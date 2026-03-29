@@ -1,11 +1,15 @@
-// src/application/services/AuthService.ts
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, Gender } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
+import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
+import { WorkoutService } from './WorkoutService';
 
 export class AuthService {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(
+    private userRepository: IUserRepository,
+    private workoutRepository: IWorkoutRepository
+  ) {}
 
   // Регистрация нового пользователя
   async register(data: {
@@ -47,6 +51,9 @@ export class AuthService {
     // Генерация JWT токена
     const token = this.generateToken(savedUser.id!);
 
+    // АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПРОГРАММЫ 
+    const workoutService = new WorkoutService(this.workoutRepository, this.userRepository);
+    await workoutService.generateBaseProgram(savedUser.id!);
     return { user: savedUser, token };
   }
 

@@ -1,4 +1,3 @@
-// public/register.js
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -44,11 +43,14 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
       
-      showMessage('Регистрация успешна! Перенаправление...', 'success');
+      // Генерация базовой программы (автоматически на сервере)
+      // Это происходит внутри AuthService.register()
       
-      // Перенаправление в личный кабинет (будет создан позже)
+      showMessage('Регистрация успешна! Программа тренировок создана', 'success');
+      
+      // Перенаправление в личный кабинет
       setTimeout(() => {
-        window.location.href = '/dashboard.html';
+        window.location.href = '/dashboard';
       }, 1500);
     } else {
       showMessage(result.error || 'Ошибка регистрации', 'error');

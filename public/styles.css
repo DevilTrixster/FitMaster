@@ -1,4 +1,3 @@
-/* public/styles.css */
 :root {
   --primary: #e63946;
   --primary-dark: #c1121f;
@@ -252,5 +251,168 @@ body {
 
   .auth-form {
     padding: 25px;
+  }
+}
+/* Dashboard Styles */
+.dashboard {
+  flex: 1;
+  padding: 40px 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 30px;
+}
+
+.dashboard-section {
+  background: var(--dark-gray);
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: var(--primary);
+}
+
+.workouts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.workout-card {
+  background: var(--black);
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid var(--primary);
+}
+
+.workout-card.completed {
+  border-left-color: var(--success);
+}
+
+.workout-card.skipped {
+  border-left-color: var(--gray);
+}
+
+.workout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.workout-header h4 {
+  font-size: 1.1rem;
+}
+
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.scheduled {
+  background: rgba(230, 57, 70, 0.2);
+  color: var(--primary);
+}
+
+.status-badge.completed {
+  background: rgba(42, 157, 143, 0.2);
+  color: var(--success);
+}
+
+.status-badge.skipped {
+  background: rgba(107, 107, 107, 0.2);
+  color: var(--gray);
+}
+
+.workout-details {
+  display: flex;
+  gap: 20px;
+  color: var(--gray);
+  margin-bottom: 15px;
+}
+
+.workout-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-small {
+  padding: 8px 20px;
+  font-size: 0.9rem;
+}
+
+.wellness-rating {
+  margin-top: 10px;
+  color: var(--primary-light);
+}
+
+.program-info {
+  text-align: center;
+}
+
+.program-info h3 {
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.program-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--gray);
+}
+
+.progress-info {
+  text-align: center;
+}
+
+.progress-info p {
+  margin: 15px 0;
+  font-size: 1.1rem;
+}
+
+.user-greeting {
+  color: var(--light-gray);
+  margin-right: 20px;
+}
+
+.loading, .empty, .error {
+  text-align: center;
+  padding: 40px;
+  color: var(--gray);
+}
+
+.error {
+  color: var(--error);
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+  
+  .program-stats {
+    grid-template-columns: 1fr;
   }
 }

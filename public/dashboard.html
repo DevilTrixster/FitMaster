@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Личный кабинет — FitMaster</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="logo">Fit<span class="accent">Master</span></h1>
+      <nav class="nav">
+        <span id="userGreeting" class="user-greeting"></span>
+        <button id="logoutBtn" class="btn btn-outline">Выход</button>
+      </nav>
+    </header>
+
+    <main class="dashboard">
+      <section class="dashboard-section">
+        <h2>📅 Предстоящие тренировки</h2>
+        <div id="upcomingWorkouts" class="workouts-list">
+          <div class="loading">Загрузка...</div>
+        </div>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>🏋️ Текущая программа</h2>
+        <div class="program-info">
+          <h3>Базовая программа Full Body</h3>
+          <p>3 раза в неделю: Понедельник, Среда, Пятница</p>
+          <div class="program-stats">
+            <div class="stat">
+              <span class="stat-value">6</span>
+              <span class="stat-label">Упражнений</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">3</span>
+              <span class="stat-label">Подхода</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">8-12</span>
+              <span class="stat-label">Повторений</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>📊 Прогресс</h2>
+        <div class="progress-info">
+          <p>Тренировок завершено: <span id="completedCount">0</span></p>
+          <p>Средняя оценка самочувствия: <span id="avgWellness">-</span></p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2026 FitMaster. Все права защищены.</p>
+    </footer>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,4 +1,3 @@
-// src/infrastructure/repositories/UserRepository.ts
 import { Pool } from 'pg';
 import { User, Gender } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';

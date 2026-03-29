@@ -1,5 +1,3 @@
-// src/domain/entities/User.ts
-
 // Перечисление для пола (строгая типизация)
 export enum Gender {
   Male = 'male',

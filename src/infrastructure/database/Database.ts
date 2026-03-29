@@ -1,4 +1,3 @@
-// src/infrastructure/database/Database.ts
 import { Pool } from 'pg';
 import { config } from '../../config/env';
 

@@ -1,4 +1,3 @@
-// src/interface/middleware/authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../application/services/AuthService';
 
