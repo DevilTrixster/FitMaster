@@ -1,7 +1,16 @@
 export enum WorkoutStatus {
   Scheduled = 'scheduled',
+  InProgress = 'in_progress',
   Completed = 'completed',
   Skipped = 'skipped',
+}
+
+export enum AdaptationType {
+  IncreaseWeight = 'increase_weight',
+  DecreaseWeight = 'decrease_weight',
+  IncreaseReps = 'increase_reps',
+  DecreaseReps = 'decrease_reps',
+  SubstituteExercise = 'substitute_exercise',
 }
 
 export class Exercise {
@@ -33,6 +42,7 @@ export class WorkoutExercise {
   public readonly repMax: number;
   public readonly restSeconds: number;
   public readonly orderIndex: number;
+  public readonly targetWeight?: number;
 
   constructor(data: {
     exercise: Exercise;
@@ -41,6 +51,7 @@ export class WorkoutExercise {
     repMax: number;
     restSeconds: number;
     orderIndex: number;
+    targetWeight?: number;
   }) {
     this.exercise = data.exercise;
     this.sets = data.sets;
@@ -48,6 +59,77 @@ export class WorkoutExercise {
     this.repMax = data.repMax;
     this.restSeconds = data.restSeconds;
     this.orderIndex = data.orderIndex;
+    this.targetWeight = data.targetWeight;
+  }
+}
+
+export class SetResult {
+  public readonly setNumber: number;
+  public readonly targetReps: number;
+  public readonly targetWeight?: number;
+  public readonly actualReps?: number;
+  public readonly actualWeight?: number;
+  public readonly completed: boolean;
+  public readonly completedAt?: Date;
+
+  constructor(data: {
+    setNumber: number;
+    targetReps: number;
+    targetWeight?: number;
+    actualReps?: number;
+    actualWeight?: number;
+    completed: boolean;
+    completedAt?: Date;
+  }) {
+    this.setNumber = data.setNumber;
+    this.targetReps = data.targetReps;
+    this.targetWeight = data.targetWeight;
+    this.actualReps = data.actualReps;
+    this.actualWeight = data.actualWeight;
+    this.completed = data.completed;
+    this.completedAt = data.completedAt;
+  }
+
+  public isSuccessful(): boolean {
+    if (!this.completed) return false;
+    if (this.actualReps === undefined) return false;
+    return this.actualReps >= this.targetReps;
+  }
+
+  public needsProgression(): boolean {
+    return this.isSuccessful() && (this.actualReps || 0) > this.targetReps;
+  }
+
+  public needsRegression(): boolean {
+    if (!this.completed) return false;
+    if (this.actualReps === undefined) return false;
+    return this.actualReps < this.targetReps;
+  }
+}
+
+export class WorkoutExerciseResult {
+  public readonly workoutExercise: WorkoutExercise;
+  public readonly sets: SetResult[];
+  public readonly comments?: string;
+
+  constructor(data: {
+    workoutExercise: WorkoutExercise;
+    sets: SetResult[];
+    comments?: string;
+  }) {
+    this.workoutExercise = data.workoutExercise;
+    this.sets = data.sets;
+    this.comments = data.comments;
+  }
+
+  public getAllSetsSuccessful(): boolean {
+    return this.sets.every(set => set.isSuccessful());
+  }
+
+  public getSuccessRate(): number {
+    if (this.sets.length === 0) return 0;
+    const successful = this.sets.filter(set => set.isSuccessful()).length;
+    return (successful / this.sets.length) * 100;
   }
 }
 
@@ -83,6 +165,7 @@ export class UserWorkout {
   public readonly completedAt?: Date;
   public readonly wellnessRating?: number;
   public readonly comments?: string;
+  public readonly exerciseResults?: WorkoutExerciseResult[];
 
   constructor(data: {
     id?: number;
@@ -94,6 +177,7 @@ export class UserWorkout {
     completedAt?: Date;
     wellnessRating?: number;
     comments?: string;
+    exerciseResults?: WorkoutExerciseResult[];
   }) {
     this.id = data.id;
     this.userId = data.userId;
@@ -104,10 +188,48 @@ export class UserWorkout {
     this.completedAt = data.completedAt;
     this.wellnessRating = data.wellnessRating;
     this.comments = data.comments;
+    this.exerciseResults = data.exerciseResults;
   }
 
-  // Метод для проверки, можно ли начать тренировку
   public canStart(): boolean {
     return this.status === WorkoutStatus.Scheduled;
+  }
+
+  public isInProgress(): boolean {
+    return this.status === WorkoutStatus.InProgress;
+  }
+}
+
+export class WorkoutAdaptation {
+  public readonly id?: number;
+  public readonly userId: number;
+  public readonly exerciseId: number;
+  public readonly previousWeight: number;
+  public readonly newWeight: number;
+  public readonly previousReps: number;
+  public readonly newReps: number;
+  public readonly adaptationType: AdaptationType;
+  public readonly reason: string;
+
+  constructor(data: {
+    id?: number;
+    userId: number;
+    exerciseId: number;
+    previousWeight: number;
+    newWeight: number;
+    previousReps: number;
+    newReps: number;
+    adaptationType: AdaptationType;
+    reason: string;
+  }) {
+    this.id = data.id;
+    this.userId = data.userId;
+    this.exerciseId = data.exerciseId;
+    this.previousWeight = data.previousWeight;
+    this.newWeight = data.newWeight;
+    this.previousReps = data.previousReps;
+    this.newReps = data.newReps;
+    this.adaptationType = data.adaptationType;
+    this.reason = data.reason;
   }
 }

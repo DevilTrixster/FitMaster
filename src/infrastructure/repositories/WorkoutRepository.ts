@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
-import { Workout, UserWorkout, Exercise, WorkoutExercise, WorkoutStatus } from '../../domain/entities/Workout';
+import { Workout, UserWorkout, Exercise, WorkoutExercise, WorkoutStatus, SetResult, WorkoutAdaptation, AdaptationType } from '../../domain/entities/Workout';
 
 export class WorkoutRepository implements IWorkoutRepository {
   constructor(private pool: Pool) {}
@@ -47,6 +47,40 @@ export class WorkoutRepository implements IWorkoutRepository {
     });
   }
 
+  async getWorkoutHistory(userId: number, limit: number = 10): Promise<UserWorkout[]> {
+    const query = `
+      SELECT uw.*, w.name as workout_name, w.description as workout_description
+      FROM user_workouts uw
+      JOIN workouts w ON uw.workout_id = w.id
+      WHERE uw.user_id = $1 AND uw.status = $2
+      ORDER BY uw.completed_at DESC
+      LIMIT $3
+    `;
+    
+    const result = await this.pool.query(query, [userId, 'completed', limit]);
+    
+    return result.rows.map((row: any) => {
+      const workout = new Workout({
+        id: row.workout_id,
+        name: row.workout_name,
+        description: row.workout_description,
+        frequencyPerWeek: 3,
+      });
+      
+      return new UserWorkout({
+        id: row.id,
+        userId: row.user_id,
+        workout,
+        scheduledDate: row.scheduled_date,
+        scheduledTime: row.scheduled_time,
+        status: row.status as WorkoutStatus,
+        completedAt: row.completed_at,
+        wellnessRating: row.wellness_rating,
+        comments: row.comments,
+      });
+    });
+  }
+
   async getBaseWorkout(): Promise<Workout | null> {
     const query = 'SELECT * FROM workouts WHERE name LIKE $1 LIMIT 1';
     const result = await this.pool.query(query, ['%Базовая%']);
@@ -86,7 +120,7 @@ export class WorkoutRepository implements IWorkoutRepository {
       FROM user_workouts uw
       JOIN workouts w ON uw.workout_id = w.id
       WHERE uw.user_id = $1
-      ORDER BY uw.scheduled_date DESC
+      ORDER BY uw.scheduled_date ASC, uw.scheduled_time ASC 
       LIMIT $2
     `;
     
@@ -159,6 +193,16 @@ export class WorkoutRepository implements IWorkoutRepository {
     await this.pool.query(query, [status, wellnessRating || null, comments || null, completedAt, id]);
   }
 
+  async startUserWorkout(id: number): Promise<void> {
+    const query = `
+      UPDATE user_workouts 
+      SET status = $1
+      WHERE id = $2
+    `;
+    
+    await this.pool.query(query, ['in_progress', id]);
+  }
+
   async getAllExercises(): Promise<Exercise[]> {
     const query = 'SELECT * FROM exercises ORDER BY muscle_group, name';
     const result = await this.pool.query(query);
@@ -169,6 +213,93 @@ export class WorkoutRepository implements IWorkoutRepository {
       description: row.description,
       muscleGroup: row.muscle_group,
       equipmentType: row.equipment_type,
+    }));
+  }
+
+  async saveSetResult(userWorkoutId: number, exerciseId: number, setResult: SetResult): Promise<void> {
+    const query = `
+      INSERT INTO workout_results 
+      (user_workout_id, exercise_id, set_number, target_reps, target_weight, actual_reps, actual_weight, completed, completed_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `;
+    
+    const values = [
+      userWorkoutId,
+      exerciseId,
+      setResult.setNumber,
+      setResult.targetReps,
+      setResult.targetWeight || null,
+      setResult.actualReps || null,
+      setResult.actualWeight || null,
+      setResult.completed,
+      setResult.completedAt || new Date(),
+    ];
+
+    await this.pool.query(query, values);
+  }
+
+  async getExerciseResults(userWorkoutId: number, exerciseId: number): Promise<SetResult[]> {
+    const query = `
+      SELECT set_number, target_reps, target_weight, actual_reps, actual_weight, completed, completed_at
+      FROM workout_results
+      WHERE user_workout_id = $1 AND exercise_id = $2
+      ORDER BY set_number
+    `;
+    
+    const result = await this.pool.query(query, [userWorkoutId, exerciseId]);
+    
+    return result.rows.map((row: any) => new SetResult({
+      setNumber: row.set_number,
+      targetReps: row.target_reps,
+      targetWeight: row.target_weight,
+      actualReps: row.actual_reps,
+      actualWeight: row.actual_weight,
+      completed: row.completed,
+      completedAt: row.completed_at,
+    }));
+  }
+
+  async saveAdaptation(adaptation: WorkoutAdaptation): Promise<void> {
+    const query = `
+      INSERT INTO workout_adaptations 
+      (user_id, user_workout_id, exercise_id, previous_weight, new_weight, previous_reps, new_reps, adaptation_reason)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `;
+    
+    const values = [
+      adaptation.userId,
+      adaptation.id,
+      adaptation.exerciseId,
+      adaptation.previousWeight,
+      adaptation.newWeight,
+      adaptation.previousReps,
+      adaptation.newReps,
+      adaptation.reason,
+    ];
+
+    await this.pool.query(query, values);
+  }
+
+  async getUserAdaptations(userId: number, exerciseId: number, limit: number = 10): Promise<WorkoutAdaptation[]> {
+    const query = `
+      SELECT * FROM workout_adaptations
+      WHERE user_id = $1 AND exercise_id = $2
+      ORDER BY created_at DESC
+      LIMIT $3
+    `;
+    
+    const result = await this.pool.query(query, [userId, exerciseId, limit]);
+    
+    return result.rows.map((row: any) => new WorkoutAdaptation({
+      id: row.id,
+      userId: row.user_id,
+      exerciseId: row.exercise_id,
+      previousWeight: row.previous_weight,
+      newWeight: row.new_weight,
+      previousReps: row.previous_reps,
+      newReps: row.new_reps,
+      adaptationType: row.adaptation_reason.includes('увелич') ? AdaptationType.IncreaseWeight : AdaptationType.DecreaseWeight,
+      reason: row.adaptation_reason,
     }));
   }
 }

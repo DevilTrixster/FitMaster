@@ -104,10 +104,83 @@ function formatDate(dateString) {
   });
 }
 
-// Начало тренировки
 async function startWorkout(workoutId) {
-  window.location.href = `/workout.html?id=${workoutId}`;
-}
+  try {
+    const response = await fetch('/api/workouts/start', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ workoutId }),
+    });
 
+    if (response.ok) {
+      window.location.href = `/workout.html?id=${workoutId}`;
+    } else {
+      const data = await response.json();
+      alert('Ошибка: ' + data.error);
+    }
+  } catch (error) {
+    alert('Ошибка соединения');
+  }
+}
 // Загрузка при старте
 loadUpcomingWorkouts();
+
+// public/dashboard.js - добавить функцию загрузки истории
+
+async function loadWorkoutHistory() {
+  try {
+    const response = await fetch('/api/workouts/history', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error('Ошибка загрузки');
+
+    const data = await response.json();
+    renderWorkoutHistory(data.workouts);
+  } catch (error) {
+    console.error('Ошибка загрузки истории:', error);
+  }
+}
+
+function renderWorkoutHistory(workouts) {
+  const container = document.getElementById('workoutHistory');
+  
+  if (workouts.length === 0) {
+    container.innerHTML = '<div class="empty">История пуста</div>';
+    return;
+  }
+
+  const html = workouts.map(workout => `
+    <div class="workout-history-item ${workout.status}">
+      <div class="history-header">
+        <h4>${workout.workoutName}</h4>
+        <span class="status-badge ${workout.status}">${getStatusText(workout.status)}</span>
+      </div>
+      <div class="history-details">
+        <span class="date">📅 ${formatDate(workout.scheduledDate)}</span>
+        <span class="time">⏰ ${workout.scheduledTime}</span>
+      </div>
+      ${workout.wellnessRating ? `
+        <div class="wellness-rating">
+          Самочувствие: ${'⭐'.repeat(workout.wellnessRating)} (${workout.wellnessRating}/5)
+        </div>
+      ` : ''}
+      ${workout.comments ? `
+        <div class="workout-comments">
+          <strong>Комментарии:</strong>
+          <p>${workout.comments}</p>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+
+  container.innerHTML = html;
+}
+
+// Вызывать при загрузке страницы
+loadWorkoutHistory();

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import { Database } from './infrastructure/database/Database';
 import { UserRepository } from './infrastructure/repositories/UserRepository';
 import { WorkoutRepository } from './infrastructure/repositories/WorkoutRepository';
@@ -11,10 +13,18 @@ import { WorkoutController } from './interface/controllers/WorkoutController';
 import { createAuthRoutes } from './interface/routes/authRoutes';
 import { createWorkoutRoutes } from './interface/routes/workoutRoutes';
 import { createAuthMiddleware } from './interface/middleware/authMiddleware';
+import { WorkoutSocketHandler } from './interface/socket/WorkoutSocketHandler';
 import { config } from './config/env';
 
 async function bootstrap() {
   const app = express();
+  const httpServer = createServer(app);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST'],
+    },
+  });
   
   app.use(cors());
   app.use(express.json());
@@ -24,21 +34,20 @@ async function bootstrap() {
     const database = Database.getInstance();
     await database.connect();
 
-    // Репозитории
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
     
-    // Сервисы (с внедрением зависимостей)
     const workoutService = new WorkoutService(workoutRepository, userRepository);
     const authService = new AuthService(userRepository, workoutRepository);
     
-    // Контроллеры
     const authController = new AuthController(authService);
     const workoutController = new WorkoutController(workoutService);
     
     const authMiddleware = createAuthMiddleware(authService);
 
-    // Маршруты
+    const socketHandler = new WorkoutSocketHandler(io, workoutService);
+    socketHandler.initialize();
+
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
 
@@ -56,10 +65,11 @@ async function bootstrap() {
 
     console.log('🚀 Сервер готов к работе');
 
-    app.listen(config.server.port, () => {
+    httpServer.listen(config.server.port, () => {
       console.log(`🌐 Сервер запущен на порту ${config.server.port}`);
       console.log(`📍 Главная: http://localhost:${config.server.port}/`);
       console.log(`📍 Личный кабинет: http://localhost:${config.server.port}/dashboard`);
+      console.log(`🔌 Socket.IO готов`);
     });
 
   } catch (error) {

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тренировка — FitMaster</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="logo">Fit<span class="accent">Master</span></h1>
+      <nav class="nav">
+        <button id="finishWorkoutBtn" class="btn btn-outline">Завершить</button>
+      </nav>
+    </header>
+
+    <main class="workout-session">
+      <div class="workout-header">
+        <h2 id="workoutName">Загрузка...</h2>
+        <div class="timer-container">
+          <span class="timer-label">Отдых:</span>
+          <span id="restTimer" class="timer">00:00</span>
+          <button id="startTimerBtn" class="btn btn-primary btn-small">Старт</button>
+          <button id="resetTimerBtn" class="btn btn-outline btn-small">Сброс</button>
+        </div>
+      </div>
+
+      <div id="exercisesList" class="exercises-list">
+        <div class="loading">Загрузка упражнений...</div>
+      </div>
+
+      <div class="workout-footer">
+        <div class="wellness-section">
+          <label>Оценка самочувствия:</label>
+          <div class="rating-stars" id="wellnessRating">
+            <span data-rating="1">⭐</span>
+            <span data-rating="2">⭐</span>
+            <span data-rating="3">⭐</span>
+            <span data-rating="4">⭐</span>
+            <span data-rating="5">⭐</span>
+          </div>
+        </div>
+        <textarea id="workoutComments" placeholder="Комментарии к тренировке (необязательно)"></textarea>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2026 FitMaster. Все права защищены.</p>
+    </footer>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="workout.js"></script>
+</body>
+</html>

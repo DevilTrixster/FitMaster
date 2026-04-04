@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    "ignoreDeprecations": "6.0",
     "module": "commonjs",
     "lib": ["ES2020"],
     "outDir": "./dist",
@@ -9,7 +10,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",  // ← Добавьте эту строку
     "paths": {
       "@domain/*": ["src/domain/*"],
       "@application/*": ["src/application/*"],
