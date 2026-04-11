@@ -25,11 +25,13 @@ async function bootstrap() {
       methods: ['GET', 'POST'],
     },
   });
-  
+
+  //1. Сначала все middleware
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json()); // ← Это обрабатывает JSON из запросов
   app.use(express.static(path.join(__dirname, '../public')));
 
+  //2. Инициализация БД и зависимостей
   try {
     const database = Database.getInstance();
     await database.connect();
@@ -45,9 +47,11 @@ async function bootstrap() {
     
     const authMiddleware = createAuthMiddleware(authService);
 
+    // 3. Socket.IO
     const socketHandler = new WorkoutSocketHandler(io, workoutService);
     socketHandler.initialize();
 
+    // 4. API маршруты
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
 
@@ -55,12 +59,29 @@ async function bootstrap() {
       res.json({ message: 'Это защищённый маршрут', userId: (req as any).userId });
     });
 
+    // ✅ 5. Frontend маршруты
     app.get('/', (req, res) => {
       res.sendFile(path.join(__dirname, '../public/index.html'));
     });
-    
+
     app.get('/dashboard', (req, res) => {
       res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+    });
+
+    app.get('/history', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/history.html'));
+    });
+
+    app.get('/workout', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/workout.html'));
+    });
+
+    app.get('/login', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/auth/login.html'));
+    });
+
+    app.get('/register', (req, res) => {
+      res.sendFile(path.join(__dirname, '../public/auth/register.html'));
     });
 
     console.log('🚀 Сервер готов к работе');
@@ -69,6 +90,7 @@ async function bootstrap() {
       console.log(`🌐 Сервер запущен на порту ${config.server.port}`);
       console.log(`📍 Главная: http://localhost:${config.server.port}/`);
       console.log(`📍 Личный кабинет: http://localhost:${config.server.port}/dashboard`);
+      console.log(`📍 Вход: http://localhost:${config.server.port}/login`);
       console.log(`🔌 Socket.IO готов`);
     });
 

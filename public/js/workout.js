@@ -137,7 +137,69 @@ function updateTimerDisplay() {
   document.getElementById('restTimer').textContent = 
     `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
+// Сохранение состояния при закрытии страницы
+window.addEventListener('beforeunload', () => {
+  if (currentWorkout && currentWorkout.status === 'in_progress') {
+    // Отправляем запрос на паузу синхронно
+    navigator.sendBeacon('/api/workouts/pause', JSON.stringify({
+      workoutId: parseInt(workoutId),
+      lastExerciseIndex: currentExerciseIndex,
+    }));
+  }
+});
 
+// Кнопка паузы в интерфейсе
+document.getElementById('pauseWorkoutBtn')?.addEventListener('click', async () => {
+  try {
+    await fetch('/api/workouts/pause', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        workoutId: parseInt(workoutId),
+        lastExerciseIndex: currentExerciseIndex,
+      }),
+    });
+    
+    clearInterval(restTimerInterval);
+    alert('Тренировка на паузе. Вы можете вернуться позже.');
+    window.location.href = '/dashboard';
+  } catch (error) {
+    alert('Ошибка сохранения');
+  }
+});
+
+// Проверка активной тренировки при загрузке
+async function checkActiveWorkout() {
+  try {
+    const response = await fetch('/api/workouts/active', {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.workout && data.workout.status === 'in_progress') {
+        // Показываем уведомление о продолжении
+        showResumeNotification(data.workout);
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка проверки активной тренировки:', error);
+  }
+}
+
+function showResumeNotification(workout) {
+  const notification = document.createElement('div');
+  notification.className = 'resume-notification';
+  notification.innerHTML = `
+    <p>У вас есть незавершённая тренировка!</p>
+    <button onclick="window.location.href='/workout.html?id=${workout.id}'">Продолжить</button>
+    <button onclick="this.parentElement.remove()">Закрыть</button>
+  `;
+  document.body.appendChild(notification);
+}
 document.getElementById('startTimerBtn').addEventListener('click', () => {
   const exercise = currentWorkout.exercises[0];
   if (exercise && exercise.restSeconds) {

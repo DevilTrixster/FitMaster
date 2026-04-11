@@ -166,6 +166,9 @@ export class UserWorkout {
   public readonly wellnessRating?: number;
   public readonly comments?: string;
   public readonly exerciseResults?: WorkoutExerciseResult[];
+  public readonly startedAt?: Date;
+  public readonly pausedAt?: Date;
+  public readonly lastExerciseIndex?: number;
 
   constructor(data: {
     id?: number;
@@ -177,6 +180,9 @@ export class UserWorkout {
     completedAt?: Date;
     wellnessRating?: number;
     comments?: string;
+    startedAt?: Date;
+    pausedAt?: Date;
+    lastExerciseIndex?: number;
     exerciseResults?: WorkoutExerciseResult[];
   }) {
     this.id = data.id;
@@ -189,6 +195,9 @@ export class UserWorkout {
     this.wellnessRating = data.wellnessRating;
     this.comments = data.comments;
     this.exerciseResults = data.exerciseResults;
+    this.startedAt = data.startedAt;
+    this.pausedAt = data.pausedAt;
+    this.lastExerciseIndex = data.lastExerciseIndex;
   }
 
   public canStart(): boolean {
@@ -196,6 +205,14 @@ export class UserWorkout {
   }
 
   public isInProgress(): boolean {
+    return this.status === WorkoutStatus.InProgress;
+  }
+
+  public isPaused(): boolean {
+    return this.status === WorkoutStatus.InProgress && this.pausedAt !== undefined;
+  }
+
+  public canResume(): boolean {
     return this.status === WorkoutStatus.InProgress;
   }
 }

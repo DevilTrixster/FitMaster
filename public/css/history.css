@@ -1,0 +1,105 @@
+.history-page {
+  flex: 1;
+  padding: 40px 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.history-page h2 {
+  color: var(--primary);
+  margin-bottom: 30px;
+  font-size: 2rem;
+}
+
+.history-filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.history-filters select,
+.history-filters input {
+  padding: 10px 15px;
+  border: 2px solid var(--gray);
+  border-radius: 5px;
+  background: var(--black);
+  color: var(--white);
+  font-size: 1rem;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.workout-history-item {
+  background: var(--black);
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid var(--gray);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.workout-history-item:hover {
+  transform: translateX(5px);
+}
+
+.workout-history-item.completed {
+  border-left-color: var(--success);
+}
+
+.workout-history-item.skipped {
+  border-left-color: var(--error);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.history-header h4 {
+  color: var(--white);
+  font-size: 1.1rem;
+}
+
+.history-details {
+  display: flex;
+  gap: 20px;
+  color: var(--gray);
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.wellness {
+  color: var(--primary-light);
+  margin-bottom: 10px;
+}
+
+.comments-preview {
+  color: var(--light-gray);
+  font-style: italic;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: var(--dark-gray);
+  border-radius: 5px;
+}
+
+.item-stats {
+  display: flex;
+  gap: 20px;
+  color: var(--gray);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .history-filters {
+    flex-direction: column;
+  }
+}

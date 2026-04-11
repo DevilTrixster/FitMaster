@@ -47,40 +47,6 @@ export class WorkoutRepository implements IWorkoutRepository {
     });
   }
 
-  async getWorkoutHistory(userId: number, limit: number = 10): Promise<UserWorkout[]> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1 AND uw.status = $2
-      ORDER BY uw.completed_at DESC
-      LIMIT $3
-    `;
-    
-    const result = await this.pool.query(query, [userId, 'completed', limit]);
-    
-    return result.rows.map((row: any) => {
-      const workout = new Workout({
-        id: row.workout_id,
-        name: row.workout_name,
-        description: row.workout_description,
-        frequencyPerWeek: 3,
-      });
-      
-      return new UserWorkout({
-        id: row.id,
-        userId: row.user_id,
-        workout,
-        scheduledDate: row.scheduled_date,
-        scheduledTime: row.scheduled_time,
-        status: row.status as WorkoutStatus,
-        completedAt: row.completed_at,
-        wellnessRating: row.wellness_rating,
-        comments: row.comments,
-      });
-    });
-  }
-
   async getBaseWorkout(): Promise<Workout | null> {
     const query = 'SELECT * FROM workouts WHERE name LIKE $1 LIMIT 1';
     const result = await this.pool.query(query, ['%Базовая%']);
@@ -278,6 +244,122 @@ export class WorkoutRepository implements IWorkoutRepository {
     ];
 
     await this.pool.query(query, values);
+  }
+
+  async pauseUserWorkout(id: number, lastExerciseIndex: number): Promise<void> {
+  const query = `
+    UPDATE user_workouts 
+    SET paused_at = CURRENT_TIMESTAMP, last_exercise_index = $1
+    WHERE id = $2
+  `;
+  await this.pool.query(query, [lastExerciseIndex, id]);
+  }
+
+  async resumeUserWorkout(id: number): Promise<void> {
+    const query = `
+      UPDATE user_workouts 
+      SET paused_at = NULL
+      WHERE id = $2
+    `;
+    await this.pool.query(query, [id]);
+  }
+
+  async getUserActiveWorkout(userId: number): Promise<UserWorkout | null> {
+    const query = `
+      SELECT uw.*, w.name as workout_name, w.description as workout_description
+      FROM user_workouts uw
+      JOIN workouts w ON uw.workout_id = w.id
+      WHERE uw.user_id = $1 AND uw.status = $2
+      ORDER BY uw.scheduled_date ASC
+      LIMIT 1
+    `;
+    
+    const result = await this.pool.query(query, [userId, 'in_progress']);
+    
+    if (result.rows.length === 0) return null;
+    
+    const row = result.rows[0];
+    const workout = new Workout({
+      id: row.workout_id,
+      name: row.workout_name,
+      description: row.workout_description,
+      frequencyPerWeek: 3,
+    });
+    
+    return new UserWorkout({
+      id: row.id,
+      userId: row.user_id,
+      workout,
+      scheduledDate: row.scheduled_date,
+      scheduledTime: row.scheduled_time,
+      status: row.status as WorkoutStatus,
+      startedAt: row.started_at,
+      pausedAt: row.paused_at,
+      lastExerciseIndex: row.last_exercise_index,
+    });
+  }
+
+  async getWorkoutHistory(
+    userId: number, 
+    limit: number, 
+    offset: number,
+    status?: string,
+    dateFrom?: string,
+    dateTo?: string
+  ): Promise<UserWorkout[]> {
+    let query = `
+      SELECT uw.*, w.name as workout_name, w.description as workout_description
+      FROM user_workouts uw
+      JOIN workouts w ON uw.workout_id = w.id
+      WHERE uw.user_id = $1
+    `;
+    
+    const params: any[] = [userId];
+    let paramIndex = 2;
+    
+    if (status && status !== 'all') {
+      query += ` AND uw.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+    
+    if (dateFrom) {
+      query += ` AND uw.scheduled_date >= $${paramIndex}`;
+      params.push(dateFrom);
+      paramIndex++;
+    }
+    
+    if (dateTo) {
+      query += ` AND uw.scheduled_date <= $${paramIndex}`;
+      params.push(dateTo);
+      paramIndex++;
+    }
+    
+    query += ` ORDER BY uw.scheduled_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+    
+    const result = await this.pool.query(query, params);
+    
+    return result.rows.map((row: any) => {
+      const workout = new Workout({
+        id: row.workout_id,
+        name: row.workout_name,
+        description: row.workout_description,
+        frequencyPerWeek: 3,
+      });
+      
+      return new UserWorkout({
+        id: row.id,
+        userId: row.user_id,
+        workout,
+        scheduledDate: row.scheduled_date,
+        scheduledTime: row.scheduled_time,
+        status: row.status as WorkoutStatus,
+        completedAt: row.completed_at,
+        wellnessRating: row.wellness_rating,
+        comments: row.comments,
+      });
+    });
   }
 
   async getUserAdaptations(userId: number, exerciseId: number, limit: number = 10): Promise<WorkoutAdaptation[]> {

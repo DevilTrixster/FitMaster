@@ -57,29 +57,35 @@ export class AuthController {
 
   // Обработка входа
   async login(req: Request, res: Response): Promise<void> {
-    try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        res.status(400).json({ error: 'Email и пароль обязательны' });
-        return;
-      }
-
-      const result = await this.authService.login(email, password);
-
-      res.status(200).json({
-        message: 'Вход успешен',
-        user: {
-          id: result.user.id,
-          nickname: result.user.nickname,
-          email: result.user.email,
-          firstName: result.user.firstName,
-          lastName: result.user.lastName,
-        },
-        token: result.token,
-      });
-    } catch (error: any) {
-      res.status(401).json({ error: error.message });
+  try {
+    // ✅ Проверка что body существует
+    if (!req.body) {
+      res.status(400).json({ error: 'Тело запроса пустое' });
+      return;
     }
+
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      res.status(400).json({ error: 'Email и пароль обязательны' });
+      return;
+    }
+
+    const result = await this.authService.login(email, password);
+
+    res.status(200).json({
+      message: 'Вход успешен',
+      user: {
+        id: result.user.id,
+        nickname: result.user.nickname,
+        email: result.user.email,
+        firstName: result.user.firstName,
+        lastName: result.user.lastName,
+      },
+      token: result.token,
+    });
+  } catch (error: any) {
+    res.status(401).json({ error: error.message });
   }
+}
 }

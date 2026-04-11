@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Личный кабинет — FitMaster</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
   <div class="container">
@@ -12,61 +13,65 @@
       <h1 class="logo">Fit<span class="accent">Master</span></h1>
       <nav class="nav">
         <span id="userGreeting" class="user-greeting"></span>
+        <a href="/history" class="btn btn-outline">История</a>
         <button id="logoutBtn" class="btn btn-outline">Выход</button>
       </nav>
     </header>
 
-    <main class="dashboard">
-      <section class="dashboard-section">
-        <h2>📅 Предстоящие тренировки</h2>
-        <div id="upcomingWorkouts" class="workouts-list">
-          <div class="loading">Загрузка...</div>
+    <div class="dashboard">
+      <aside class="sidebar">
+        <h3>📊 Статистика</h3>
+        <div class="stat-card">
+          <span class="stat-value" id="totalWorkouts">0</span>
+          <span class="stat-label">Тренировок</span>
         </div>
-      </section>
+        <div class="stat-card">
+          <span class="stat-value" id="avgWellness">-</span>
+          <span class="stat-label">Самочувствие</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="currentStreak">0</span>
+          <span class="stat-label">Дней подряд</span>
+        </div>
+      </aside>
 
-      <section class="dashboard-section">
-        <h2>🏋️ Текущая программа</h2>
-        <div class="program-info">
-          <h3>Базовая программа Full Body</h3>
-          <p>3 раза в неделю: Понедельник, Среда, Пятница</p>
-          <div class="program-stats">
-            <div class="stat">
-              <span class="stat-value">6</span>
-              <span class="stat-label">Упражнений</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">3</span>
-              <span class="stat-label">Подхода</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">8-12</span>
-              <span class="stat-label">Повторений</span>
+      <main class="main-content">
+        <section class="section">
+          <h2>📅 Предстоящие тренировки</h2>
+          <div id="upcomingWorkouts" class="workouts-list">
+            <div class="loading">Загрузка...</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>🏋️ Текущая программа</h2>
+          <div class="program-info">
+            <h3>Базовая программа Full Body</h3>
+            <p>3 раза в неделю: Понедельник, Среда, Пятница</p>
+            <div class="program-stats">
+              <div class="stat">
+                <span class="stat-value">6</span>
+                <span class="stat-label">Упражнений</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">3</span>
+                <span class="stat-label">Подхода</span>
+              </div>
+              <div class="stat">
+                <span class="stat-value">8-12</span>
+                <span class="stat-label">Повторений</span>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section class="dashboard-section">
-        <h2>📊 Прогресс</h2>
-        <div class="progress-info">
-          <p>Тренировок завершено: <span id="completedCount">0</span></p>
-          <p>Средняя оценка самочувствия: <span id="avgWellness">-</span></p>
-        </div>
-      </section>
-      
-      <section class="dashboard-section">
-        <h2>📝 История тренировок</h2>
-        <div id="workoutHistory" class="workout-history">
-          <div class="loading">Загрузка...</div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+    </div>
 
     <footer class="footer">
       <p>&copy; 2026 FitMaster. Все права защищены.</p>
     </footer>
   </div>
 
-  <script src="dashboard.js"></script>
+  <script src="/js/dashboard.js"></script>
 </body>
 </html>

@@ -17,9 +17,7 @@ export class WorkoutSocketHandler {
       console.log('🔌 Клиент подключился:', socket.id);
 
       socket.on('authenticate', (data: { token: string; userId: number }) => {
-        // Здесь должна быть проверка токена
-        // Пока пропускаем
-            socket.userId = data.userId; // ✅ Теперь userId доступен
+            socket.userId = data.userId;
             socket.join(`user:${data.userId}`);
             console.log(`✅ Пользователь ${data.userId} аутентифицирован`);
         });

@@ -12,6 +12,9 @@ export function createWorkoutRoutes(workoutController: WorkoutController, authMi
   router.get('/history', (req, res) => workoutController.getWorkoutHistory(req, res));
   router.post('/start', (req, res) => workoutController.startWorkout(req, res));
   router.post('/complete', (req, res) => workoutController.completeWorkout(req, res));
+  router.post('/pause', (req, res) => workoutController.pauseWorkout(req, res));
+  router.post('/resume', (req, res) => workoutController.resumeWorkout(req, res));
+  router.get('/active', (req, res) => workoutController.getActiveWorkout(req, res));
 
   return router;
 }

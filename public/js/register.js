@@ -5,7 +5,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   const form = e.target;
   const formData = new FormData(form);
 
-  // Проверка совпадения паролей
   const password = formData.get('password');
   const confirmPassword = formData.get('confirmPassword');
   
@@ -14,7 +13,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     return;
   }
 
-  // Подготовка данных для отправки
   const data = {
     nickname: formData.get('nickname'),
     email: formData.get('email'),
@@ -39,16 +37,11 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     const result = await response.json();
 
     if (response.ok) {
-      // Сохранение токена в localStorage
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
       
-      // Генерация базовой программы (автоматически на сервере)
-      // Это происходит внутри AuthService.register()
-      
       showMessage('Регистрация успешна! Программа тренировок создана', 'success');
       
-      // Перенаправление в личный кабинет
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 1500);
@@ -62,6 +55,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
 function showMessage(text, type) {
   const messageEl = document.getElementById('message');
+  if (!messageEl) return;
+  
   messageEl.textContent = text;
   messageEl.className = `message ${type}`;
 }
