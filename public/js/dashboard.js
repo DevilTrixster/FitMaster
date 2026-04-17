@@ -3,7 +3,7 @@ const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 if (!token) {
-  window.location.href = '/auth/login.html';
+  window.location.href = '/login';
 }
 
 // Отображение приветствия
@@ -24,8 +24,6 @@ if (logoutBtn) {
 
 // Загрузка предстоящих тренировок
 async function loadUpcomingWorkouts() {
-  const container = document.getElementById('upcomingWorkouts');
-  
   try {
     const response = await fetch('/api/workouts/dashboard', {
       headers: {
@@ -37,7 +35,7 @@ async function loadUpcomingWorkouts() {
       if (response.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/auth/login.html';
+        window.location.href = '/login';
         return;
       }
       throw new Error('Ошибка загрузки данных');
@@ -47,6 +45,7 @@ async function loadUpcomingWorkouts() {
     renderUpcomingWorkouts(data.upcomingWorkouts);
     updateStats(data.upcomingWorkouts);
   } catch (error) {
+    const container = document.getElementById('upcomingWorkouts');
     if (container) {
       container.innerHTML = `<div class="error">Ошибка: ${error.message}</div>`;
     }
@@ -62,13 +61,13 @@ function renderUpcomingWorkouts(workouts) {
     return;
   }
 
-  const html = workouts.map(workout => `
-    <div class="workout-card ${workout.status}" onclick="startWorkout(${workout.id})">
+  const html = workouts.map(workout => {
+    return `<div class="workout-card ${workout.status}" onclick="startWorkout(${workout.id})">
       <div class="workout-header">
         <h4>${workout.workoutName || 'Тренировка'}</h4>
         <span class="status-badge ${workout.status}">${getStatusText(workout.status)}</span>
       </div>
-      <div class="workout-datetime">
+      <div class="workout-details">
         <span class="date">📅 ${formatDate(workout.scheduledDate)}</span>
         <span class="time">⏰ ${workout.scheduledTime || '10:00'}</span>
       </div>
@@ -77,8 +76,13 @@ function renderUpcomingWorkouts(workouts) {
           <button class="btn btn-primary btn-small">Начать</button>
         </div>
       ` : ''}
-    </div>
-  `).join('');
+      ${workout.wellnessRating ? `
+        <div class="wellness-rating">
+          Оценка самочувствия: ${'⭐'.repeat(workout.wellnessRating)}
+        </div>
+      ` : ''}
+    </div>`;
+  }).join('');
 
   container.innerHTML = html;
 }
@@ -103,7 +107,6 @@ function updateStats(workouts) {
   }
   
   if (streakEl) {
-    // Пока заглушка - нужно реализовать подсчёт серии
     streakEl.textContent = '0';
   }
 }
@@ -139,7 +142,7 @@ async function startWorkout(workoutId) {
     });
 
     if (response.ok) {
-      window.location.href = `/workout.html?id=${workoutId}`;
+      window.location.href = `/workout?id=${workoutId}`;
     } else {
       const data = await response.json();
       alert('Ошибка: ' + data.error);

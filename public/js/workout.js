@@ -1,31 +1,41 @@
+// Проверка авторизации
 const token = localStorage.getItem('token');
 if (!token) {
-  window.location.href = '/login.html';
+  window.location.href = '/login';
 }
-
-const socket = io();
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-socket.emit('authenticate', { 
-  token, 
-  userId: user.id // Добавляем userId
-});
 
 let currentWorkout = null;
 let restTimerInterval = null;
-let restSeconds = 0;
+let restSeconds = 60;
 let selectedWellness = 3;
 
+// Получаем ID тренировки из URL
 const urlParams = new URLSearchParams(window.location.search);
 const workoutId = urlParams.get('id');
 
+if (!workoutId) {
+  alert('Не указан ID тренировки');
+  window.location.href = '/dashboard';
+}
+
+// Загрузка тренировки
 async function loadWorkout() {
   try {
-    const response = await fetch('/api/workouts/current', {
-      headers: { 'Authorization': `Bearer ${token}` },
+    const response = await fetch(`/api/workouts/current`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     });
 
-    if (!response.ok) throw new Error('Ошибка загрузки');
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return;
+      }
+      throw new Error('Ошибка загрузки тренировки');
+    }
 
     const data = await response.json();
     currentWorkout = data.workout;
@@ -33,50 +43,59 @@ async function loadWorkout() {
     document.getElementById('workoutName').textContent = currentWorkout.name;
     renderExercises();
   } catch (error) {
+    console.error('Ошибка:', error);
     document.getElementById('exercisesList').innerHTML = 
       `<div class="error">Ошибка: ${error.message}</div>`;
   }
 }
 
+// Отрисовка упражнений
 function renderExercises() {
   const container = document.getElementById('exercisesList');
   
-  const html = currentWorkout.exercises.map((exercise, exIndex) => `
-    <div class="exercise-card" data-exercise-id="${exercise.id}">
+  if (!currentWorkout || !currentWorkout.exercises || currentWorkout.exercises.length === 0) {
+    container.innerHTML = '<div class="empty">Нет упражнений</div>';
+    return;
+  }
+
+  const html = currentWorkout.exercises.map((exercise, exIndex) => {
+    return `<div class="exercise-card" data-exercise-id="${exercise.id}" data-exercise-index="${exIndex}">
       <div class="exercise-header">
         <h3>${exercise.name}</h3>
-        <span class="muscle-group">${exercise.muscleGroup}</span>
+        <span class="muscle-group">${exercise.muscleGroup || 'N/A'}</span>
       </div>
       <div class="exercise-targets">
         <span>Подходы: ${exercise.sets}</span>
         <span>Повторения: ${exercise.repMin}–${exercise.repMax}</span>
         <span>Вес: ${exercise.targetWeight || 'Собственный'} кг</span>
-        <span>Отдых: ${exercise.restSeconds} сек</span>
+        <span>Отдых: ${exercise.restSeconds || 60} сек</span>
       </div>
       <div class="sets-container" id="sets-${exercise.id}">
-        ${Array.from({ length: exercise.sets }, (_, i) => `
-          <div class="set-row" data-set="${i + 1}">
+        ${Array.from({ length: exercise.sets }, (_, i) => {
+          return `<div class="set-row" data-set="${i + 1}">
             <span class="set-label">Подход ${i + 1}</span>
-            <input type="number" class="set-reps" placeholder="Повторения" min="1">
-            <input type="number" class="set-weight" placeholder="Вес (кг)" step="0.5" ${exercise.targetWeight ? '' : 'disabled'}>
+            <input type="number" class="set-reps" placeholder="Повторения" min="1" value="${exercise.repMin}">
+            <input type="number" class="set-weight" placeholder="Вес (кг)" step="0.5" ${exercise.targetWeight ? `value="${exercise.targetWeight}"` : 'disabled'}>
             <button class="btn btn-primary btn-small complete-set" 
                     data-exercise="${exercise.id}" 
                     data-set="${i + 1}">
               Выполнено
             </button>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   container.innerHTML = html;
 
+  // Добавляем обработчики кнопок
   document.querySelectorAll('.complete-set').forEach(btn => {
     btn.addEventListener('click', handleSetComplete);
   });
 }
 
+// Обработка завершения подхода
 function handleSetComplete(e) {
   const exerciseId = parseInt(e.target.dataset.exercise);
   const setNumber = parseInt(e.target.dataset.set);
@@ -89,32 +108,17 @@ function handleSetComplete(e) {
   
   const exercise = currentWorkout.exercises.find(ex => ex.id === exerciseId);
   
-  const actualReps = parseInt(repsInput.value) || exercise.repMin;
-  const actualWeight = parseFloat(weightInput.value) || exercise.targetWeight || 0;
-  
-  const setResult = {
-    setNumber,
-    targetReps: exercise.repMin,
-    targetWeight: exercise.targetWeight,
-    actualReps,
-    actualWeight,
-    completed: true,
-    completedAt: new Date(),
-  };
-
-  socket.emit('workout:set:complete', {
-    workoutId: parseInt(workoutId),
-    exerciseId,
-    setResult,
-  });
-
+  // Визуально помечаем подход как выполненный
   setRow.classList.add('completed');
   e.target.textContent = '✓';
   e.target.disabled = true;
-
-  startRestTimer(exercise.restSeconds);
+  
+  // Запускаем таймер отдыха
+  const restSeconds = exercise.restSeconds || 60;
+  startRestTimer(restSeconds);
 }
 
+// Таймер отдыха
 function startRestTimer(seconds) {
   clearInterval(restTimerInterval);
   restSeconds = seconds;
@@ -137,84 +141,24 @@ function updateTimerDisplay() {
   document.getElementById('restTimer').textContent = 
     `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
-// Сохранение состояния при закрытии страницы
-window.addEventListener('beforeunload', () => {
-  if (currentWorkout && currentWorkout.status === 'in_progress') {
-    // Отправляем запрос на паузу синхронно
-    navigator.sendBeacon('/api/workouts/pause', JSON.stringify({
-      workoutId: parseInt(workoutId),
-      lastExerciseIndex: currentExerciseIndex,
-    }));
-  }
-});
 
-// Кнопка паузы в интерфейсе
-document.getElementById('pauseWorkoutBtn')?.addEventListener('click', async () => {
-  try {
-    await fetch('/api/workouts/pause', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        workoutId: parseInt(workoutId),
-        lastExerciseIndex: currentExerciseIndex,
-      }),
-    });
-    
-    clearInterval(restTimerInterval);
-    alert('Тренировка на паузе. Вы можете вернуться позже.');
-    window.location.href = '/dashboard';
-  } catch (error) {
-    alert('Ошибка сохранения');
-  }
-});
-
-// Проверка активной тренировки при загрузке
-async function checkActiveWorkout() {
-  try {
-    const response = await fetch('/api/workouts/active', {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      if (data.workout && data.workout.status === 'in_progress') {
-        // Показываем уведомление о продолжении
-        showResumeNotification(data.workout);
-      }
-    }
-  } catch (error) {
-    console.error('Ошибка проверки активной тренировки:', error);
-  }
-}
-
-function showResumeNotification(workout) {
-  const notification = document.createElement('div');
-  notification.className = 'resume-notification';
-  notification.innerHTML = `
-    <p>У вас есть незавершённая тренировка!</p>
-    <button onclick="window.location.href='/workout.html?id=${workout.id}'">Продолжить</button>
-    <button onclick="this.parentElement.remove()">Закрыть</button>
-  `;
-  document.body.appendChild(notification);
-}
+// Кнопка старта таймера
 document.getElementById('startTimerBtn').addEventListener('click', () => {
-  const exercise = currentWorkout.exercises[0];
-  if (exercise && exercise.restSeconds) {
-    startRestTimer(exercise.restSeconds);
+  if (currentWorkout && currentWorkout.exercises && currentWorkout.exercises[0]) {
+    startRestTimer(currentWorkout.exercises[0].restSeconds || 60);
   } else {
-    startRestTimer(60); // Значение по умолчанию
+    startRestTimer(60);
   }
 });
 
+// Кнопка сброса таймера
 document.getElementById('resetTimerBtn').addEventListener('click', () => {
   clearInterval(restTimerInterval);
   restSeconds = 0;
   updateTimerDisplay();
 });
 
+// Выбор оценки самочувствия
 document.querySelectorAll('#wellnessRating span').forEach(star => {
   star.addEventListener('click', () => {
     selectedWellness = parseInt(star.dataset.rating);
@@ -224,8 +168,11 @@ document.querySelectorAll('#wellnessRating span').forEach(star => {
   });
 });
 
+// Завершение тренировки
 document.getElementById('finishWorkoutBtn').addEventListener('click', async () => {
   const comments = document.getElementById('workoutComments').value;
+  
+  if (!confirm('Завершить тренировку?')) return;
   
   try {
     const response = await fetch('/api/workouts/complete', {
@@ -253,28 +200,26 @@ document.getElementById('finishWorkoutBtn').addEventListener('click', async () =
   }
 });
 
+// Звук уведомления
 function playNotificationSound() {
-  const audio = new AudioContext();
-  const oscillator = audio.createOscillator();
-  const gainNode = audio.createGain();
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(audio.destination);
-  
-  oscillator.frequency.value = 800;
-  oscillator.type = 'sine';
-  gainNode.gain.value = 0.1;
-  
-  oscillator.start();
-  setTimeout(() => oscillator.stop(), 200);
+  try {
+    const audio = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audio.createOscillator();
+    const gainNode = audio.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audio.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.1;
+    
+    oscillator.start();
+    setTimeout(() => oscillator.stop(), 200);
+  } catch (e) {
+    console.log('Audio not supported');
+  }
 }
 
-socket.on('workout:set:success', (data) => {
-  console.log('Подход сохранён:', data);
-});
-
-socket.on('workout:set:error', (data) => {
-  alert('Ошибка сохранения: ' + data.error);
-});
-
+// Загрузка при старте
 loadWorkout();
