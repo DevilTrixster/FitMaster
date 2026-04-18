@@ -8,7 +8,7 @@ import { UserRepository } from './infrastructure/repositories/UserRepository';
 import { WorkoutRepository } from './infrastructure/repositories/WorkoutRepository';
 import { AuthService } from './application/services/AuthService';
 import { WorkoutService } from './application/services/WorkoutService';
-import { WorkoutRescheduleService } from './application/services/WorkoutRescheduleService'; // ✅ 1. Импортируем
+import { WorkoutRescheduleService } from './application/services/WorkoutRescheduleService';
 import { AuthController } from './presentation/controllers/AuthController';
 import { WorkoutController } from './presentation/controllers/WorkoutController';
 import { createAuthRoutes } from './presentation/routes/authRoutes';
@@ -16,6 +16,10 @@ import { createWorkoutRoutes } from './presentation/routes/workoutRoutes';
 import { createAuthMiddleware } from './presentation/middleware/authMiddleware';
 import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler';
 import { config } from './config/env';
+import { ProgressRepository } from './infrastructure/repositories/ProgressRepository';
+import { ProgressAnalyticsService } from './application/services/ProgressAnalyticsService';
+import { ProgressController } from './presentation/controllers/ProgressController';
+import { createProgressRoutes } from './presentation/routes/progressRoutes';
 
 async function bootstrap() {
   const app = express();
@@ -36,13 +40,16 @@ async function bootstrap() {
     
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
+    const progressRepository = new ProgressRepository(database.getPool()); 
 
     const workoutService = new WorkoutService(workoutRepository, userRepository);
-    const rescheduleService = new WorkoutRescheduleService(workoutRepository); // ✅ 2. Создаём сервис
+    const rescheduleService = new WorkoutRescheduleService(workoutRepository);
+    const progressService = new ProgressAnalyticsService(progressRepository);
     const authService = new AuthService(userRepository, workoutRepository);
 
     const authController = new AuthController(authService);
-    const workoutController = new WorkoutController(workoutService, rescheduleService); // ✅ 3. Передаём в контроллер
+    const workoutController = new WorkoutController(workoutService, rescheduleService);
+    const progressController = new ProgressController(progressService);
 
     const authMiddleware = createAuthMiddleware(authService);
 
@@ -53,6 +60,7 @@ async function bootstrap() {
     // 4. API маршруты
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
+    app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
 
     app.get('/api/profile', authMiddleware, (req, res) => {
       res.json({ message: 'Профиль защищён', userId: (req as any).userId });
@@ -65,6 +73,7 @@ async function bootstrap() {
     app.get('/workout', (req, res) => res.sendFile(path.join(__dirname, '../public/workout.html')));
     app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/login.html')));
     app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/register.html')));
+    app.get('/progress', (req, res) => {res.sendFile(path.join(__dirname, '../public/progress.html'));});
 
     console.log('🚀 Сервер готов к работе');
 

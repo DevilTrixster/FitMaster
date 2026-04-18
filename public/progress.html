@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Прогресс - FitMaster</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/progress.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="navbar">
+      <div class="nav-brand">FitMaster</div>
+      <div class="nav-links">
+        <a href="/dashboard">Личный кабинет</a>
+        <a href="/workout">Тренировка</a>
+        <a href="/history">История</a>
+        <a href="/progress" class="active">Прогресс</a>
+        <a href="#" id="logoutBtn">Выход</a>
+      </div>
+    </nav>
+
+    <div class="content">
+      <h1>📊 Ваш прогресс</h1>
+
+      <div id="errorContainer"></div>
+
+      <!-- Графики по упражнениям -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h2>📈 Динамика рабочего веса</h2>
+          <div class="exercise-selector">
+            <label for="exerciseSelect">Выберите упражнение:</label>
+            <select id="exerciseSelect">
+              <option value="">Загрузка...</option>
+            </select>
+          </div>
+          <canvas id="weightChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+          <h2>📊 Объём тренировки (Volume)</h2>
+          <canvas id="volumeChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Статистика по мышечным группам -->
+      <div class="chart-card full-width">
+        <h2>💪 Нагрузка по мышечным группам</h2>
+        <canvas id="muscleGroupChart"></canvas>
+      </div>
+
+      <!-- Общая статистика -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3 id="totalWorkouts">0</h3>
+          <p>Всего тренировок</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="avgWellness">0</h3>
+          <p>Среднее самочувствие</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="totalVolume">0</h3>
+          <p>Общий объём (кг)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/progress.js"></script>
+</body>
+</html>
