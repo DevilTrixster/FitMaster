@@ -23,6 +23,10 @@ export interface IWorkoutRepository {
   
   // Упражнения
   getAllExercises(): Promise<Exercise[]>;
+
+  // Пропуск и перенос тренировок
+  rescheduleWorkout(id: number, newDate: Date, reason?: string): Promise<void>;
+  skipWorkout(id: number, reason?: string): Promise<void>;
   
   // Адаптация
   saveAdaptation(adaptation: WorkoutAdaptation): Promise<void>;

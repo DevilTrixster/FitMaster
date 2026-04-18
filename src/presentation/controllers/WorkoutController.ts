@@ -1,8 +1,12 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { WorkoutService } from '../../application/services/WorkoutService';
+import { WorkoutRescheduleService } from '../../application/services/WorkoutRescheduleService';
+
 
 export class WorkoutController {
-  constructor(private workoutService: WorkoutService) {}
+  constructor(
+    private workoutService: WorkoutService,
+    private rescheduleService: WorkoutRescheduleService) {}
 
   async getDashboard(req: Request, res: Response): Promise<void> {
     try {
@@ -162,4 +166,30 @@ export class WorkoutController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  async rescheduleWorkout(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = (req as any).user?.id;
+    const workoutId = parseInt(req.params.id as string);
+    const dto = req.body;
+    
+    await this.rescheduleService.reschedule(userId, workoutId, dto);
+    res.status(200).json({ message: 'Тренировка успешно перенесена', data: { newDate: dto.newDate } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async skipWorkout(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = (req as any).user?.id;
+    const workoutId = parseInt(req.params.id as string);
+    const { reason } = req.body;
+    
+    await this.rescheduleService.skip(userId, workoutId, reason);
+    res.status(200).json({ message: 'Тренировка пропущена' });
+  } catch (error) {
+    next(error);
+  }
+}
 }

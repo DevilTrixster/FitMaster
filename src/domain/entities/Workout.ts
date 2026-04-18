@@ -3,6 +3,7 @@ export enum WorkoutStatus {
   InProgress = 'in_progress',
   Completed = 'completed',
   Skipped = 'skipped',
+  Rescheduled = 'rescheduled',
 }
 
 export enum AdaptationType {
@@ -169,6 +170,8 @@ export class UserWorkout {
   public readonly startedAt?: Date;
   public readonly pausedAt?: Date;
   public readonly lastExerciseIndex?: number;
+  public readonly rescheduledTo?: Date; 
+  public readonly rescheduleReason?: string;
 
   constructor(data: {
     id?: number;
@@ -184,6 +187,8 @@ export class UserWorkout {
     pausedAt?: Date;
     lastExerciseIndex?: number;
     exerciseResults?: WorkoutExerciseResult[];
+    rescheduledTo?: Date; 
+    rescheduleReason?: string;
   }) {
     this.id = data.id;
     this.userId = data.userId;
@@ -198,6 +203,8 @@ export class UserWorkout {
     this.startedAt = data.startedAt;
     this.pausedAt = data.pausedAt;
     this.lastExerciseIndex = data.lastExerciseIndex;
+    this.rescheduledTo = data.rescheduledTo;
+    this.rescheduleReason = data.rescheduleReason;
   }
 
   public canStart(): boolean {
