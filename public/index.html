@@ -3,32 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FitMaster — Твой персональный тренер</title>
+  <title>FitMaster - Главная</title>
   <link rel="stylesheet" href="/css/common.css">
-  <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">Fit<span class="accent">Master</span></h1>
-      <nav class="nav">
-        <a href="/auth/login.html" class="btn btn-outline">Вход</a>
-        <a href="/auth/register.html" class="btn btn-primary">Регистрация</a>
-      </nav>
-    </header>
+  <nav class="navbar">
+    <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+    <div class="nav-user">
+      <a href="/auth/login.html" class="btn btn-outline">Вход</a>
+      <a href="/auth/register.html" class="btn btn-primary">Регистрация</a>
+    </div>
+  </nav>
 
-    <main class="hero">
-      <h2>Твоя идеальная тренировка начинается здесь</h2>
-      <p>Индивидуальные программы, адаптивная нагрузка, отслеживание прогресса</p>
-      <div class="hero-buttons">
-        <a href="/auth/register.html" class="btn btn-primary btn-large">Начать бесплатно</a>
-        <a href="/auth/login.html" class="btn btn-outline btn-large">Уже есть аккаунт</a>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <p>&copy; 2026 FitMaster. Все права защищены.</p>
-    </footer>
+  <div class="container" style="text-align: center; padding-top: 100px;">
+    <h1 style="font-size: 3.5rem; margin-bottom: 1rem;">Твой путь к <span class="brand-accent">идеальной</span> форме</h1>
+    <p style="font-size: 1.2rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 2rem;">
+      Персональные тренировки, адаптация нагрузки и отслеживание прогресса в одном месте.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+      <a href="/auth/register.html" class="btn btn-primary btn-large">Начать бесплатно</a>
+      <a href="/auth/login.html" class="btn btn-outline btn-large">Войти</a>
+    </div>
   </div>
 </body>
 </html>

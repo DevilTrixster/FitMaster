@@ -3,95 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Регистрация — FitMaster</title>
+  <title>Регистрация - FitMaster</title>
   <link rel="stylesheet" href="/css/common.css">
-  <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">Fit<span class="accent">Master</span></h1>
-      <nav class="nav">
-        <a href="/auth/login.html" class="btn btn-outline">Вход</a>
-      </nav>
-    </header>
+  <nav class="navbar">
+    <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+    <div class="nav-user">
+      <a href="/auth/login.html" class="btn btn-outline">Вход</a>
+    </div>
+  </nav>
 
-    <main class="form-container">
-      <h2>Регистрация</h2>
-      <form id="registerForm" class="auth-form">
+  <div class="auth-container">
+    <div class="auth-card" style="max-width: 600px;">
+      <h1 class="auth-title">Регистрация</h1>
+      <form id="registerForm">
         <div class="form-row">
           <div class="form-group">
-            <label for="nickname">Никнейм *</label>
-            <input type="text" id="nickname" name="nickname" required>
+            <label>Никнейм *</label>
+            <input type="text" name="nickname" required placeholder="Ваш никнейм">
           </div>
           <div class="form-group">
-            <label for="email">Email *</label>
-            <input type="email" id="email" name="email" required>
+            <label>Email *</label>
+            <input type="email" name="email" required placeholder="example@mail.ru">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="firstName">Имя *</label>
-            <input type="text" id="firstName" name="firstName" required>
+            <label>Имя *</label>
+            <input type="text" name="firstName" required placeholder="Имя">
           </div>
           <div class="form-group">
-            <label for="lastName">Фамилия *</label>
-            <input type="text" id="lastName" name="lastName" required>
+            <label>Фамилия *</label>
+            <input type="text" name="lastName" required placeholder="Фамилия">
           </div>
+        </div>
+
+        <div class="form-group">
+          <label>Пароль *</label>
+          <input type="password" name="password" required placeholder="••••••••">
+        </div>
+
+        <div class="form-group">
+          <label>Подтвердите пароль *</label>
+          <input type="password" name="confirmPassword" required placeholder="••••••••">
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="password">Пароль *</label>
-            <input type="password" id="password" name="password" required>
+            <label>Дата рождения *</label>
+            <input type="date" name="birthDate" required>
           </div>
           <div class="form-group">
-            <label for="confirmPassword">Подтвердите пароль *</label>
-            <input type="password" id="confirmPassword" name="confirmPassword" required>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="birthDate">Дата рождения *</label>
-            <input type="date" id="birthDate" name="birthDate" required>
-          </div>
-          <div class="form-group">
-            <label for="gender">Пол *</label>
-            <select id="gender" name="gender" required>
+            <label>Пол *</label>
+            <select name="gender" required>
               <option value="">Выберите пол</option>
               <option value="male">Мужской</option>
               <option value="female">Женский</option>
-              <option value="other">Другой</option>
             </select>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="height">Рост (см) *</label>
-            <input type="number" id="height" name="height" required>
+            <label>Рост (см) *</label>
+            <input type="number" name="height" required placeholder="175">
           </div>
           <div class="form-group">
-            <label for="weight">Вес (кг) *</label>
-            <input type="number" id="weight" name="weight" step="0.1" required>
+            <label>Вес (кг) *</label>
+            <input type="number" name="weight" step="0.1" required placeholder="70">
           </div>
         </div>
 
-        <div id="message" class="message"></div>
-
-        <button type="submit" class="btn btn-primary btn-full">Зарегистрироваться</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+          Создать аккаунт
+        </button>
       </form>
-
-      <p class="form-footer">Уже есть аккаунт? <a href="/auth/login.html">Войти</a></p>
-    </main>
-
-    <footer class="footer">
-      <p>&copy; 2026 FitMaster. Все права защищены.</p>
-    </footer>
+      <div class="auth-link">
+        Уже есть аккаунт? <a href="/auth/login.html">Войти</a>
+      </div>
+    </div>
   </div>
 
+  <script src="/js/common.js"></script>
   <script src="/js/register.js"></script>
 </body>
 </html>

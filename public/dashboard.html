@@ -3,75 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Личный кабинет — FitMaster</title>
+  <title>Личный кабинет - FitMaster</title>
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
+  <nav class="navbar">
+    <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+    <div class="nav-user">
+      <a href="/dashboard" class="nav-link active">Личный кабинет</a>
+      <a href="/history" class="nav-link">История</a>
+      <a href="/progress" class="nav-link">Прогресс</a>
+      <button id="logoutBtn" class="btn btn-outline">Выход</button>
+    </div>
+  </nav>
+
   <div class="container">
-    <header class="header">
-      <h1 class="logo">Fit<span class="accent">Master</span></h1>
-      <nav class="nav">
-        <span id="userGreeting" class="user-greeting"></span>
-        <a href="/history" class="btn btn-outline">История</a>
-        <button id="logoutBtn" class="btn btn-outline">Выход</button>
-      </nav>
-    </header>
+    <div class="dashboard-grid">
+      <!-- Левая колонка: Статистика -->
+      <div class="sidebar">
+        <div class="card stat-section">
+          <h2>📊 Статистика</h2>
+          <div class="stat-item">
+            <div class="stat-value" id="totalWorkouts">0</div>
+            <div class="stat-label">Тренировок</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="avgWellness">-</div>
+            <div class="stat-label">Самочувствие</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="currentStreak">0</div>
+            <div class="stat-label">Дней подряд</div>
+          </div>
+        </div>
+      </div>
 
-    <div class="dashboard">
-      <aside class="sidebar">
-        <h3>📊 Статистика</h3>
-        <div class="stat-card">
-          <span class="stat-value" id="totalWorkouts">0</span>
-          <span class="stat-label">Тренировок</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="avgWellness">-</span>
-          <span class="stat-label">Самочувствие</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-value" id="currentStreak">0</span>
-          <span class="stat-label">Дней подряд</span>
-        </div>
-      </aside>
-
-      <main class="main-content">
-        <section class="section">
+      <!-- Правая колонка: Предстоящие тренировки -->
+      <div class="main-content">
+        <div class="card">
           <h2>📅 Предстоящие тренировки</h2>
-          <div id="upcomingWorkouts" class="workouts-list">
+          <div id="upcomingWorkouts">
             <div class="loading">Загрузка...</div>
           </div>
-        </section>
-
-        <section class="section">
-          <h2>🏋️ Текущая программа</h2>
-          <div class="program-info">
-            <h3>Базовая программа Full Body</h3>
-            <p>3 раза в неделю: Понедельник, Среда, Пятница</p>
-            <div class="program-stats">
-              <div class="stat">
-                <span class="stat-value">6</span>
-                <span class="stat-label">Упражнений</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value">3</span>
-                <span class="stat-label">Подхода</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value">8-12</span>
-                <span class="stat-label">Повторений</span>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
-
-    <footer class="footer">
-      <p>&copy; 2026 FitMaster. Все права защищены.</p>
-    </footer>
   </div>
 
+  <script src="/js/common.js"></script>
   <script src="/js/dashboard.js"></script>
 </body>
 </html>

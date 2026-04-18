@@ -48,19 +48,46 @@ async function loadExercises() {
 
 // Загрузка прогресса по упражнению
 async function loadExerciseProgress(exerciseId) {
-  const response = await fetch(`/api/progress/exercise/${exerciseId}?limit=30`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
+  try {
+    const response = await fetch(`/api/progress/exercise/${exerciseId}?limit=30`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    if (!response.ok) {
+      // Если нет данных, просто очищаем графики
+      clearCharts();
+      return;
+    }
+    
+    const data = await response.json();
+    
+    // График веса
+    renderWeightChart(data.trend);
+    
+    // График объёма
+    renderVolumeChart(data.trend);
+  } catch (error) {
+    console.error('Ошибка загрузки прогресса:', error);
+    clearCharts();
+  }
+}
+
+// Очистка графиков
+function clearCharts() {
+  if (weightChartInstance) {
+    weightChartInstance.destroy();
+    weightChartInstance = null;
+  }
+  if (volumeChartInstance) {
+    volumeChartInstance.destroy();
+    volumeChartInstance = null;
+  }
   
-  if (!response.ok) throw new Error('Failed to load progress');
+  // Показываем сообщение
+  const weightCtx = document.getElementById('weightChart').getContext('2d');
+  const volumeCtx = document.getElementById('volumeChart').getContext('2d');
   
-  const data = await response.json();
-  
-  // График веса
-  renderWeightChart(data.trend);
-  
-  // График объёма
-  renderVolumeChart(data.trend);
+  // Можно добавить отображение "Нет данных"
 }
 
 // Загрузка статистики по мышечным группам
@@ -230,7 +257,10 @@ function renderMuscleGroupChart(stats) {
 
 function showError(message) {
   const container = document.getElementById('errorContainer');
-  container.innerHTML = `<div class="error-message">${message}</div>`;
+  container.innerHTML = `<div class="error-message">⚠️ ${message}</div>`;
+  setTimeout(() => {
+    container.innerHTML = '';
+  }, 5000);
 }
 
 // Logout

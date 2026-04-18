@@ -3,54 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Тренировка — FitMaster</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Тренировка - FitMaster</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/workout.css">
 </head>
 <body>
+  <nav class="navbar">
+    <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+    <div class="nav-user">
+      <button id="finishBtn" class="btn btn-outline" disabled>Завершить тренировку</button>
+    </div>
+  </nav>
+
   <div class="container">
-    <header class="header">
-      <h1 class="logo">Fit<span class="accent">Master</span></h1>
-      <nav class="nav">
-        <button id="finishWorkoutBtn" class="btn btn-outline">Завершить</button>
-      </nav>
-    </header>
+    <!-- Таймер отдыха -->
+    <div class="timer-section">
+      <div class="timer-icon">⏱️</div>
+      <div class="timer-display" id="timerDisplay">00:00</div>
+      <button id="startTimerBtn" class="btn btn-primary btn-small">Старт</button>
+      <button id="resetTimerBtn" class="btn btn-outline btn-small">Сброс</button>
+    </div>
 
-    <main class="workout-session">
-      <div class="workout-header">
-        <h2 id="workoutName">Загрузка...</h2>
-        <div class="timer-container">
-          <span class="timer-label">Отдых:</span>
-          <span id="restTimer" class="timer">00:00</span>
-          <button id="startTimerBtn" class="btn btn-primary btn-small">Старт</button>
-          <button id="resetTimerBtn" class="btn btn-outline btn-small">Сброс</button>
+    <!-- Список упражнений -->
+    <div id="exercisesList" class="exercises-grid">
+      <!-- Сюда JS добавит карточки -->
+    </div>
+
+    <!-- Блок завершения -->
+    <div id="completionSection" class="completion-card hidden">
+      <h2>🎉 Тренировка завершена!</h2>
+      <p>Оцени своё самочувствие и оставь комментарий</p>
+      
+      <div class="wellness-rating">
+        <label>Самочувствие:</label>
+        <div class="stars" id="starContainer">
+          <span class="star" data-value="1">⭐</span>
+          <span class="star" data-value="2">⭐</span>
+          <span class="star" data-value="3">⭐</span>
+          <span class="star" data-value="4">⭐</span>
+          <span class="star" data-value="5">⭐</span>
         </div>
       </div>
 
-      <div id="exercisesList" class="exercises-list">
-        <div class="loading">Загрузка упражнений...</div>
-      </div>
-
-      <div class="workout-footer">
-        <div class="wellness-section">
-          <label>Оценка самочувствия:</label>
-          <div class="rating-stars" id="wellnessRating">
-            <span data-rating="1">⭐</span>
-            <span data-rating="2">⭐</span>
-            <span data-rating="3">⭐</span>
-            <span data-rating="4">⭐</span>
-            <span data-rating="5">⭐</span>
-          </div>
-        </div>
-        <textarea id="workoutComments" placeholder="Комментарии к тренировке (необязательно)"></textarea>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <p>&copy; 2026 FitMaster. Все права защищены.</p>
-    </footer>
+      <textarea id="commentsInput" placeholder="Комментарии к тренировке (необязательно)"></textarea>
+      
+      <button id="submitFinishBtn" class="btn btn-primary">Сохранить и вернуться</button>
+    </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
   <script src="/js/workout.js"></script>
 </body>
 </html>

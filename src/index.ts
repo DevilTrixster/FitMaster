@@ -9,17 +9,17 @@ import { WorkoutRepository } from './infrastructure/repositories/WorkoutReposito
 import { AuthService } from './application/services/AuthService';
 import { WorkoutService } from './application/services/WorkoutService';
 import { WorkoutRescheduleService } from './application/services/WorkoutRescheduleService';
+import { ProgressRepository } from './infrastructure/repositories/ProgressRepository';
+import { ProgressAnalyticsService } from './application/services/ProgressAnalyticsService';
 import { AuthController } from './presentation/controllers/AuthController';
 import { WorkoutController } from './presentation/controllers/WorkoutController';
+import { ProgressController } from './presentation/controllers/ProgressController';
 import { createAuthRoutes } from './presentation/routes/authRoutes';
 import { createWorkoutRoutes } from './presentation/routes/workoutRoutes';
+import { createProgressRoutes } from './presentation/routes/progressRoutes';
 import { createAuthMiddleware } from './presentation/middleware/authMiddleware';
 import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler';
 import { config } from './config/env';
-import { ProgressRepository } from './infrastructure/repositories/ProgressRepository';
-import { ProgressAnalyticsService } from './application/services/ProgressAnalyticsService';
-import { ProgressController } from './presentation/controllers/ProgressController';
-import { createProgressRoutes } from './presentation/routes/progressRoutes';
 
 async function bootstrap() {
   const app = express();
@@ -38,19 +38,23 @@ async function bootstrap() {
     const database = Database.getInstance();
     await database.connect();
     
+    // Репозитории
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
-    const progressRepository = new ProgressRepository(database.getPool()); 
+    const progressRepository = new ProgressRepository(database.getPool());
 
+    // Сервисы
     const workoutService = new WorkoutService(workoutRepository, userRepository);
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);
     const authService = new AuthService(userRepository, workoutRepository);
 
+    // Контроллеры
     const authController = new AuthController(authService);
     const workoutController = new WorkoutController(workoutService, rescheduleService);
     const progressController = new ProgressController(progressService);
 
+    // Middleware
     const authMiddleware = createAuthMiddleware(authService);
 
     // 3. Socket.IO
@@ -66,14 +70,14 @@ async function bootstrap() {
       res.json({ message: 'Профиль защищён', userId: (req as any).userId });
     });
 
-    // 5. Frontend маршруты (оставляем как есть)
+    // 5. Frontend маршруты
     app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
     app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../public/dashboard.html')));
     app.get('/history', (req, res) => res.sendFile(path.join(__dirname, '../public/history.html')));
     app.get('/workout', (req, res) => res.sendFile(path.join(__dirname, '../public/workout.html')));
     app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/login.html')));
     app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/register.html')));
-    app.get('/progress', (req, res) => {res.sendFile(path.join(__dirname, '../public/progress.html'));});
+    app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
 
     console.log('🚀 Сервер готов к работе');
 
@@ -82,6 +86,7 @@ async function bootstrap() {
       console.log(`📍 Главная: http://localhost:${config.server.port}/`);
       console.log(`📍 Личный кабинет: http://localhost:${config.server.port}/dashboard`);
       console.log(`📍 Вход: http://localhost:${config.server.port}/login`);
+      console.log(`📍 Прогресс: http://localhost:${config.server.port}/progress`);
       console.log(`🔌 Socket.IO готов`);
     });
   } catch (error) {

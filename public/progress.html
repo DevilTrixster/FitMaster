@@ -9,61 +9,82 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="container">
+  <div class="app">
     <nav class="navbar">
-      <div class="nav-brand">FitMaster</div>
-      <div class="nav-links">
-        <a href="/dashboard">Личный кабинет</a>
-        <a href="/workout">Тренировка</a>
-        <a href="/history">История</a>
-        <a href="/progress" class="active">Прогресс</a>
-        <a href="#" id="logoutBtn">Выход</a>
+      <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+      <div class="nav-user">
+        <a href="/dashboard" class="nav-link">Личный кабинет</a>
+        <a href="/history" class="nav-link">История</a>
+        <a href="/progress" class="nav-link active">Прогресс</a>
+        <button id="logoutBtn" class="btn btn-outline">Выход</button>
       </div>
     </nav>
 
-    <div class="content">
-      <h1>📊 Ваш прогресс</h1>
+    <div class="container">
+      <div class="page-header">
+        <h1>📊 Ваш прогресс</h1>
+        <p class="subtitle">Отслеживайте свои результаты и динамику</p>
+      </div>
 
       <div id="errorContainer"></div>
-
-      <!-- Графики по упражнениям -->
-      <div class="charts-grid">
-        <div class="chart-card">
-          <h2>📈 Динамика рабочего веса</h2>
-          <div class="exercise-selector">
-            <label for="exerciseSelect">Выберите упражнение:</label>
-            <select id="exerciseSelect">
-              <option value="">Загрузка...</option>
-            </select>
-          </div>
-          <canvas id="weightChart"></canvas>
-        </div>
-
-        <div class="chart-card">
-          <h2>📊 Объём тренировки (Volume)</h2>
-          <canvas id="volumeChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Статистика по мышечным группам -->
-      <div class="chart-card full-width">
-        <h2>💪 Нагрузка по мышечным группам</h2>
-        <canvas id="muscleGroupChart"></canvas>
-      </div>
 
       <!-- Общая статистика -->
       <div class="stats-grid">
         <div class="stat-card">
-          <h3 id="totalWorkouts">0</h3>
-          <p>Всего тренировок</p>
+          <div class="stat-icon">🏋️</div>
+          <div class="stat-value" id="totalWorkouts">0</div>
+          <div class="stat-label">Всего тренировок</div>
         </div>
         <div class="stat-card">
-          <h3 id="avgWellness">0</h3>
-          <p>Среднее самочувствие</p>
+          <div class="stat-icon">😊</div>
+          <div class="stat-value" id="avgWellness">0</div>
+          <div class="stat-label">Среднее самочувствие</div>
         </div>
         <div class="stat-card">
-          <h3 id="totalVolume">0</h3>
-          <p>Общий объём (кг)</p>
+          <div class="stat-icon">📈</div>
+          <div class="stat-value" id="totalVolume">0</div>
+          <div class="stat-label">Общий объём (кг)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-value" id="currentStreak">0</div>
+          <div class="stat-label">Дней подряд</div>
+        </div>
+      </div>
+
+      <!-- Графики -->
+      <div class="charts-section">
+        <div class="chart-header">
+          <h2>📈 Детальная статистика</h2>
+          <div class="exercise-selector">
+            <label for="exerciseSelect">Упражнение:</label>
+            <select id="exerciseSelect">
+              <option value="">Загрузка...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-card">
+            <h3>Динамика рабочего веса</h3>
+            <div class="chart-container">
+              <canvas id="weightChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h3>Объём тренировки (Volume)</h3>
+            <div class="chart-container">
+              <canvas id="volumeChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-card full-width">
+          <h3>💪 Нагрузка по мышечным группам</h3>
+          <div class="chart-container">
+            <canvas id="muscleGroupChart"></canvas>
+          </div>
         </div>
       </div>
     </div>

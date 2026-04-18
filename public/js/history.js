@@ -1,112 +1,66 @@
-const token = localStorage.getItem('token');
+let token = localStorage.getItem('token');
+
 if (!token) {
-  window.location.href = '/login.html';
+  window.location.href = '/auth/login.html';
 }
 
-let currentPage = 1;
-const limit = 10;
-
-async function loadHistory(page = 1) {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const statusFilter = document.getElementById('statusFilter').value;
-    const dateFrom = document.getElementById('dateFrom').value;
-    const dateTo = document.getElementById('dateTo').value;
-    
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-    
-    if (statusFilter !== 'all') params.append('status', statusFilter);
-    if (dateFrom) params.append('from', dateFrom);
-    if (dateTo) params.append('to', dateTo);
-    
-    const response = await fetch(`/api/workouts/history?${params}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-
-    if (!response.ok) throw new Error('Ошибка загрузки');
-
-    const data = await response.json();
-    renderHistory(data.workouts, page === 1);
+    await loadHistory();
   } catch (error) {
+    console.error('Ошибка загрузки истории:', error);
     document.getElementById('historyList').innerHTML = 
-      `<div class="error">Ошибка: ${error.message}</div>`;
+      '<p style="color: var(--text-secondary); text-align: center;">Ошибка загрузки данных</p>';
   }
+});
+
+async function loadHistory() {
+  const response = await fetch('/api/workouts/history?limit=20', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to load history');
+  }
+
+  const data = await response.json();
+  renderHistory(data.workouts);
 }
 
-function renderHistory(workouts, clear = true) {
+function renderHistory(workouts) {
   const container = document.getElementById('historyList');
   
-  if (clear) {
-    container.innerHTML = '';
-  }
-  
-  if (workouts.length === 0 && clear) {
-    container.innerHTML = '<div class="empty">История пуста</div>';
-    document.getElementById('loadMoreBtn').style.display = 'none';
+  if (!workouts || workouts.length === 0) {
+    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">История пуста</p>';
     return;
   }
 
-  const html = workouts.map(workout => `
-    <div class="history-item ${workout.status}" onclick="showWorkoutDetails(${workout.id})">
-      <div class="item-header">
-        <h4>${workout.workoutName}</h4>
-        <span class="status-badge ${workout.status}">${getStatusText(workout.status)}</span>
-      </div>
-      <div class="item-details">
-        <span class="date">📅 ${formatDate(workout.scheduledDate)}</span>
-        <span class="time">⏰ ${workout.scheduledTime}</span>
-      </div>
-      ${workout.wellnessRating ? `
-        <div class="wellness">
-          Самочувствие: ${'⭐'.repeat(workout.wellnessRating)} (${workout.wellnessRating}/5)
+  container.innerHTML = workouts.map(workout => {
+    const date = new Date(workout.scheduledDate);
+    const dateStr = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    
+    const statusClass = workout.status === 'completed' ? 'status-completed' : 'status-scheduled';
+    const statusText = workout.status === 'completed' ? 'Завершена' : 'Запланирована';
+    
+    const wellnessStars = workout.wellnessRating 
+      ? '⭐'.repeat(workout.wellnessRating) + ` (${workout.wellnessRating}/5)`
+      : '-';
+
+    return `
+      <div class="card">
+        <h3>${workout.workoutName}</h3>
+        <div class="workout-meta" style="margin: 0.5rem 0;">
+          <span>📅 ${dateStr}</span>
+          <span>⏰ ${workout.scheduledTime || '10:00'}</span>
+          <span class="status-badge ${statusClass}">${statusText}</span>
         </div>
-      ` : ''}
-      ${workout.comments ? `
-        <div class="comments-preview">
-          💬 ${workout.comments.substring(0, 100)}${workout.comments.length > 100 ? '...' : ''}
-        </div>
-      ` : ''}
-      <div class="item-stats">
-        <span>Упражнений: ${workout.exercisesCount || 6}</span>
-        <span>Успешность: ${workout.successRate || 0}%</span>
+        ${workout.status === 'completed' ? `
+          <div style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+            <div>Самочувствие: ${wellnessStars}</div>
+            ${workout.comments ? `<div>Комментарий: ${workout.comments}</div>` : ''}
+          </div>
+        ` : ''}
       </div>
-    </div>
-  `).join('');
-
-  container.insertAdjacentHTML('beforeend', html);
-  
-  if (workouts.length < limit) {
-    document.getElementById('loadMoreBtn').style.display = 'none';
-  }
+    `;
+  }).join('');
 }
-
-document.getElementById('loadMoreBtn').addEventListener('click', () => {
-  currentPage++;
-  loadHistory(currentPage);
-});
-
-document.getElementById('statusFilter').addEventListener('change', () => {
-  currentPage = 1;
-  loadHistory(1);
-});
-
-function getStatusText(status) {
-  const map = {
-    'completed': 'Завершена',
-    'skipped': 'Пропущена',
-    'in_progress': 'В процессе',
-  };
-  return map[status] || status;
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ru-RU', { 
-    day: 'numeric', month: 'long', year: 'numeric' 
-  });
-}
-
-// Загрузка при старте
-loadHistory(1);

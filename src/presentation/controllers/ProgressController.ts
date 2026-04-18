@@ -11,6 +11,12 @@ export class ProgressController {
       const limit = parseInt(req.query.limit as string) || 30;
 
       const data = await this.progressService.getExerciseProgress(userId, exerciseId, limit);
+      
+      if (!data) {
+        res.json({ trend: [] }); // Возвращаем пустой массив
+        return;
+      }
+      
       res.json(data);
     } catch (error) {
       next(error);

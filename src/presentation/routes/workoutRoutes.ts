@@ -19,6 +19,7 @@ export function createWorkoutRoutes(
   router.post('/pause', (req, res) => workoutController.pauseWorkout(req, res));
   router.post('/resume', (req, res) => workoutController.resumeWorkout(req, res));
   router.get('/active', (req, res) => workoutController.getActiveWorkout(req, res));
+  router.get('/exercises', (req, res) => workoutController.getExercises(req, res));
   
   router.patch('/workouts/:id/reschedule', (req, res, next) =>
     workoutController.rescheduleWorkout(req, res, next)

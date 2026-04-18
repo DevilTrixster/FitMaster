@@ -1,6 +1,8 @@
-import { Workout, UserWorkout, WorkoutStatus, SetResult, WorkoutAdaptation, AdaptationType, WorkoutExerciseResult } from '../../domain/entities/Workout';
+import { Workout, UserWorkout, WorkoutStatus, SetResult, WorkoutAdaptation, AdaptationType, WorkoutExerciseResult, Exercise } from '../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
+
+
 export class WorkoutService {
   constructor(
     private workoutRepository: IWorkoutRepository,
@@ -69,17 +71,21 @@ export class WorkoutService {
   }
 
   async getUpcomingWorkouts(userId: number, limit: number = 5): Promise<UserWorkout[]> {
+    console.log('📅 getUpcomingWorkouts: userId=', userId, 'limit=', limit);
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const upcomingWorkouts = await this.workoutRepository.getUserWorkouts(userId, 20);
-    
+    console.log('📥 Получено из БД:', upcomingWorkouts.length, 'тренировок');
+
+    // Помечаем просроченные как пропущенные
     for (const workout of upcomingWorkouts) {
       const workoutDate = new Date(workout.scheduledDate);
       workoutDate.setHours(0, 0, 0, 0);
       
       if (workoutDate < today && workout.status === WorkoutStatus.Scheduled) {
-        // Помечаем как пропущенную
+        console.log('⏰ Пропускаем устаревшую тренировку:', workout.id, workout.scheduledDate);
         await this.workoutRepository.updateUserWorkoutStatus(
           workout.id!,
           WorkoutStatus.Skipped,
@@ -88,41 +94,72 @@ export class WorkoutService {
         );
       }
     }
-    
+
+    // Фильтруем только запланированные и активные
     const filtered = upcomingWorkouts.filter(w => 
       w.status === WorkoutStatus.Scheduled || w.status === WorkoutStatus.InProgress
     );
-    
-    if (filtered.length < limit) {
-      await this.generateAdditionalWorkouts(userId, limit - filtered.length);
-      return this.getUpcomingWorkouts(userId, limit);
+
+    console.log('✅ После фильтрации:', filtered.length, 'тренировок');
+
+    // ✅ ИСПРАВЛЕНИЕ: не рекурсия, а просто возврат того что есть
+    if (filtered.length === 0) {
+      console.log('⚠️ Нет предстоящих тренировок. Генерируем новые...');
+      await this.generateAdditionalWorkouts(userId, 5);
+      // Получаем только что созданные
+      const newWorkouts = await this.workoutRepository.getUserWorkouts(userId, 5);
+      return newWorkouts.filter(w => 
+        w.status === WorkoutStatus.Scheduled || w.status === WorkoutStatus.InProgress
+      );
     }
-    
+
     return filtered.slice(0, limit);
   }
 
   async generateAdditionalWorkouts(userId: number, count: number): Promise<void> {
+    console.log('🔄 Генерируем', count, 'дополнительных тренировок...');
+    
     const baseWorkout = await this.workoutRepository.getBaseWorkout();
-    if (!baseWorkout) return;
+    if (!baseWorkout) {
+      console.error('❌ Базовая программа не найдена!');
+      return;
+    }
     
     const lastWorkout = await this.workoutRepository.getUserWorkouts(userId, 1);
     let startDate = new Date();
-    
+
     if (lastWorkout.length > 0) {
+      // Начинаем с даты последней тренировки + 2 дня
       startDate = new Date(lastWorkout[0].scheduledDate);
-      startDate.setDate(startDate.getDate() + 2); // +2 дня от последней
+      startDate.setDate(startDate.getDate() + 2);
+    } else {
+      // Если тренировок нет вообще, начинаем с ближайшего понедельника
+      const dayOfWeek = startDate.getDay();
+      const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
+      startDate.setDate(startDate.getDate() + (dayOfWeek === 1 ? 0 : daysUntilMonday));
     }
-    
-    // Находим следующий понедельник, среду или пятницу
+
+    startDate.setHours(10, 0, 0, 0); // Устанавливаем время 10:00
+
+    console.log('📅 Начало генерации:', startDate);
+
+    // Генерируем count тренировок
     for (let i = 0; i < count; i++) {
       const workoutDate = new Date(startDate);
       const dayOfWeek = workoutDate.getDay();
       
       // Корректируем до ближайшего Пн/Ср/Пт
-      if (dayOfWeek === 0) workoutDate.setDate(workoutDate.getDate() + 1); // Вс -> Пн
-      else if (dayOfWeek === 2) workoutDate.setDate(workoutDate.getDate() + 1); // Вт -> Ср
-      else if (dayOfWeek === 4) workoutDate.setDate(workoutDate.getDate() + 1); // Чт -> Пт
-      else if (dayOfWeek === 6) workoutDate.setDate(workoutDate.getDate() + 2); // Сб -> Пн
+      if (dayOfWeek === 0) {
+        workoutDate.setDate(workoutDate.getDate() + 1); // Вс -> Пн
+      } else if (dayOfWeek === 2) {
+        workoutDate.setDate(workoutDate.getDate() + 1); // Вт -> Ср
+      } else if (dayOfWeek === 4) {
+        workoutDate.setDate(workoutDate.getDate() + 1); // Чт -> Пт
+      } else if (dayOfWeek === 6) {
+        workoutDate.setDate(workoutDate.getDate() + 2); // Сб -> Пн
+      }
+      
+      console.log(`  Создаём тренировку ${i + 1}: ${workoutDate}`);
       
       const userWorkout = new UserWorkout({
         userId,
@@ -133,8 +170,12 @@ export class WorkoutService {
       });
       
       await this.workoutRepository.createUserWorkout(userWorkout);
-      startDate.setDate(startDate.getDate() + 2);
+      
+      // Следующая тренировка через 2 дня
+      startDate.setDate(workoutDate.getDate() + 2);
     }
+    
+    console.log('✅ Сгенерировано', count, 'тренировок');
   }
 
   async startWorkout(workoutId: number, userId: number): Promise<UserWorkout> {
@@ -365,5 +406,9 @@ export class WorkoutService {
     }
     
     await this.workoutRepository.saveSetResult(workoutId, exerciseId, setResult);
+  }
+
+  async getAllExercises(): Promise<Exercise[]> {
+    return await this.workoutRepository.getAllExercises();
   }
 }

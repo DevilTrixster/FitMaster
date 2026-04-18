@@ -386,12 +386,12 @@ export class WorkoutRepository implements IWorkoutRepository {
   }
 
   async rescheduleWorkout(id: number, newDate: Date, reason?: string): Promise<void> {
-  const query = `
-    UPDATE user_workouts 
-    SET status = 'rescheduled', rescheduled_to = $1, reschedule_reason = $2 
-    WHERE id = $3
-  `;
-  await this.pool.query(query, [newDate.toISOString().split('T')[0], reason || null, id]);
+    const query = `
+      UPDATE user_workouts 
+      SET status = 'rescheduled', rescheduled_to = $1, reschedule_reason = $2 
+      WHERE id = $3
+    `;
+    await this.pool.query(query, [newDate.toISOString().split('T')[0], reason || null, id]);
   }
 
   async skipWorkout(id: number, reason?: string): Promise<void> {
