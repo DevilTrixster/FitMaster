@@ -60,11 +60,16 @@ export class WorkoutController {
     try {
       const userId = (req as any).userId;
       const { workoutId, wellnessRating, comments } = req.body;
-      
+
+      if (!workoutId) {
+        res.status(400).json({ error: 'Не указан ID тренировки' });
+        return;
+      }
+
       await this.workoutService.completeWorkout(workoutId, userId, wellnessRating, comments);
-      
       res.json({ message: 'Тренировка завершена' });
     } catch (error: any) {
+      console.error('❌ Ошибка в completeWorkout:', error);
       res.status(400).json({ error: error.message });
     }
   }

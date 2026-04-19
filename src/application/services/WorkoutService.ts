@@ -178,26 +178,31 @@ export class WorkoutService {
     console.log('✅ Сгенерировано', count, 'тренировок');
   }
 
+  // src/application/services/WorkoutService.ts
+
   async startWorkout(workoutId: number, userId: number): Promise<UserWorkout> {
+    // 🔥 ЗАЩИТА: Проверяем, нет ли уже активной тренировки у пользователя
+    const activeWorkout = await this.workoutRepository.getUserActiveWorkout(userId);
+    if (activeWorkout && activeWorkout.id !== workoutId) {
+      console.log(`⚠️ Автозавершение старой тренировки #${activeWorkout.id} при начале новой`);
+      await this.workoutRepository.updateUserWorkoutStatus(
+        activeWorkout.id!,
+        WorkoutStatus.Completed,
+        3,
+        'Автоматически завершена при начале новой тренировки'
+      );
+    }
+
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    
-    if (!userWorkout) {
-      throw new Error('Тренировка не найдена');
-    }
-    
-    if (userWorkout.userId !== userId) {
-      throw new Error('Доступ запрещён');
-    }
-    
-    if (!userWorkout.canStart()) {
-      throw new Error('Тренировку нельзя начать');
-    }
-    
+    if (!userWorkout) throw new Error('Тренировка не найдена');
+    if (userWorkout.userId !== userId) throw new Error('Доступ запрещён');
+    if (!userWorkout.canStart()) throw new Error('Тренировку нельзя начать');
+
     await this.workoutRepository.startUserWorkout(workoutId);
-    
+
     const updated = await this.workoutRepository.getUserWorkoutById(workoutId);
     if (!updated) throw new Error('Ошибка обновления тренировки');
-    
+
     return updated;
   }
   

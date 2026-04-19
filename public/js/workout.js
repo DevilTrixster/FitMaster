@@ -140,31 +140,58 @@ document.querySelectorAll('.star').forEach(star => {
 });
 
 // Завершение тренировки
-document.getElementById('finishBtn').onclick = () => {
-  document.getElementById('completionSection').classList.remove('hidden');
-  document.getElementById('exercisesList').classList.add('hidden');
-};
+// public/js/workout.js
 
-document.getElementById('submitFinishBtn').onclick = async () => {
-  try {
-    await fetch('/api/workouts/finish', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        workoutId: currentWorkout.id,
-        wellnessRating: selectedRating,
-        comments: document.getElementById('commentsInput').value
-      })
-    });
-    localStorage.removeItem('currentWorkoutId');
-    window.location.href = '/dashboard';
-  } catch (e) {
-    alert('Ошибка при завершении');
-  }
-};
+// Кнопка "Завершить" (показывает форму оценки)
+const finishBtn = document.getElementById('finishBtn');
+if (finishBtn) {
+  finishBtn.onclick = () => {
+    document.getElementById('completionSection').classList.remove('hidden');
+    document.getElementById('exercisesList').style.display = 'none';
+    finishBtn.disabled = true;
+  };
+}
+
+// Кнопка "Сохранить и вернуться"
+const submitFinishBtn = document.getElementById('submitFinishBtn');
+if (submitFinishBtn) {
+  submitFinishBtn.onclick = async () => {
+    const workoutId = currentWorkout?.id;
+    if (!workoutId) {
+      alert('Ошибка: ID тренировки не найден');
+      return;
+    }
+
+    const wellnessRating = selectedRating || 3;
+    const comments = document.getElementById('commentsInput')?.value || '';
+
+    try {
+      const response = await fetch('/api/workouts/complete', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ workoutId, wellnessRating, comments })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Не удалось завершить тренировку');
+      }
+
+      // Очищаем состояние активной тренировки
+      localStorage.removeItem('currentWorkoutId');
+      
+      alert('✅ Тренировка успешно завершена!');
+      window.location.href = '/dashboard';
+    } catch (err) {
+      console.error('❌ Ошибка завершения:', err);
+      alert('Ошибка: ' + err.message);
+      submitFinishBtn.disabled = false;
+    }
+  };
+}
 
 // Старт
 loadWorkout();
