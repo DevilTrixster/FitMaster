@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { WorkoutService } from '../../application/services/WorkoutService';
 import { WorkoutRescheduleService } from '../../application/services/WorkoutRescheduleService';
-
+import { SetResult } from '../../domain/entities/Workout';
 
 export class WorkoutController {
   constructor(
@@ -228,4 +228,31 @@ export class WorkoutController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  async saveSetResult(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = (req as any).userId;
+    const { workoutId, exerciseId, setNumber, actualReps, actualWeight } = req.body;
+    
+    console.log('💾 Сохранение результата:', { workoutId, exerciseId, setNumber, actualReps, actualWeight });
+
+    const setResult = new SetResult({
+      setNumber,
+      targetReps: req.body.targetReps || 10,
+      targetWeight: req.body.targetWeight,
+      actualReps,
+      actualWeight,
+      completed: true,
+      completedAt: new Date(),
+    });
+
+    await this.workoutService.saveSetResult(workoutId, userId, exerciseId, setResult);
+    
+    console.log('✅ Результат сохранён');
+    res.json({ message: 'Результат сохранён' });
+  } catch (error: any) {
+    console.error('❌ Ошибка сохранения:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
 }

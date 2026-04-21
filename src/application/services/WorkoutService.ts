@@ -178,8 +178,6 @@ export class WorkoutService {
     console.log('✅ Сгенерировано', count, 'тренировок');
   }
 
-  // src/application/services/WorkoutService.ts
-
   async startWorkout(workoutId: number, userId: number): Promise<UserWorkout> {
     // 🔥 ЗАЩИТА: Проверяем, нет ли уже активной тренировки у пользователя
     const activeWorkout = await this.workoutRepository.getUserActiveWorkout(userId);
@@ -399,19 +397,19 @@ export class WorkoutService {
   }
 
   async saveSetResult(
-    workoutId: number,
-    userId: number,
-    exerciseId: number,
-    setResult: SetResult
-  ): Promise<void> {
-    const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    
-    if (!userWorkout || userWorkout.userId !== userId) {
-      throw new Error('Доступ запрещён');
-    }
-    
-    await this.workoutRepository.saveSetResult(workoutId, exerciseId, setResult);
+  workoutId: number,
+  userId: number,
+  exerciseId: number,
+  setResult: SetResult
+): Promise<void> {
+  const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
+  if (!userWorkout || userWorkout.userId !== userId) {
+    throw new Error('Доступ запрещён');
   }
+
+  console.log('💾 WorkoutService: сохраняем результат в БД...');
+  await this.workoutRepository.saveSetResult(workoutId, exerciseId, setResult);
+}
 
   async getAllExercises(): Promise<Exercise[]> {
     return await this.workoutRepository.getAllExercises();
