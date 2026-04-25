@@ -402,4 +402,23 @@ export class WorkoutRepository implements IWorkoutRepository {
     `;
     await this.pool.query(query, [reason || null, id]);
   }
+  async getSplitPrograms(): Promise<Workout[]> {
+    // Мы ищем программы с ID 1, 2 и 3.
+    // ID 1 = Ноги (бывшая Full Body)
+    // ID 2 = Грудь
+    // ID 3 = Спина
+    const query = `SELECT * FROM workouts WHERE id IN (1, 2, 3) ORDER BY id ASC`;
+    const result = await this.pool.query(query);
+
+    if (result.rows.length === 0) return [];
+
+    // Загружаем упражнения для каждой программы
+    const workouts: Workout[] = [];
+    for (const row of result.rows) {
+      const workout = await this.getWorkoutById(row.id);
+      if (workout) workouts.push(workout);
+    }
+    
+    return workouts;
+  }
 }

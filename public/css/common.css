@@ -244,6 +244,29 @@ input:focus, select:focus {
   gap: 1rem;
 }
 
+/* Анимации для уведомлений */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
 @media (max-width: 600px) {
   .form-row {
     grid-template-columns: 1fr;

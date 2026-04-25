@@ -7,7 +7,7 @@ export class ProgressRepository implements IProgressRepository {
 
   async getExerciseProgress(userId: number, exerciseId: number, limit: number = 30): Promise<ExerciseProgressDTO | null> {
     const query = `
-      SELECT 
+      SELECT
         e.id as exercise_id,
         e.name as exercise_name,
         e.muscle_group,
@@ -18,25 +18,25 @@ export class ProgressRepository implements IProgressRepository {
       FROM workout_results wr
       JOIN user_workouts uw ON wr.user_workout_id = uw.id
       JOIN exercises e ON wr.exercise_id = e.id
-      WHERE uw.user_id = $1 
-        AND wr.exercise_id = $2 
+      WHERE uw.user_id = $1
+        AND wr.exercise_id = $2
         AND wr.completed = true
       GROUP BY e.id, e.name, e.muscle_group, uw.scheduled_date
       ORDER BY uw.scheduled_date ASC
       LIMIT $3
     `;
-    
+
     const result = await this.pool.query(query, [userId, exerciseId, limit]);
-    
+
     if (result.rows.length === 0) return null;
 
-    const row = result.rows[0];
+    const firstRow = result.rows[0];
     return {
-      exerciseId: row.exercise_id,
-      exerciseName: row.exercise_name,
-      muscleGroup: row.muscle_group,
+      exerciseId: firstRow.exercise_id,
+      exerciseName: firstRow.exercise_name,
+      muscleGroup: firstRow.muscle_group,
       trend: result.rows.map((r: any) => ({
-        date: r.date.toISOString().split('T')[0],
+        date: new Date(r.date).toISOString().split('T')[0],
         avgWeight: parseFloat(r.avg_weight),
         totalVolume: parseFloat(r.total_volume),
         maxReps: parseInt(r.max_reps),
@@ -46,7 +46,7 @@ export class ProgressRepository implements IProgressRepository {
 
   async getMuscleGroupStats(userId: number): Promise<MuscleGroupStatsDTO[]> {
     const query = `
-      SELECT 
+      SELECT
         e.muscle_group,
         COUNT(DISTINCT uw.id) as total_workouts,
         COALESCE(SUM(wr.actual_weight * wr.actual_reps), 0) as total_volume,
@@ -58,9 +58,9 @@ export class ProgressRepository implements IProgressRepository {
       GROUP BY e.muscle_group
       ORDER BY total_volume DESC
     `;
-    
+
     const result = await this.pool.query(query, [userId]);
-    
+
     return result.rows.map((row: any) => ({
       muscleGroup: row.muscle_group,
       totalWorkouts: parseInt(row.total_workouts),

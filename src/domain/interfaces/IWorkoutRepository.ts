@@ -41,4 +41,7 @@ export interface IWorkoutRepository {
     dateFrom?: string,
     dateTo?: string
   ): Promise<UserWorkout[]>;
+
+  // Получение списка базовых программ для сплита (Грудь, Спина, Ноги)
+  getSplitPrograms(): Promise<Workout[]>;
 }

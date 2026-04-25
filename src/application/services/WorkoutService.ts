@@ -10,58 +10,64 @@ export class WorkoutService {
   ) {}
 
   async generateBaseProgram(userId: number): Promise<UserWorkout[]> {
-    const baseWorkout = await this.workoutRepository.getBaseWorkout();
-    if (!baseWorkout) {
-      throw new Error('Базовая программа тренировок не найдена');
+    const splitPrograms = await this.workoutRepository.getSplitPrograms();
+    if (splitPrograms.length < 3) {
+      throw new Error('Не найдены программы для сплита (нужно 3: Грудь, Спина, Ноги)');
     }
+
+    // Индексы программ в массиве splitPrograms (зависит от ORDER BY id ASC в репозитории)
+    // splitPrograms[0] -> ID 1 (Ноги)
+    // splitPrograms[1] -> ID 2 (Грудь)
+    // splitPrograms[2] -> ID 3 (Спина)
+    
+    // Наша логика ротации:
+    // День 0 (Пн) -> Грудь (index 1)
+    // День 1 (Ср) -> Спина (index 2)
+    // День 2 (Пт) -> Ноги (index 0)
+    const scheduleMap = [1, 2, 0]; 
 
     const user = await this.userRepository.findById(userId);
-    if (!user) {
-      throw new Error('Пользователь не найден');
-    }
+    if (!user) throw new Error('Пользователь не найден');
 
     const scheduledWorkouts: UserWorkout[] = [];
-    
-    // Находим ближайший понедельник
     const today = new Date();
     const startDate = new Date(today);
-    
-    // Находим следующий понедельник (1 = понедельник)
-    const dayOfWeek = startDate.getDay(); // 0 = воскресенье, 6 = суббота
+
+    // Находим ближайший понедельник
+    const dayOfWeek = startDate.getDay();
     const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
-    
-    // Если сегодня понедельник, начинаем с него, иначе - следующий понедельник
     startDate.setDate(startDate.getDate() + (dayOfWeek === 1 ? 0 : daysUntilMonday));
-    
-    // Устанавливаем время 10:00
     startDate.setHours(10, 0, 0, 0);
-    
-    // Генерируем тренировки на 4 недели вперёд
+
+    // Генерируем на 4 недели
     for (let week = 0; week < 4; week++) {
       const weekStart = new Date(startDate);
       weekStart.setDate(startDate.getDate() + (week * 7));
-      
-      // Понедельник (1), Среда (3), Пятница (5)
-      const daysOffset = [0, 2, 4]; // 0 = понедельник недели, 2 = среда, 4 = пятница
-      
-      for (const dayOffset of daysOffset) {
+
+      // 0, 2, 4 — это смещения для Пн, Ср, Пт внутри недели
+      const daysOffset = [0, 2, 4];
+
+      for (let i = 0; i < daysOffset.length; i++) {
         const workoutDate = new Date(weekStart);
-        workoutDate.setDate(weekStart.getDate() + dayOffset);
-        
-        // Не создаём тренировки в прошлом
+        workoutDate.setDate(weekStart.getDate() + daysOffset[i]);
+
+        // Проверка на прошлое
         const workoutDateOnly = new Date(workoutDate.getFullYear(), workoutDate.getMonth(), workoutDate.getDate());
         const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        
         if (workoutDateOnly < todayDateOnly) continue;
-        
+
+        // ✅ Выбираем программу на основе индекса дня (0, 1 или 2)
+        const programIndex = scheduleMap[i];
+        const targetWorkout = splitPrograms[programIndex];
+
         const userWorkout = new UserWorkout({
           userId,
-          workout: baseWorkout,
+          workout: targetWorkout, // ✅ Используем конкретную программу (Грудь/Спина/Ноги)
           scheduledDate: workoutDate,
           scheduledTime: '10:00',
           status: WorkoutStatus.Scheduled,
         });
-        
+
         const saved = await this.workoutRepository.createUserWorkout(userWorkout);
         scheduledWorkouts.push(saved);
       }

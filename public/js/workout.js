@@ -182,9 +182,12 @@ if (submitFinishBtn) {
 
       // Очищаем состояние активной тренировки
       localStorage.removeItem('currentWorkoutId');
-      
+
+      // Устанавливаем флаг для обновления прогресса
+      sessionStorage.setItem('workoutCompleted', 'true');
+
       alert('✅ Тренировка успешно завершена!');
-      window.location.href = '/dashboard';
+      window.location.href = '/progress'; // Перенаправляем на страницу прогресса
     } catch (err) {
       console.error('❌ Ошибка завершения:', err);
       alert('Ошибка: ' + err.message);

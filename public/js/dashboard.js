@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearTimeout(timeoutId);
     
     console.log('✅ Dashboard успешно загружен');
+    
+    // Проверяем, есть ли флаг обновления после тренировки
+    const shouldRefresh = sessionStorage.getItem('workoutCompleted');
+    if (shouldRefresh === 'true') {
+      sessionStorage.removeItem('workoutCompleted');
+      showNotification('✅ Тренировка завершена! Данные обновлены.');
+    }
   } catch (error) {
     console.error('❌ Ошибка загрузки dashboard:', error);
     
@@ -41,6 +48,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 });
+
+// Показ уведомления
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #43e97b;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
 
 // Загрузка dashboard
 async function loadDashboard(options = {}) {

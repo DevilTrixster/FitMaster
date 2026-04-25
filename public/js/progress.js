@@ -15,11 +15,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadExercises();
     await loadMuscleGroupStats();
     await loadOverallStats();
+    // Добавляем обработчик для обновления при возврате на страницу
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        // Страница загружена из кэша - обновляем данные
+        refreshAllData();
+      }
+    });
+
+    // Проверяем, есть ли флаг обновления после тренировки
+    const shouldRefresh = sessionStorage.getItem('workoutCompleted');
+    if (shouldRefresh === 'true') {
+      sessionStorage.removeItem('workoutCompleted');
+      await refreshAllData();
+      showNotification('✅ Тренировка завершена! Прогресс обновлён.');
+    }
   } catch (error) {
     showError('Ошибка загрузки данных: ' + error.message);
   }
 });
 
+// Функция полного обновления всех данных
+async function refreshAllData() {
+  try {
+    await loadExercises();
+    await loadMuscleGroupStats();
+    await loadOverallStats();
+  } catch (error) {
+    console.error('Ошибка обновления данных:', error);
+  }
+}
+
+// Показ уведомления
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.className = 'notification success';
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #43e97b;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
 // Загрузка списка упражнений
 async function loadExercises() {
   const response = await fetch('/api/workouts/exercises', {
@@ -29,7 +79,12 @@ async function loadExercises() {
   if (!response.ok) throw new Error('Failed to load exercises');
   
   const exercises = await response.json();
-  const select = document.getElementById('exerciseSelect');
+  const select = document.getElementById('exerciseSelect');  
+  if (exercises.length === 0) {
+    select.innerHTML = '<option value="">Нет доступных упражнений</option>';
+    clearCharts();
+    return;
+  }
   
   select.innerHTML = exercises.map(ex => 
     `<option value="${ex.id}">${ex.name} (${ex.muscleGroup})</option>`
@@ -42,7 +97,10 @@ async function loadExercises() {
 
   // Обработчик изменения
   select.addEventListener('change', (e) => {
-    loadExerciseProgress(parseInt(e.target.value));
+    const exerciseId = parseInt(e.target.value);
+    if (exerciseId) {
+      loadExerciseProgress(exerciseId);
+    }
   });
 }
 
@@ -54,12 +112,16 @@ async function loadExerciseProgress(exerciseId) {
     });
     
     if (!response.ok) {
-      // Если нет данных, просто очищаем графики
       clearCharts();
       return;
     }
     
     const data = await response.json();
+
+    if (!data.trend || data.trend.length === 0) {
+      clearCharts();
+      return;
+    }
     
     // График веса
     renderWeightChart(data.trend);
@@ -83,11 +145,6 @@ function clearCharts() {
     volumeChartInstance = null;
   }
   
-  // Показываем сообщение
-  const weightCtx = document.getElementById('weightChart').getContext('2d');
-  const volumeCtx = document.getElementById('volumeChart').getContext('2d');
-  
-  // Можно добавить отображение "Нет данных"
 }
 
 // Загрузка статистики по мышечным группам
