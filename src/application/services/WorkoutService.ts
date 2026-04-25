@@ -123,65 +123,48 @@ export class WorkoutService {
   }
 
   async generateAdditionalWorkouts(userId: number, count: number): Promise<void> {
-    console.log('🔄 Генерируем', count, 'дополнительных тренировок...');
-    
-    const baseWorkout = await this.workoutRepository.getBaseWorkout();
-    if (!baseWorkout) {
-      console.error('❌ Базовая программа не найдена!');
-      return;
-    }
+    const splitPrograms = await this.workoutRepository.getSplitPrograms();
+    if (splitPrograms.length < 3) return;
     
     const lastWorkout = await this.workoutRepository.getUserWorkouts(userId, 1);
     let startDate = new Date();
 
     if (lastWorkout.length > 0) {
-      // Начинаем с даты последней тренировки + 2 дня
       startDate = new Date(lastWorkout[0].scheduledDate);
       startDate.setDate(startDate.getDate() + 2);
-    } else {
-      // Если тренировок нет вообще, начинаем с ближайшего понедельника
-      const dayOfWeek = startDate.getDay();
-      const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
-      startDate.setDate(startDate.getDate() + (dayOfWeek === 1 ? 0 : daysUntilMonday));
     }
 
-    startDate.setHours(10, 0, 0, 0); // Устанавливаем время 10:00
-
-    console.log('📅 Начало генерации:', startDate);
-
-    // Генерируем count тренировок
+    // Находим следующий понедельник, среду или пятницу
     for (let i = 0; i < count; i++) {
       const workoutDate = new Date(startDate);
       const dayOfWeek = workoutDate.getDay();
       
       // Корректируем до ближайшего Пн/Ср/Пт
-      if (dayOfWeek === 0) {
-        workoutDate.setDate(workoutDate.getDate() + 1); // Вс -> Пн
-      } else if (dayOfWeek === 2) {
-        workoutDate.setDate(workoutDate.getDate() + 1); // Вт -> Ср
-      } else if (dayOfWeek === 4) {
-        workoutDate.setDate(workoutDate.getDate() + 1); // Чт -> Пт
-      } else if (dayOfWeek === 6) {
-        workoutDate.setDate(workoutDate.getDate() + 2); // Сб -> Пн
-      }
+      if (dayOfWeek === 0) workoutDate.setDate(workoutDate.getDate() + 1); // Вс -> Пн
+      else if (dayOfWeek === 2) workoutDate.setDate(workoutDate.getDate() + 1); // Вт -> Ср
+      else if (dayOfWeek === 4) workoutDate.setDate(workoutDate.getDate() + 1); // Чт -> Пт
+      else if (dayOfWeek === 6) workoutDate.setDate(workoutDate.getDate() + 2); // Сб -> Пн
       
-      console.log(`  Создаём тренировку ${i + 1}: ${workoutDate}`);
+      // ✅ Выбираем программу на основе дня недели
+      let programIndex = 0;
+      const adjustedDay = workoutDate.getDay();
+      if (adjustedDay === 1) programIndex = 1; // Пн -> Грудь
+      else if (adjustedDay === 3) programIndex = 2; // Ср -> Спина
+      else if (adjustedDay === 5) programIndex = 0; // Пт -> Ноги
       
+      const targetWorkout = splitPrograms[programIndex];
+
       const userWorkout = new UserWorkout({
         userId,
-        workout: baseWorkout,
+        workout: targetWorkout, // ✅ Используем конкретную программу
         scheduledDate: workoutDate,
         scheduledTime: '10:00',
         status: WorkoutStatus.Scheduled,
       });
       
       await this.workoutRepository.createUserWorkout(userWorkout);
-      
-      // Следующая тренировка через 2 дня
-      startDate.setDate(workoutDate.getDate() + 2);
+      startDate.setDate(startDate.getDate() + 2);
     }
-    
-    console.log('✅ Сгенерировано', count, 'тренировок');
   }
 
   async startWorkout(workoutId: number, userId: number): Promise<UserWorkout> {
