@@ -19,6 +19,9 @@ import { createWorkoutRoutes } from './presentation/routes/workoutRoutes';
 import { createProgressRoutes } from './presentation/routes/progressRoutes';
 import { createAuthMiddleware } from './presentation/middleware/authMiddleware';
 import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler';
+import { ProfileController } from './presentation/controllers/ProfileController';
+import { ProfileService } from './application/services/ProfileService';
+import { createProfileRoutes } from './presentation/routes/profileRoutes';
 import { config } from './config/env';
 
 async function bootstrap() {
@@ -42,8 +45,11 @@ async function bootstrap() {
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
     const progressRepository = new ProgressRepository(database.getPool());
+    
 
     // Сервисы
+    const profileService = new ProfileService(userRepository);
+    const profileController = new ProfileController(profileService);
     const workoutService = new WorkoutService(workoutRepository, userRepository);
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);
@@ -65,10 +71,7 @@ async function bootstrap() {
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
     app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
-
-    app.get('/api/profile', authMiddleware, (req, res) => {
-      res.json({ message: 'Профиль защищён', userId: (req as any).userId });
-    });
+    app.use('/api/profile', createProfileRoutes(profileController, authMiddleware));
 
     // 5. Frontend маршруты
     app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
@@ -78,6 +81,7 @@ async function bootstrap() {
     app.get('/login', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/login.html')));
     app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/register.html')));
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
+    app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
 
     console.log('🚀 Сервер готов к работе');
 

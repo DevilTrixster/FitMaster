@@ -84,4 +84,76 @@ export class UserRepository implements IUserRepository {
       createdAt: row.created_at,
     });
   }
+
+  async updateUser(user: User): Promise<void> {
+  const query = `
+    UPDATE users SET 
+      nickname = $1, 
+      first_name = $2, 
+      last_name = $3, 
+      height = $4, 
+      weight = $5,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $6
+  `;
+  const values = [
+    user.nickname,
+    user.firstName,
+    user.lastName,
+    user.height,
+    user.weight,
+    user.id
+  ];
+  await this.pool.query(query, values);
+  }
+
+  async updateUserFields(userId: number, fields: {
+    nickname?: string;
+    firstName?: string;
+    lastName?: string;
+    height?: number;
+    weight?: number;
+  }): Promise<void> {
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (fields.nickname !== undefined) {
+      updates.push(`nickname = $${paramIndex}`);
+      values.push(fields.nickname);
+      paramIndex++;
+    }
+
+    if (fields.firstName !== undefined) {
+      updates.push(`first_name = $${paramIndex}`);
+      values.push(fields.firstName);
+      paramIndex++;
+    }
+
+    if (fields.lastName !== undefined) {
+      updates.push(`last_name = $${paramIndex}`);
+      values.push(fields.lastName);
+      paramIndex++;
+    }
+
+    if (fields.height !== undefined) {
+      updates.push(`height = $${paramIndex}`);
+      values.push(fields.height);
+      paramIndex++;
+    }
+
+    if (fields.weight !== undefined) {
+      updates.push(`weight = $${paramIndex}`);
+      values.push(fields.weight);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) return;
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(userId);
+
+    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+    await this.pool.query(query, values);
+  }
 }
