@@ -402,6 +402,7 @@ export class WorkoutRepository implements IWorkoutRepository {
     `;
     await this.pool.query(query, [reason || null, id]);
   }
+
   async getSplitPrograms(): Promise<Workout[]> {
     // Мы ищем программы с ID 1, 2 и 3.
     // ID 1 = Ноги (бывшая Full Body)
@@ -420,5 +421,68 @@ export class WorkoutRepository implements IWorkoutRepository {
     }
     
     return workouts;
+  }
+
+  async saveExerciseSubstitution(
+    userId: number,
+    originalExerciseId: number,
+    alternativeExerciseId: number,
+    reason: string
+  ): Promise<void> {
+    const query = `
+      INSERT INTO workout_adaptations 
+      (user_id, exercise_id, previous_weight, new_weight, adaptation_reason, created_at)
+      VALUES ($1, $2, NULL, NULL, $3, CURRENT_TIMESTAMP)
+      ON CONFLICT (user_id, exercise_id) DO NOTHING
+    `;
+    
+    const fullReason = `SUBSTITUTION:${originalExerciseId}->${alternativeExerciseId}:${reason}`;
+    await this.pool.query(query, [userId, alternativeExerciseId, fullReason]);
+  }
+
+  async getUserExerciseSubstitutions(userId: number): Promise<{
+    originalExerciseId: number;
+    alternativeExerciseId: number;
+    reason: string;
+    suggestedAt: Date;
+  }[]> {
+    const query = `
+      SELECT 
+        exercise_id as alternative_exercise_id,
+        adaptation_reason,
+        created_at
+      FROM workout_adaptations
+      WHERE user_id = $1 
+        AND adaptation_reason LIKE 'SUBSTITUTION:%'
+      ORDER BY created_at DESC
+    `;
+    
+    const result = await this.pool.query(query, [userId]);
+    
+    return result.rows.map((row: any) => {
+      const match = row.adaptation_reason.match(/SUBSTITUTION:(\d+)->(\d+):(.+)/);
+      return {
+        originalExerciseId: parseInt(match[1]),
+        alternativeExerciseId: row.alternative_exercise_id,
+        reason: match[3],
+        suggestedAt: new Date(row.created_at),
+      };
+    });
+  }
+
+  async getExerciseById(id: number): Promise<Exercise | null> {
+    const query = 'SELECT * FROM exercises WHERE id = $1';
+    const result = await this.pool.query(query, [id]);
+    
+    if (result.rows.length === 0) return null;
+    
+    const row = result.rows[0];
+    return new Exercise({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      muscleGroup: row.muscle_group,
+      equipmentType: row.equipment_type,
+    });
   }
 }

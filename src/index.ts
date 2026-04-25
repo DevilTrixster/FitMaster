@@ -18,10 +18,13 @@ import { createAuthRoutes } from './presentation/routes/authRoutes';
 import { createWorkoutRoutes } from './presentation/routes/workoutRoutes';
 import { createProgressRoutes } from './presentation/routes/progressRoutes';
 import { createAuthMiddleware } from './presentation/middleware/authMiddleware';
+import { SubstitutionController } from './presentation/controllers/SubstitutionController';
+import { createSubstitutionRoutes } from './presentation/routes/substitutionRoutes';
 import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler';
 import { ProfileController } from './presentation/controllers/ProfileController';
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
+import { WorkoutAdaptationService } from './application/services/WorkoutAdaptationService';
 import { config } from './config/env';
 
 async function bootstrap() {
@@ -50,10 +53,12 @@ async function bootstrap() {
     // Сервисы
     const profileService = new ProfileService(userRepository);
     const profileController = new ProfileController(profileService);
-    const workoutService = new WorkoutService(workoutRepository, userRepository);
+    const workoutAdaptationService = new WorkoutAdaptationService(workoutRepository, userRepository);
+    const workoutService = new WorkoutService(workoutRepository, userRepository, workoutAdaptationService);
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);
     const authService = new AuthService(userRepository, workoutRepository);
+    const substitutionController = new SubstitutionController(workoutService);
 
     // Контроллеры
     const authController = new AuthController(authService);
@@ -72,6 +77,7 @@ async function bootstrap() {
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
     app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
     app.use('/api/profile', createProfileRoutes(profileController, authMiddleware));
+    app.use('/api/substitutions', createSubstitutionRoutes(substitutionController, authMiddleware));
 
     // 5. Frontend маршруты
     app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
@@ -82,6 +88,7 @@ async function bootstrap() {
     app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/register.html')));
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
+    app.get('/suggestions', (req, res) => res.sendFile(path.join(__dirname, '../public/suggestions.html')));
 
     console.log('🚀 Сервер готов к работе');
 

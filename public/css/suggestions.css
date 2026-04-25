@@ -1,0 +1,162 @@
+/* Suggestions page styles */
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  color: #fff;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.suggestions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.suggestion-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border-left: 4px solid #ffa500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.suggestion-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.suggestion-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #ffa500;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.suggestion-body {
+  margin-bottom: 1rem;
+}
+
+.exercise-comparison {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.exercise-item {
+  flex: 1;
+  text-align: center;
+}
+
+.exercise-item.original {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.exercise-item.alternative {
+  color: #4ecca3;
+  font-weight: 600;
+}
+
+.arrow {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+}
+
+.reason-text {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.btn-accept {
+  flex: 1;
+  background: #4ecca3;
+  color: #1a1a2e;
+}
+
+.btn-accept:hover {
+  background: #3db892;
+}
+
+.btn-dismiss {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--text-secondary);
+  color: var(--text-secondary);
+}
+
+.btn-dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.loading {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 3rem;
+  grid-column: 1 / -1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  grid-column: 1 / -1;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-state h2 {
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: var(--text-secondary);
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .suggestions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .exercise-comparison {
+    flex-direction: column;
+  }
+  
+  .arrow {
+    transform: rotate(90deg);
+  }
+}

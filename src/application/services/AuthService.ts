@@ -4,6 +4,7 @@ import { User, Gender } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { WorkoutService } from './WorkoutService';
+import { WorkoutAdaptationService } from './WorkoutAdaptationService';
 
 export class AuthService {
   constructor(
@@ -52,7 +53,8 @@ export class AuthService {
     const token = this.generateToken(savedUser.id!);
 
     // АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПРОГРАММЫ 
-    const workoutService = new WorkoutService(this.workoutRepository, this.userRepository);
+    const adaptationService = new WorkoutAdaptationService(this.workoutRepository, this.userRepository);
+    const workoutService = new WorkoutService(this.workoutRepository, this.userRepository, adaptationService);
     await workoutService.generateBaseProgram(savedUser.id!);
     return { user: savedUser, token };
   }

@@ -1,12 +1,13 @@
 import { Workout, UserWorkout, WorkoutStatus, SetResult, WorkoutAdaptation, AdaptationType, WorkoutExerciseResult, Exercise } from '../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-
+import { WorkoutAdaptationService } from './WorkoutAdaptationService';
 
 export class WorkoutService {
   constructor(
     private workoutRepository: IWorkoutRepository,
-    private userRepository: IUserRepository
+    private userRepository: IUserRepository,
+    private adaptationService: WorkoutAdaptationService
   ) {}
 
   async generateBaseProgram(userId: number): Promise<UserWorkout[]> {
@@ -218,7 +219,29 @@ export class WorkoutService {
       comments
     );
     
-    await this.adaptNextWorkout(userId, workoutId, rating);
+    await this.runAdaptationLogic(userId, workoutId, wellnessRating || 3);
+  }
+
+  private async runAdaptationLogic(userId: number, completedWorkoutId: number, wellnessRating: number): Promise<void> {
+    const userWorkout = await this.workoutRepository.getUserWorkoutById(completedWorkoutId);
+    if (!userWorkout) return;
+
+    // Проходим по каждому упражнению в завершенной тренировке
+    for (const exercise of userWorkout.workout.exercises) {
+      if (!exercise.exercise.id) continue;
+
+      // Получаем результаты подходов
+      const results = await this.workoutRepository.getExerciseResults(completedWorkoutId, exercise.exercise.id);
+      
+      // Вызываем наш умный сервис адаптации
+      await this.adaptationService.adaptExercise(
+        userId,
+        completedWorkoutId,
+        exercise,
+        wellnessRating,
+        results
+      );
+    }
   }
 
   private async adaptNextWorkout(userId: number, completedWorkoutId: number, wellnessRating: number): Promise<void> {
@@ -398,9 +421,35 @@ export class WorkoutService {
 
   console.log('💾 WorkoutService: сохраняем результат в БД...');
   await this.workoutRepository.saveSetResult(workoutId, exerciseId, setResult);
-}
+  }
 
   async getAllExercises(): Promise<Exercise[]> {
     return await this.workoutRepository.getAllExercises();
+  }
+
+  async getExerciseSubstitutions(userId: number): Promise<{
+    originalExercise: Exercise;
+    alternativeExercise: Exercise;
+    reason: string;
+    suggestedAt: Date;
+  }[]> {
+    const substitutions = await this.workoutRepository.getUserExerciseSubstitutions(userId);
+    
+    const result = [];
+    for (const sub of substitutions) {
+      const original = await this.workoutRepository.getExerciseById(sub.originalExerciseId);
+      const alternative = await this.workoutRepository.getExerciseById(sub.alternativeExerciseId);
+      
+      if (original && alternative) {
+        result.push({
+          originalExercise: original,
+          alternativeExercise: alternative,
+          reason: sub.reason,
+          suggestedAt: sub.suggestedAt,
+        });
+      }
+    }
+    
+    return result;
   }
 }

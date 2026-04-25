@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Рекомендации - FitMaster</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/suggestions.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+    <div class="nav-user">
+      <a href="/dashboard" class="nav-link">Личный кабинет</a>
+      <a href="/history" class="nav-link">История</a>
+      <a href="/progress" class="nav-link">Прогресс</a>
+      <a href="/suggestions" class="nav-link active">Рекомендации</a>
+      <a href="/profile" class="nav-link">Профиль</a>
+      <button id="logoutBtn" class="btn btn-outline">Выход</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>💡 Рекомендации по упражнениям</h1>
+      <p class="subtitle">Система предлагает заменить упражнения, где у вас застой</p>
+    </div>
+
+    <div id="suggestionsList" class="suggestions-grid">
+      <div class="loading">Загрузка рекомендаций...</div>
+    </div>
+
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-icon">✅</div>
+      <h2>Всё отлично!</h2>
+      <p>На данный момент нет предложений по замене упражнений. Продолжайте тренироваться!</p>
+    </div>
+  </div>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/suggestions.js"></script>
+</body>
+</html>
