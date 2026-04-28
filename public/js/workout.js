@@ -40,6 +40,11 @@ function renderWorkout() {
   currentWorkout.exercises.forEach((ex, exIdx) => {
     const card = document.createElement('div');
     card.className = 'exercise-card';
+    
+    // Формируем текст рекомендации
+    const repRecommendation = `${ex.repMin}-${ex.repMax}`;
+    const weightRecommendation = ex.targetWeight > 0 ? `${ex.targetWeight} кг` : 'Вес';
+    
     card.innerHTML = `
       <div class="exercise-header">
         <h2>${ex.name}</h2>
@@ -52,11 +57,24 @@ function renderWorkout() {
       </div>
       <div class="sets-list" id="sets-${exIdx}">
         ${Array.from({length: ex.sets}, (_, i) => `
-          <div class="set-row">
+          <div class="set-row" id="set-${exIdx}-${i}">
             <span class="set-label">Подход ${i + 1}</span>
-            <input type="number" class="set-input" id="reps-${exIdx}-${i}" placeholder="${ex.repMin}" min="0">
-            <input type="number" class="set-input" id="weight-${exIdx}-${i}" placeholder="Вес" step="0.5">
-            <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${i})">Выполнено</button>
+            <input type="number" 
+                   class="set-input reps-input" 
+                   id="reps-${exIdx}-${i}" 
+                   placeholder="${repRecommendation}"
+                   min="0" 
+                   max="${ex.repMax + 5}">
+            <input type="number" 
+                   class="set-input weight-input" 
+                   id="weight-${exIdx}-${i}" 
+                   placeholder="${weightRecommendation}"
+                   step="0.5" 
+                   min="0">
+            <div class="set-actions">
+              <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${i})">✓</button>
+              <button class="btn-set-skip" onclick="skipSet(${exIdx}, ${i})">Пропустить</button>
+            </div>
           </div>
         `).join('')}
       </div>
@@ -100,6 +118,91 @@ window.completeSet = async (exIdx, setIdx) => {
   }
 };
 
+// Глобальная функция для выполнения подхода
+window.completeSet = async (exIdx, setIdx) => {
+  const ex = currentWorkout.exercises[exIdx];
+  const repsInput = document.getElementById(`reps-${exIdx}-${setIdx}`);
+  const weightInput = document.getElementById(`weight-${exIdx}-${setIdx}`);
+  const reps = parseInt(repsInput.value) || 0;
+  const weight = parseFloat(weightInput.value) || 0;
+  
+  if (reps === 0) {
+    alert('Введите количество повторений');
+    return;
+  }
+  
+  const setRow = document.getElementById(`set-${exIdx}-${setIdx}`);
+  const completeBtn = setRow.querySelector('.btn-set-complete');
+  const skipBtn = setRow.querySelector('.btn-set-skip');
+  
+  completeBtn.disabled = true;
+  skipBtn.disabled = true;
+  setRow.classList.add('completed');
+  
+  try {
+    await fetch('/api/workouts/save-set', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        workoutId: currentWorkout.id,
+        exerciseId: ex.id,
+        setNumber: setIdx + 1,
+        actualReps: reps,
+        actualWeight: weight,
+        completed: true,
+        skipped: false
+      })
+    });
+    startRestTimer(ex.restSeconds);
+  } catch (e) {
+    alert('Ошибка сохранения подхода');
+    completeBtn.disabled = false;
+    skipBtn.disabled = false;
+    setRow.classList.remove('completed');
+  }
+};
+
+// Глобальная функция для пропуска подхода
+window.skipSet = async (exIdx, setIdx) => {
+  const ex = currentWorkout.exercises[exIdx];
+  const setRow = document.getElementById(`set-${exIdx}-${setIdx}`);
+  const completeBtn = setRow.querySelector('.btn-set-complete');
+  const skipBtn = setRow.querySelector('.btn-set-skip');
+  
+  if (!confirm('Пропустить этот подход?')) return;
+  
+  skipBtn.disabled = true;
+  completeBtn.disabled = true;
+  setRow.classList.add('skipped');
+  
+  try {
+    await fetch('/api/workouts/save-set', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        workoutId: currentWorkout.id,
+        exerciseId: ex.id,
+        setNumber: setIdx + 1,
+        actualReps: null,
+        actualWeight: null,
+        completed: false,
+        skipped: true
+      })
+    });
+  } catch (e) {
+    alert('Ошибка при пропуске подхода');
+    skipBtn.disabled = false;
+    completeBtn.disabled = false;
+    setRow.classList.remove('skipped');
+  }
+};
+
 // Таймер
 function startRestTimer(seconds) {
   clearInterval(timerInterval);
@@ -140,8 +243,6 @@ document.querySelectorAll('.star').forEach(star => {
 });
 
 // Завершение тренировки
-// public/js/workout.js
-
 // Кнопка "Завершить" (показывает форму оценки)
 const finishBtn = document.getElementById('finishBtn');
 if (finishBtn) {

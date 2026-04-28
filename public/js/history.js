@@ -51,7 +51,7 @@ function renderHistory(workouts) {
         <h3>${workout.workoutName}</h3>
         <div class="workout-meta" style="margin: 0.5rem 0;">
           <span>📅 ${dateStr}</span>
-          <span>⏰ ${workout.scheduledTime || '10:00'}</span>
+          <span>⏰ ${workout.scheduledTime || '17:00'}</span>
           <span class="status-badge ${statusClass}">${statusText}</span>
         </div>
         ${workout.status === 'completed' ? `

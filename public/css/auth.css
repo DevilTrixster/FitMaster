@@ -144,3 +144,27 @@
     flex-direction: column;
   }
 }
+/* Стили для select элементов */
+select {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+select option {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 10px;
+}
+
+select option:hover,
+select option:checked {
+  background: #e94560;
+  color: #fff;
+}
+
+select:focus {
+  border-color: #e94560;
+  outline: none;
+}

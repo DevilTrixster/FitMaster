@@ -10,38 +10,36 @@ export class WorkoutController {
   ) {}
 
   async getCurrentWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      
-      const workout = await this.workoutService.getCurrentWorkout(userId);
-      
-      if (!workout) {
-        res.status(404).json({ error: 'Нет активной тренировки' });
-        return;
-      }
-      
-      res.json({
-        workout: {
-          id: workout.id,
-          name: workout.workout.name,
-          status: workout.status,
-          // ✅ ИСПРАВЛЕНИЕ: добавляем типизацию
-          exercises: workout.workout.exercises.map((ex: any) => ({
-            id: ex.exercise.id,
-            name: ex.exercise.name,
-            sets: ex.sets,
-            repMin: ex.repMin,
-            repMax: ex.repMax,
-            restSeconds: ex.restSeconds,
-            targetWeight: ex.targetWeight,
-            muscleGroup: ex.exercise.muscleGroup,
-          })),
-        },
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+  try {
+    const userId = (req as any).userId;
+    const workout = await this.workoutService.getCurrentWorkout(userId);
+    
+    if (!workout) {
+      res.status(404).json({ error: 'Нет активной тренировки' });
+      return;
     }
+    
+    res.json({
+      workout: {
+        id: workout.id,
+        name: workout.workout.name,
+        status: workout.status,
+        exercises: workout.workout.exercises.map((ex: any) => ({
+          id: ex.exercise.id,
+          name: ex.exercise.name,
+          sets: ex.sets,
+          repMin: ex.repMin,        // ✅ Целевые повторения (мин)
+          repMax: ex.repMax,        // ✅ Целевые повторения (макс)
+          restSeconds: ex.restSeconds,
+          targetWeight: ex.targetWeight || 0,  // ✅ Целевой вес
+          muscleGroup: ex.exercise.muscleGroup,
+        })),
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
+}
 
   async startWorkout(req: Request, res: Response): Promise<void> {
     try {
@@ -254,5 +252,5 @@ export class WorkoutController {
     console.error('❌ Ошибка сохранения:', error);
     res.status(500).json({ error: error.message });
   }
-}
+  }
 }

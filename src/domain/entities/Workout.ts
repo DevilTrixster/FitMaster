@@ -11,7 +11,8 @@ export enum AdaptationType {
   DecreaseWeight = 'decrease_weight',
   IncreaseReps = 'increase_reps',
   DecreaseReps = 'decrease_reps',
-  SubstituteExercise = 'substitute_exercise',
+  NoChange = 'no_change',
+  Substitution = 'substitution',
 }
 
 export class Exercise {
@@ -71,7 +72,9 @@ export class SetResult {
   public readonly actualReps?: number;
   public readonly actualWeight?: number;
   public readonly completed: boolean;
+  public readonly skipped: boolean;
   public readonly completedAt?: Date;
+  public readonly notes?: string;
 
   constructor(data: {
     setNumber: number;
@@ -80,7 +83,9 @@ export class SetResult {
     actualReps?: number;
     actualWeight?: number;
     completed: boolean;
+    skipped?: boolean;
     completedAt?: Date;
+    notes?: string;
   }) {
     this.setNumber = data.setNumber;
     this.targetReps = data.targetReps;
@@ -88,23 +93,39 @@ export class SetResult {
     this.actualReps = data.actualReps;
     this.actualWeight = data.actualWeight;
     this.completed = data.completed;
+    this.skipped = data.skipped || false;
     this.completedAt = data.completedAt;
+    this.notes = data.notes;
   }
 
+  /**
+   * Проверка успешности выполнения подхода
+   * Успешен только если выполнен и достигнут целевой показатель
+   */
   public isSuccessful(): boolean {
-    if (!this.completed) return false;
-    if (this.actualReps === undefined) return false;
+    if (this.skipped || !this.completed) return false;
+    if (this.actualReps === undefined || this.actualReps === null) return false;
     return this.actualReps >= this.targetReps;
   }
 
+  /**
+   * Нужно ли увеличивать нагрузку (превышение цели)
+   */
   public needsProgression(): boolean {
-    return this.isSuccessful() && (this.actualReps || 0) > this.targetReps;
+    if (this.skipped || !this.completed) return false;
+    if (this.actualReps === undefined || this.actualReps === null) return false;
+    return this.actualReps > this.targetReps + 2;
   }
 
+  /**
+   * Нужно ли снижать нагрузку (невыполнение цели)
+   * Пропущенный подход считается как неудача
+   */
   public needsRegression(): boolean {
+    if (this.skipped) return true; // Пропуск = регрессия
     if (!this.completed) return false;
-    if (this.actualReps === undefined) return false;
-    return this.actualReps < this.targetReps;
+    if (this.actualReps === undefined || this.actualReps === null) return false;
+    return this.actualReps < this.targetReps * 0.8; // Меньше 80% от цели
   }
 }
 
@@ -123,14 +144,27 @@ export class WorkoutExerciseResult {
     this.comments = data.comments;
   }
 
+  /**
+   * Все ли подходы выполнены успешно
+   */
   public getAllSetsSuccessful(): boolean {
     return this.sets.every(set => set.isSuccessful());
   }
 
+  /**
+   * Процент успешных подходов
+   */
   public getSuccessRate(): number {
     if (this.sets.length === 0) return 0;
     const successful = this.sets.filter(set => set.isSuccessful()).length;
     return (successful / this.sets.length) * 100;
+  }
+
+  /**
+   * Сколько подходов пропущено
+   */
+  public getSkippedCount(): number {
+    return this.sets.filter(set => set.skipped).length;
   }
 }
 
@@ -170,7 +204,7 @@ export class UserWorkout {
   public readonly startedAt?: Date;
   public readonly pausedAt?: Date;
   public readonly lastExerciseIndex?: number;
-  public readonly rescheduledTo?: Date; 
+  public readonly rescheduledTo?: Date;
   public readonly rescheduleReason?: string;
 
   constructor(data: {
@@ -187,7 +221,7 @@ export class UserWorkout {
     pausedAt?: Date;
     lastExerciseIndex?: number;
     exerciseResults?: WorkoutExerciseResult[];
-    rescheduledTo?: Date; 
+    rescheduledTo?: Date;
     rescheduleReason?: string;
   }) {
     this.id = data.id;

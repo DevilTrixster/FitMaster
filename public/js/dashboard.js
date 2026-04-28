@@ -139,7 +139,7 @@ function renderWorkouts(workouts) {
       month: 'long' 
     });
     
-    const timeStr = workout.scheduledTime || '10:00';
+    const timeStr = workout.scheduledTime || '17:00';
     
     let statusText = 'Запланирована';
     let statusClass = 'status-scheduled';
