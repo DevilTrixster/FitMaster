@@ -95,9 +95,6 @@ async function bootstrap() {
     httpServer.listen(config.server.port, () => {
       console.log(`🌐 Сервер запущен на порту ${config.server.port}`);
       console.log(`📍 Главная: http://localhost:${config.server.port}/`);
-      console.log(`📍 Личный кабинет: http://localhost:${config.server.port}/dashboard`);
-      console.log(`📍 Вход: http://localhost:${config.server.port}/login`);
-      console.log(`📍 Прогресс: http://localhost:${config.server.port}/progress`);
       console.log(`🔌 Socket.IO готов`);
     });
   } catch (error) {
