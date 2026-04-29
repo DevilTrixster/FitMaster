@@ -27,16 +27,6 @@
   color: #fff;
 }
 
-.set-row.completed {
-  border-left: 3px solid #4ecca3;
-  background: rgba(78, 204, 163, 0.1);
-}
-
-.set-row.skipped {
-  opacity: 0.5;
-  border-left: 3px solid #ffa500;
-}
-
 /* Timer */
 .timer-section {
   display: flex;
@@ -122,15 +112,7 @@
   gap: 0.5rem;
 }
 
-.set-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 0.75rem;
-  border-radius: 10px;
-}
+
 
 .set-label {
   color: var(--text-secondary);
@@ -229,6 +211,126 @@
 }
 
 .hidden { display: none !important; }
+
+/* Sets List - вертикальный список */
+.sets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Один подход - ВСЕГДА В ОДНУ СТРОКУ */
+.set-row {
+  display: grid;
+  grid-template-columns: 100px 120px 120px 50px 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Метка подхода */
+.set-label {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Поля ввода */
+.set-input {
+  width: 100%;
+  padding: 0.6rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.95rem;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.set-input:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+
+/* Кнопка выполнения (галочка) */
+.btn-set-complete {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1.2rem;
+  background: rgba(78, 204, 163, 0.2);
+  border: 1px solid #4ecca3;
+  color: #4ecca3;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-set-complete:hover {
+  background: #4ecca3;
+  color: #1a1a2e;
+}
+
+.btn-set-complete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Кнопка пропуска */
+.btn-set-skip {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  white-space: nowrap;
+}
+
+.btn-set-skip:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 768px) {
+  .set-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  
+  .set-label {
+    grid-column: 1 / -1;
+    margin-bottom: 0.25rem;
+  }
+  
+  .btn-set-skip {
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+}
+
+/* Состояния подходов */
+.set-row.completed {
+  border-left: 3px solid #4ecca3;
+  background: rgba(78, 204, 163, 0.1);
+}
+
+.set-row.skipped {
+  opacity: 0.5;
+  border-left: 3px solid #ffa500;
+}
 
 @media (max-width: 600px) {
   .set-row { grid-template-columns: 1fr; gap: 0.3rem; }

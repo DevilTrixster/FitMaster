@@ -23,23 +23,30 @@
   <div class="container">
     <div class="dashboard-grid">
       <!-- Левая колонка: Статистика -->
-      <div class="sidebar">
-        <div class="card stat-section">
-          <h2>📊 Статистика</h2>
-          <div class="stat-item">
-            <div class="stat-value" id="totalWorkouts">0</div>
+      <aside class="sidebar">
+        <div class="card">
+          <h2 class="sidebar-title">📊 Статистика</h2>
+          
+          <div class="stat-card">
+            <div class="stat-number" id="totalWorkouts">0</div>
             <div class="stat-label">Тренировок</div>
+            <div class="progress-bar"></div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="avgWellness">-</div>
+          
+          <div class="stat-card">
+            <div class="stat-number" id="avgWellness">-</div>
             <div class="stat-label">Самочувствие</div>
+            <div class="progress-bar"></div>
           </div>
-          <div class="stat-item">
-            <div class="stat-value" id="currentStreak">0</div>
+          
+          <div class="stat-card">
+            <div class="stat-number" id="currentStreak">0</div>
             <div class="stat-label">Дней подряд</div>
+            <div class="progress-bar"></div>
           </div>
+          
         </div>
-      </div>
+      </aside>
 
       <!-- Правая колонка: Предстоящие тренировки -->
       <div class="main-content">

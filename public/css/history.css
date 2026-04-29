@@ -1,105 +1,151 @@
-.history-page {
-  flex: 1;
-  padding: 40px 20px;
-  max-width: 1000px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.history-page h2 {
-  color: var(--primary);
-  margin-bottom: 30px;
-  font-size: 2rem;
-}
-
-.history-filters {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-}
-
-.history-filters select,
-.history-filters input {
-  padding: 10px 15px;
-  border: 2px solid var(--gray);
-  border-radius: 5px;
-  background: var(--black);
-  color: var(--white);
-  font-size: 1rem;
-}
-
+/* Контейнер списка истории */
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  margin-bottom: 30px;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
+/* Карточка тренировки в истории */
 .workout-history-item {
-  background: var(--black);
-  padding: 20px;
-  border-radius: 8px;
-  border-left: 4px solid var(--gray);
-  cursor: pointer;
-  transition: transform 0.2s;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
 }
 
 .workout-history-item:hover {
+  background: var(--card-bg-hover);
   transform: translateX(5px);
+  box-shadow: var(--shadow);
 }
 
+/* Завершённая тренировка - зелёная полоска */
 .workout-history-item.completed {
-  border-left-color: var(--success);
+  border-left-color: #4ecca3;
 }
 
+/* Пропущенная тренировка - оранжевая полоска */
 .workout-history-item.skipped {
-  border-left-color: var(--error);
+  border-left-color: #ffa500;
+  opacity: 0.7;
 }
 
+/* Заголовок тренировки */
 .history-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 0.75rem;
 }
 
-.history-header h4 {
-  color: var(--white);
+.history-header h3 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Мета-информация (дата, время) */
+.history-meta {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.history-meta span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Самочувствие */
+.history-wellness {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+}
+
+/* Комментарии */
+.history-comments {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-style: italic;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  border-left: 2px solid var(--accent);
+}
+
+/* Статус тренировки */
+.history-status {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(233, 69, 96, 0.2);
+  color: #ff8fa3;
+  white-space: nowrap;
+}
+
+.workout-history-item.completed .history-status {
+  background: rgba(78, 204, 163, 0.2);
+  color: #4ecca3;
+}
+
+.workout-history-item.skipped .history-status {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+}
+
+/* Пустое состояние */
+.history-empty {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
-.history-details {
-  display: flex;
-  gap: 20px;
-  color: var(--gray);
-  margin-bottom: 10px;
-  font-size: 0.9rem;
-}
-
-.wellness {
-  color: var(--primary-light);
-  margin-bottom: 10px;
-}
-
-.comments-preview {
-  color: var(--light-gray);
-  font-style: italic;
-  margin-bottom: 10px;
-  padding: 10px;
-  background: var(--dark-gray);
-  border-radius: 5px;
-}
-
-.item-stats {
-  display: flex;
-  gap: 20px;
-  color: var(--gray);
-  font-size: 0.85rem;
-}
-
+/* Адаптивность для мобильных */
 @media (max-width: 768px) {
-  .history-filters {
+  .history-header {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
+  
+  .history-meta {
+    gap: 1rem;
+  }
+  
+  .workout-history-item {
+    padding: 1.25rem;
+  }
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.workout-history-item {
+  animation: fadeIn 0.3s ease-out;
 }

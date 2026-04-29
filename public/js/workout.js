@@ -45,42 +45,36 @@ function renderWorkout() {
     const repRecommendation = `${ex.repMin}-${ex.repMax}`;
     const weightRecommendation = ex.targetWeight > 0 ? `${ex.targetWeight} кг` : 'Вес';
     
-    card.innerHTML = `
-      <div class="exercise-header">
-        <h2>${ex.name}</h2>
-        <span class="muscle-tag">${ex.muscleGroup}</span>
-      </div>
-      <div class="exercise-meta">
-        <span>🔁 ${ex.sets} подхода</span>
-        <span>🔄 ${ex.repMin}–${ex.repMax} повт.</span>
-        <span>⏱️ Отдых: ${ex.restSeconds} сек</span>
-      </div>
-      <div class="sets-list" id="sets-${exIdx}">
-        ${Array.from({length: ex.sets}, (_, i) => `
-          <div class="set-row" id="set-${exIdx}-${i}">
-            <span class="set-label">Подход ${i + 1}</span>
-            <input type="number" 
-                   class="set-input reps-input" 
-                   id="reps-${exIdx}-${i}" 
-                   placeholder="${repRecommendation}"
-                   min="0" 
-                   max="${ex.repMax + 5}">
-            <input type="number" 
-                   class="set-input weight-input" 
-                   id="weight-${exIdx}-${i}" 
-                   placeholder="${weightRecommendation}"
-                   step="0.5" 
-                   min="0">
-            <div class="set-actions">
-              <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${i})">✓</button>
-              <button class="btn-set-skip" onclick="skipSet(${exIdx}, ${i})">Пропустить</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-    container.appendChild(card);
-  });
+    // Было: Array.from({length: ex.sets}, (_, i) => ...
+// Стало: всегда 4 подхода
+
+  card.innerHTML = `
+    <h3>${ex.name}</h3>
+    <span class="muscle-tag">${ex.muscleGroup}</span>
+    <div class="exercise-info">
+      <span>🔁 ${ex.sets} подхода</span>
+      <span>🔄 ${ex.repMin}–${ex.repMax} повт.</span>
+      <span>⏱️ Отдых: ${ex.restSeconds} сек</span>
+    </div>
+
+    <div id="sets-${exIdx}" class="sets-container">
+      ${Array.from({length: 4}, (_, i) => `
+        <div id="set-${exIdx}-${i}" class="set-row">
+          <span>Подход ${i + 1}</span>
+          <input type="number" id="reps-${exIdx}-${i}" 
+                placeholder="${ex.repMin}-${ex.repMax}" 
+                min="${ex.repMin}" max="${ex.repMax}">
+          <input type="number" id="weight-${exIdx}-${i}" 
+                placeholder="${weightRecommendation}" 
+                step="0.5">
+          <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${i})">✓</button>
+          <button class="btn-set-skip" onclick="skipSet(${exIdx}, ${i})">Пропустить</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+      container.appendChild(card);
+    });
 
   document.getElementById('finishBtn').disabled = false;
 }

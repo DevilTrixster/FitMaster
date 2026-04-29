@@ -8,10 +8,12 @@ export class ProfileController {
     try {
       const userId = (req as any).userId;
       const user = await this.profileService.getProfile(userId);
+      
       if (!user) {
         res.status(404).json({ error: 'Пользователь не найден' });
         return;
       }
+      
       res.json({
         id: user.id,
         nickname: user.nickname,
@@ -22,28 +24,55 @@ export class ProfileController {
         weight: user.weight,
         gender: user.gender,
         birthDate: user.birthDate,
+        preferredWorkoutTime: user.preferredWorkoutTime, 
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   }
 
-  async updateProfile(req: Request, res: Response) {
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    const userId = (req as any).userId;
+    
+    if (!userId) {
+      res.status(401).json({ error: 'Не авторизован' });
+      return;
+    }
+
+    const {
+      nickname,
+      firstName,
+      lastName,
+      height,
+      weight,
+      preferredWorkoutTime
+    } = req.body;
+
+    // Валидация времени (формат HH:MM или HH:MM:SS)
+    if (preferredWorkoutTime && !/^\d{2}:\d{2}(:\d{2})?$/.test(preferredWorkoutTime)) {
+      res.status(400).json({ error: 'Неверный формат времени. Используйте ЧЧ:ММ' });
+      return;
+    }
+
     try {
-      const userId = (req as any).userId;
-      const { nickname, firstName, lastName, height, weight } = req.body;
-      
       await this.profileService.updateProfile(userId, {
         nickname,
         firstName,
         lastName,
-        height: height ? Number(height) : undefined,
-        weight: weight ? Number(weight) : undefined,
+        height,
+        weight,
+        preferredWorkoutTime,
       });
-      
-      res.json({ message: 'Профиль успешно обновлен' });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+
+      // ОБНОВЛЯЕМ ВСЕ БУДУЩИЕ ТРЕНИРОВКИ НА НОВОЕ ВРЕМЯ
+      if (preferredWorkoutTime) {
+        await this.profileService.updateFutureWorkoutsTime(userId, preferredWorkoutTime);
+      }
+
+      res.json({ message: 'Профиль обновлён' });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ error: 'Ошибка обновления профиля' });
     }
   }
 }

@@ -20,6 +20,7 @@ async function loadProfile() {
     document.getElementById('height').value = user.height || '';
     document.getElementById('weight').value = user.weight || '';
     document.getElementById('email').value = user.email || '';
+    document.getElementById('preferredWorkoutTime').value = user.preferredWorkoutTime || '';
   } catch (err) {
     showMessage('Не удалось загрузить данные профиля', 'error');
   }
@@ -35,6 +36,7 @@ form.addEventListener('submit', async (e) => {
     lastName: document.getElementById('lastName').value,
     height: document.getElementById('height').value,
     weight: document.getElementById('weight').value,
+    preferredWorkoutTime: document.getElementById('preferredWorkoutTime').value,
   };
 
   try {
@@ -71,5 +73,7 @@ document.getElementById('logoutBtn')?.addEventListener('click', () => {
   localStorage.removeItem('token');
   window.location.href = '/auth/login.html';
 });
+
+
 
 loadProfile();

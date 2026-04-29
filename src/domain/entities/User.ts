@@ -16,6 +16,7 @@ export class User {
   public readonly gender: Gender;
   public readonly height: number; // в см
   public readonly weight: number; // в кг
+  public readonly preferredWorkoutTime?: string; 
   public readonly createdAt: Date;
 
   constructor(data: {
@@ -28,6 +29,7 @@ export class User {
     gender: Gender;
     height: number;
     weight: number;
+    preferredWorkoutTime?: string;
     id?: number;
     createdAt?: Date;
   }) {
@@ -41,6 +43,7 @@ export class User {
     this.gender = data.gender;
     this.height = data.height;
     this.weight = data.weight;
+    this.preferredWorkoutTime = data.preferredWorkoutTime;
     this.createdAt = data.createdAt || new Date();
   }
 

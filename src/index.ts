@@ -51,7 +51,7 @@ async function bootstrap() {
     
 
     // Сервисы
-    const profileService = new ProfileService(userRepository);
+    const profileService = new ProfileService(userRepository, workoutRepository);
     const profileController = new ProfileController(profileService);
     const workoutAdaptationService = new WorkoutAdaptationService(workoutRepository, userRepository);
     const workoutService = new WorkoutService(workoutRepository, userRepository, workoutAdaptationService);

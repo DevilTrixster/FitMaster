@@ -38,7 +38,9 @@ export class WorkoutService {
     const dayOfWeek = startDate.getDay();
     const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek) % 7;
     startDate.setDate(startDate.getDate() + (dayOfWeek === 1 ? 0 : daysUntilMonday));
-    startDate.setHours(10, 0, 0, 0);
+    const workoutTime = user.preferredWorkoutTime || '17:00';
+    const [hours, minutes] = workoutTime.split(':').map(Number);
+    startDate.setHours(hours, minutes, 0, 0);
 
     // Генерируем на 4 недели
     for (let week = 0; week < 4; week++) {
@@ -57,15 +59,15 @@ export class WorkoutService {
         const todayDateOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         if (workoutDateOnly < todayDateOnly) continue;
 
-        // ✅ Выбираем программу на основе индекса дня (0, 1 или 2)
+        // Выбираем программу на основе индекса дня (0, 1 или 2)
         const programIndex = scheduleMap[i];
         const targetWorkout = splitPrograms[programIndex];
 
         const userWorkout = new UserWorkout({
           userId,
-          workout: targetWorkout, // ✅ Используем конкретную программу (Грудь/Спина/Ноги)
+          workout: targetWorkout,
           scheduledDate: workoutDate,
-          scheduledTime: '10:00',
+          scheduledTime: user.preferredWorkoutTime || '17:00',  // Динамическое время
           status: WorkoutStatus.Scheduled,
         });
 
@@ -155,11 +157,15 @@ export class WorkoutService {
       
       const targetWorkout = splitPrograms[programIndex];
 
+      // Получаем пользователя для доступа к preferredWorkoutTime
+      const user = await this.userRepository.findById(userId);
+      if (!user) throw new Error('Пользователь не найден');
+
       const userWorkout = new UserWorkout({
         userId,
-        workout: targetWorkout, // ✅ Используем конкретную программу
+        workout: targetWorkout,
         scheduledDate: workoutDate,
-        scheduledTime: '10:00',
+        scheduledTime: user.preferredWorkoutTime || '17:00', 
         status: WorkoutStatus.Scheduled,
       });
       
@@ -259,7 +265,7 @@ export class WorkoutService {
     // src/application/services/WorkoutService.ts (строки 136-148)
 
   for (const exercise of userWorkout.workout.exercises) {
-    // ✅ Добавляем проверку на существование id
+    //Добавляем проверку на существование id
     if (!exercise.exercise.id) continue;
     
     const results = await this.workoutRepository.getExerciseResults(
