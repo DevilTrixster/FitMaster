@@ -6,94 +6,132 @@
   <title>Прогресс - FitMaster</title>
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/progress.css">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="app">
-    <nav class="navbar">
-      <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
-      <div class="nav-user">
-        <a href="/dashboard" class="nav-link">Личный кабинет</a>
-        <a href="/history" class="nav-link">История</a>
-        <a href="/progress" class="nav-link active">Прогресс</a>
-        <a href="/suggestions" class="nav-link">Рекомендация</a>
-        <a href="/profile" class="nav-link">Профиль</a>
-        <button id="logoutBtn" class="btn btn-outline">Выход</button>
-      </div>
-    </nav>
+  <!-- Навигация -->
+  <nav class="navbar">
+    <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
+    <div class="nav-user">
+      <a href="/dashboard" class="nav-link">Личный кабинет</a>
+      <a href="/history" class="nav-link">История</a>
+      <a href="/progress" class="nav-link active">Прогресс</a>
+      <a href="/suggestions" class="nav-link">Рекомендация</a>
+      <a href="/profile" class="nav-link">Профиль</a>
+      <a href="#" id="logoutBtn" class="btn-logout">Выход</a>
+    </div>
+  </nav>
 
-    <div class="container">
-      <div class="page-header">
-        <h1>📊 Ваш прогресс</h1>
-        <p class="subtitle">Отслеживайте свои результаты и динамику</p>
-      </div>
+  <!-- Заголовок страницы -->
+  <div class="progress-hero">
+    <div class="hero-glow"></div>
+    <h1 class="progress-title">📊 Ваш прогресс</h1>
+    <p class="progress-subtitle">Отслеживайте динамику, анализируйте результаты и ставьте новые цели</p>
+  </div>
 
-      <div id="errorContainer"></div>
-
-      <!-- Общая статистика -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">🏋️</div>
-          <div class="stat-value" id="totalWorkouts">0</div>
-          <div class="stat-label">Всего тренировок</div>
+  <div class="container">
+    
+    <!-- Карточки общей статистики -->
+    <div class="stats-row">
+      <div class="stat-card glass">
+        <div class="stat-icon-wrapper">
+          <span class="stat-icon">🏋️</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon">😊</div>
-          <div class="stat-value" id="avgWellness">0</div>
-          <div class="stat-label">Среднее самочувствие</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📈</div>
-          <div class="stat-value" id="totalVolume">0</div>
-          <div class="stat-label">Общий объём (кг)</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🔥</div>
-          <div class="stat-value" id="currentStreak">0</div>
-          <div class="stat-label">Дней подряд</div>
+        <div class="stat-content">
+          <span class="stat-value" id="totalWorkouts">0</span>
+          <span class="stat-label">Всего тренировок</span>
         </div>
       </div>
 
-      <!-- Графики -->
-      <div class="charts-section">
-        <div class="chart-header">
-          <h2>📈 Детальная статистика</h2>
-          <div class="exercise-selector">
-            <label for="exerciseSelect">Упражнение:</label>
-            <select id="exerciseSelect">
-              <option value="">Загрузка...</option>
-            </select>
-          </div>
+      <div class="stat-card glass">
+        <div class="stat-icon-wrapper">
+          <span class="stat-icon">😊</span>
         </div>
-
-        <div class="charts-grid">
-          <div class="chart-card">
-            <h3>Динамика рабочего веса</h3>
-            <div class="chart-container">
-              <canvas id="weightChart"></canvas>
-            </div>
-          </div>
-
-          <div class="chart-card">
-            <h3>Объём тренировки (Volume)</h3>
-            <div class="chart-container">
-              <canvas id="volumeChart"></canvas>
-            </div>
-          </div>
+        <div class="stat-content">
+          <span class="stat-value" id="avgWellness">0</span>
+          <span class="stat-label">Среднее самочувствие</span>
         </div>
+      </div>
 
-        <div class="chart-card full-width">
-          <h3>💪 Нагрузка по мышечным группам</h3>
-          <div class="chart-container">
-            <canvas id="muscleGroupChart"></canvas>
-          </div>
+      <div class="stat-card glass">
+        <div class="stat-icon-wrapper">
+          <span class="stat-icon">📈</span>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value" id="totalVolume">0</span>
+          <span class="stat-label">Общий объём (кг)</span>
+        </div>
+      </div>
+
+      <div class="stat-card glass">
+        <div class="stat-icon-wrapper">
+          <span class="stat-icon">🔥</span>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value" id="currentStreak">0</span>
+          <span class="stat-label">Дней подряд</span>
         </div>
       </div>
     </div>
+
+    <!-- Контейнер ошибок -->
+    <div id="errorContainer"></div>
+
+    <!-- Секция детальной статистики -->
+    <div class="section-title">
+      <h2>📈 Детальная статистика</h2>
+      <div class="section-line"></div>
+    </div>
+
+    <!-- Выбор упражнения -->
+    <div class="exercise-selector-wrapper">
+      <label for="exerciseSelect">Выберите упражнение:</label>
+      <div class="custom-select-wrapper">
+        <select id="exerciseSelect">
+          <option value="">Загрузка...</option>
+        </select>
+        <div class="custom-select-arrow"></div>
+      </div>
+    </div>
+
+    <!-- Графики упражнения -->
+    <div class="charts-row">
+      <div class="chart-card glass">
+        <div class="chart-card-header">
+          <span class="chart-icon">📉</span>
+          <h3>Динамика рабочего веса</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="weightChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card glass">
+        <div class="chart-card-header">
+          <span class="chart-icon"></span>
+          <h3>Объём тренировки</h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="volumeChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Нагрузка по мышечным группам -->
+    <div class="chart-card glass wide-chart">
+      <div class="chart-card-header">
+        <span class="chart-icon">💪</span>
+        <h3>Нагрузка по мышечным группам</h3>
+        <span class="chart-badge">За всё время</span>
+      </div>
+      <p class="chart-description">Распределение общего объёма нагрузки по целевым мышцам</p>
+      <div class="chart-container chart-container-wide">
+        <canvas id="muscleGroupChart"></canvas>
+      </div>
+    </div>
+
   </div>
 
-  <script src="/js/common.js"></script>
   <script src="/js/progress.js"></script>
 </body>
 </html>
