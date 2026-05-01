@@ -1,5 +1,3 @@
-/* public/css/auth.css — Стили регистрации и входа (в паре с common.css) */
-
 /* ============================================
    Контейнер регистрации — Glass Morphism
    ============================================ */
@@ -318,4 +316,20 @@
     padding: 0.75rem 0.85rem;
     font-size: 0.95rem;
   }
+}
+/* Исправление кнопки выхода в навигации */
+.nav-user .btn-logout {
+  background: var(--accent);
+  color: #ffffff;
+  border: 2px solid var(--accent);
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.nav-user .btn-logout:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
 }

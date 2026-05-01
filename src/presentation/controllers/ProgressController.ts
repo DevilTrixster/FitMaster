@@ -32,4 +32,15 @@ export class ProgressController {
       next(error);
     }
   }
+
+  async getRPEData(req: Request, res: Response) {
+    try {
+      const userId = (req as any).userId;
+      const data = await this.progressService.getRPEData(userId);
+      res.json(data);
+    } catch (error) {
+      console.error('Error loading RPE data:', error);
+      res.status(500).json({ error: 'Failed to load RPE data' });
+    }
+  }
 }

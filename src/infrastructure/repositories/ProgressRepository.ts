@@ -68,4 +68,22 @@ export class ProgressRepository implements IProgressRepository {
       avgWellnessRating: parseFloat(row.avg_wellness_rating),
     }));
   }
+
+  async getRPEData(userId: number): Promise<any[]> {
+    const query = `
+      SELECT 
+        uw.scheduled_date as date,
+        uw.wellness_rating as actualRPE,
+        COALESCE(uw.planned_difficulty, 7) as plannedRPE
+      FROM user_workouts uw
+      WHERE uw.user_id = $1
+        AND uw.status = 'completed'
+        AND uw.wellness_rating IS NOT NULL
+      ORDER BY uw.scheduled_date DESC
+      LIMIT 30
+    `;
+    
+    const result = await this.pool.query(query, [userId]);
+    return result.rows;
+  }
 }

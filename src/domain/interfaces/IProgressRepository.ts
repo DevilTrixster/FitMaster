@@ -3,4 +3,5 @@ import { ExerciseProgressDTO, MuscleGroupStatsDTO } from '../../application/dto/
 export interface IProgressRepository {
   getExerciseProgress(userId: number, exerciseId: number, limit?: number): Promise<ExerciseProgressDTO | null>;
   getMuscleGroupStats(userId: number): Promise<MuscleGroupStatsDTO[]>;
+  getRPEData(userId: number): Promise<any[]>;
 }

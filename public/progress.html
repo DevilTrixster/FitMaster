@@ -18,7 +18,7 @@
       <a href="/progress" class="nav-link active">Прогресс</a>
       <a href="/suggestions" class="nav-link">Рекомендация</a>
       <a href="/profile" class="nav-link">Профиль</a>
-      <a href="#" id="logoutBtn" class="btn-logout">Выход</a>
+      <a href="#" id="logoutBtn" class="nav-link btn-logout">Выход</a>
     </div>
   </nav>
 
@@ -26,7 +26,7 @@
   <div class="progress-hero">
     <div class="hero-glow"></div>
     <h1 class="progress-title">📊 Ваш прогресс</h1>
-    <p class="progress-subtitle">Отслеживайте динамику, анализируйте результаты и ставьте новые цели</p>
+    <p class="progress-subtitle">Анализируйте результаты, отслеживайте динамику и оптимизируйте тренировки</p>
   </div>
 
   <div class="container">
@@ -59,7 +59,7 @@
         </div>
         <div class="stat-content">
           <span class="stat-value" id="totalVolume">0</span>
-          <span class="stat-label">Общий объём (кг)</span>
+          <span class="stat-label">Общий объём (тонн)</span>
         </div>
       </div>
 
@@ -94,39 +94,61 @@
       </div>
     </div>
 
-    <!-- Графики упражнения -->
+    <!-- Графики упражнения (2 в ряд) -->
     <div class="charts-row">
+      <!-- График 1: Динамика веса -->
       <div class="chart-card glass">
         <div class="chart-card-header">
           <span class="chart-icon">📉</span>
           <h3>Динамика рабочего веса</h3>
+          <span class="chart-badge">По тренировкам</span>
         </div>
+        <p class="chart-description">Изменение среднего веса в упражнении</p>
         <div class="chart-container">
           <canvas id="weightChart"></canvas>
         </div>
       </div>
 
-      <div class="chart-card glass">
-        <div class="chart-card-header">
-          <span class="chart-icon"></span>
-          <h3>Объём тренировки</h3>
-        </div>
-        <div class="chart-container">
-          <canvas id="volumeChart"></canvas>
-        </div>
+    <!-- График 2: Гистограмма повторений -->
+    <div class="chart-card glass">
+      <div class="chart-card-header">
+        <span class="chart-icon">📊</span>
+        <h3>Гистограмма повторений</h3>
+        <span class="chart-badge">Распределение</span>
+      </div>
+      <p class="chart-description">В каких диапазонах вы работаете чаще всего</p>
+      <div class="chart-container">
+        <canvas id="repRangeChart"></canvas>
       </div>
     </div>
 
-    <!-- Нагрузка по мышечным группам -->
+    <!-- График 3: RPE vs План (на всю ширину) -->
+    <div class="chart-card glass wide-chart">
+      <div class="chart-card-header">
+        <span class="chart-icon">🎯</span>
+        <h3>RPE vs План</h3>
+        <span class="chart-badge">Воспринимаемая нагрузка</span>
+      </div>
+      <p class="chart-description">Сравнение плановой и фактической сложности тренировок (шкала 1-10)</p>
+      <div class="chart-container chart-container-wide">
+        <canvas id="rpeChart"></canvas>
+      </div>
+    </div>
+
+    <!-- График 4: Распределение нагрузки по мышцам (на всю ширину) -->
     <div class="chart-card glass wide-chart">
       <div class="chart-card-header">
         <span class="chart-icon">💪</span>
-        <h3>Нагрузка по мышечным группам</h3>
-        <span class="chart-badge">За всё время</span>
+        <h3>Распределение нагрузки по мышечным группам</h3>
+        <div class="chart-filters">
+          <button class="filter-btn active" data-period="all">Всё время</button>
+          <button class="filter-btn" data-period="month">Месяц</button>
+          <button class="filter-btn" data-period="week">Неделя</button>
+        </div>
       </div>
-      <p class="chart-description">Распределение общего объёма нагрузки по целевым мышцам</p>
+      <p class="chart-description">Общий тренировочный объём (тоннаж) по целевым мышцам</p>
       <div class="chart-container chart-container-wide">
-        <canvas id="muscleGroupChart"></canvas>
+        <canvas id="muscleDistributionChart"></canvas>
       </div>
     </div>
 

@@ -15,6 +15,9 @@ export function createProgressRoutes(
   router.get('/muscle-groups', (req, res, next) => 
     progressController.getMuscleGroupStats(req, res, next)
   );
+  router.get('/rpe', authMiddleware, (req, res) => 
+    progressController.getRPEData(req, res)
+  );
 
   return router;
 }
