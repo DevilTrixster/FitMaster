@@ -2,14 +2,12 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User, Gender } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { WorkoutService } from './WorkoutService';
-import { WorkoutAdaptationService } from './WorkoutAdaptationService';
 
 export class AuthService {
   constructor(
     private userRepository: IUserRepository,
-    private workoutRepository: IWorkoutRepository
+    private workoutService: WorkoutService 
   ) {}
 
   // Регистрация нового пользователя
@@ -24,8 +22,7 @@ export class AuthService {
     height: number;
     weight: number;
   }): Promise<{ user: User; token: string }> {
-    
-    // Проверка на существующего пользователя
+    // ... (проверки и хеширование без изменений)
     const existingByEmail = await this.userRepository.findByEmail(data.email);
     if (existingByEmail) {
       throw new Error('Пользователь с таким email уже существует');
@@ -36,57 +33,44 @@ export class AuthService {
       throw new Error('Пользователь с таким никнеймом уже существует');
     }
 
-    // Хеширование пароля (безопасность!)
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(data.password, saltRounds);
 
-    // Создание сущности пользователя
     const user = new User({
       ...data,
       password: hashedPassword,
     });
 
-    // Сохранение в БД через репозиторий
     const savedUser = await this.userRepository.createUser(user);
-
-    // Генерация JWT токена
     const token = this.generateToken(savedUser.id!);
 
-    // АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПРОГРАММЫ 
-    const adaptationService = new WorkoutAdaptationService(this.workoutRepository, this.userRepository);
-    const workoutService = new WorkoutService(this.workoutRepository, this.userRepository, adaptationService);
-    await workoutService.generateBaseProgram(savedUser.id!);
+    // АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ ПРОГРАММЫ (исправлено)
+    await this.workoutService.generateBaseProgram(savedUser.id!);
+
     return { user: savedUser, token };
   }
 
-  // Вход пользователя
+  // ... (остальные методы без изменений: login, generateToken, verifyToken)
   async login(email: string, password: string): Promise<{ user: User; token: string }> {
-    
-    // Поиск пользователя по email
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new Error('Неверный email или пароль');
     }
 
-    // Проверка пароля
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new Error('Неверный email или пароль');
     }
 
-    // Генерация токена
     const token = this.generateToken(user.id!);
-
     return { user, token };
   }
 
-  // Генерация JWT токена
   private generateToken(userId: number): string {
     const secret = process.env.JWT_SECRET || 'fitmaster-secret-key';
     return jwt.sign({ userId }, secret, { expiresIn: '7d' });
   }
 
-  // Проверка токена (для защищённых маршрутов)
   verifyToken(token: string): { userId: number } {
     const secret = process.env.JWT_SECRET || 'fitmaster-secret-key';
     return jwt.verify(token, secret) as { userId: number };

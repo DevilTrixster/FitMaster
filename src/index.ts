@@ -25,6 +25,12 @@ import { ProfileController } from './presentation/controllers/ProfileController'
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
 import { WorkoutAdaptationService } from './application/services/WorkoutAdaptationService';
+import { 
+  WorkoutSchedulingService,
+  WorkoutLifecycleService,
+  WorkoutQueryService,
+  WorkoutResultsService
+} from './application/services/workout';
 import { config } from './config/env';
 
 async function bootstrap() {
@@ -53,11 +59,25 @@ async function bootstrap() {
     // Сервисы
     const profileService = new ProfileService(userRepository, workoutRepository);
     const profileController = new ProfileController(profileService);
+    // Адаптация
     const workoutAdaptationService = new WorkoutAdaptationService(workoutRepository, userRepository);
-    const workoutService = new WorkoutService(workoutRepository, userRepository, workoutAdaptationService);
+    //  Сервисы для WorkoutService
+    const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
+    const workoutResultsService = new WorkoutResultsService(workoutRepository, userRepository, workoutAdaptationService);
+    const workoutLifecycleService = new WorkoutLifecycleService(workoutRepository, workoutResultsService);
+    const workoutQueryService = new WorkoutQueryService(workoutRepository, workoutSchedulingService);
+
+    // Главный сервис (Facade)
+    const workoutService = new WorkoutService(
+      workoutSchedulingService,
+      workoutLifecycleService,
+      workoutQueryService,
+      workoutResultsService
+    );
+
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);
-    const authService = new AuthService(userRepository, workoutRepository);
+    const authService = new AuthService(userRepository, workoutService);
     const substitutionController = new SubstitutionController(workoutService);
 
     // Контроллеры
