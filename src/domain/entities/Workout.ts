@@ -5,7 +5,15 @@ export enum WorkoutStatus {
   Skipped = 'skipped',
   Rescheduled = 'rescheduled',
 }
-
+export enum MetricType {
+    Reps = 'reps',
+    Weight = 'weight',
+    Duration = 'duration',
+    Distance = 'distance',
+    Calories = 'calories',
+    Incline = 'incline',
+    Resistance = 'resistance',
+}
 export enum AdaptationType {
   IncreaseWeight = 'increase_weight',
   DecreaseWeight = 'decrease_weight',
@@ -13,6 +21,58 @@ export enum AdaptationType {
   DecreaseReps = 'decrease_reps',
   NoChange = 'no_change',
   Substitution = 'substitution',
+}
+
+export interface MetricTemplate {
+    metricType: MetricType;
+    required: boolean;
+    defaultValue?: number;
+    unit?: string;
+}
+
+
+export class SetMetric {
+    public readonly id?: number;
+    public readonly exerciseSetId?: number;
+    public readonly metricType: MetricType;
+    public readonly value: number;
+    public readonly unit?: string; // 'kg', 'sec', 'm', 'kcal' и т.д.
+
+    constructor(data: {
+        id?: number;
+        exerciseSetId?: number;
+        metricType: MetricType;
+        value: number;
+        unit?: string;
+    }) {
+        this.id = data.id;
+        this.exerciseSetId = data.exerciseSetId;
+        this.metricType = data.metricType;
+        this.value = data.value;
+        this.unit = data.unit;
+    }
+}
+
+export class ExerciseSet {
+    public readonly id?: number;
+    public readonly workoutExerciseId?: number;
+    public readonly setNumber: number;
+    public readonly setType: string; // 'normal', 'warmup', 'dropset', 'failure'
+    public readonly metrics: SetMetric[];
+
+    constructor(data: {
+        id?: number;
+        workoutExerciseId?: number;
+        setNumber: number;
+        setType?: string;
+        metrics?: SetMetric[];
+    }) {
+        this.id = data.id;
+        this.workoutExerciseId = data.workoutExerciseId;
+        this.setNumber = data.setNumber;
+        this.setType = data.setType || 'normal';
+        this.metrics = data.metrics || [];
+    }
 }
 
 export class Exercise {
@@ -45,6 +105,9 @@ export class WorkoutExercise {
   public readonly restSeconds: number;
   public readonly orderIndex: number;
   public readonly targetWeight?: number;
+
+  public readonly metricTemplates?: MetricTemplate[]; // список шаблонов метрик
+  public readonly exerciseSets?: ExerciseSet[];
 
   constructor(data: {
     exercise: Exercise;

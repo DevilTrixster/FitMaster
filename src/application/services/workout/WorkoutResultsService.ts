@@ -1,4 +1,7 @@
-import { SetResult, WorkoutAdaptation, AdaptationType } from '../../../domain/entities/Workout';
+import { 
+  SetResult, WorkoutAdaptation, AdaptationType,
+  MetricType, SetMetric, ExerciseSet 
+} from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import { WorkoutAdaptationService } from '../WorkoutAdaptationService';
@@ -23,6 +26,45 @@ export class WorkoutResultsService {
     private adaptationService: WorkoutAdaptationService
   ) {}
 
+    async saveSetMetrics(
+    workoutId: number,
+    userId: number,
+    exerciseId: number,
+    setNumber: number,
+    setType: string,
+    metrics: { metricType: MetricType; value: number; unit?: string }[]
+  ): Promise<void> {
+    const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
+    if (!userWorkout || userWorkout.userId !== userId) {
+      throw new Error('Доступ запрещён');
+    }
+
+    // 1. Получить workoutExerciseId (связка между тренировкой и упражнением)
+    //    Пока такого метода нет в репозитории – добавим его ниже.
+    const workoutExerciseId = await this.workoutRepository.getWorkoutExerciseId(
+      workoutId,
+      exerciseId
+    );
+    if (workoutExerciseId === null) {
+      throw new Error('Упражнение не найдено в тренировке');
+    }
+
+    // 2. Создать объект ExerciseSet и сохранить через репозиторий
+    const exerciseSet = new ExerciseSet({
+      setNumber,
+      setType,
+      metrics: metrics.map(m => new SetMetric({
+        metricType: m.metricType,
+        value: m.value,
+        unit: m.unit,
+      })),
+    });
+
+    await this.workoutRepository.saveExerciseSet(workoutExerciseId, exerciseSet);
+
+    console.log(`✅ Метрики для подхода ${setNumber} сохранены (упражнение ${exerciseId})`);
+  }
+
   /**
    * Сохраняет результат выполнения одного подхода
    */
@@ -31,15 +73,14 @@ export class WorkoutResultsService {
     userId: number,
     exerciseId: number,
     setResult: SetResult
-  ): Promise<void> {
+): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
     if (!userWorkout || userWorkout.userId !== userId) {
-      throw new Error('Доступ запрещён');
+        throw new Error('Доступ запрещён');
     }
-
     console.log('💾 WorkoutResultsService: сохраняем результат в БД...');
     await this.workoutRepository.saveSetResult(workoutId, exerciseId, setResult);
-  }
+}
 
   /**
    * Запускает логику адаптации после завершения тренировки

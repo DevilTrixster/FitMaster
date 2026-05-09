@@ -1,4 +1,4 @@
-import { UserWorkout, WorkoutStatus, SetResult } from '../../domain/entities/Workout';
+import { UserWorkout, WorkoutStatus, SetResult, MetricType, MetricTemplate } from '../../domain/entities/Workout';
 import { WorkoutSchedulingService } from './workout/WorkoutSchedulingService';
 import { WorkoutLifecycleService } from './workout/WorkoutLifecycleService';
 import { WorkoutQueryService } from './workout/WorkoutQueryService';
@@ -12,15 +12,27 @@ export class WorkoutService {
     private queryService: WorkoutQueryService,
     private resultsService: WorkoutResultsService
   ) {}
-
-  // ==========  ПЛАНИРОВАНИЕ ==========
   
+  async saveSetMetrics(
+    workoutId: number,
+    userId: number,
+    exerciseId: number,
+    setNumber: number,
+    setType: string,
+    metrics: { metricType: MetricType; value: number; unit?: string }[]
+  ): Promise<void> {
+    await this.resultsService.saveSetMetrics(workoutId, userId, exerciseId, setNumber, setType, metrics);
+  }
   /**
    * Генерирует базовую программу тренировок на 4 недели
    */
   async generateBaseProgram(userId: number): Promise<UserWorkout[]> {
     return this.schedulingService.generateBaseProgram(userId);
   }
+
+  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
+    return this.queryService.getExerciseMetricTemplates(exerciseId);
+}
 
   /**
    * Генерирует дополнительные тренировки, если их не хватает

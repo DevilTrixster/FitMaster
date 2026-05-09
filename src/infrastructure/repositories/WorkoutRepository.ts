@@ -1,6 +1,19 @@
 import { Pool } from 'pg';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
-import { Workout, UserWorkout, Exercise, WorkoutExercise, WorkoutStatus, SetResult, WorkoutAdaptation, AdaptationType } from '../../domain/entities/Workout';
+import { 
+  Workout, 
+  UserWorkout, 
+  Exercise, 
+  WorkoutExercise, 
+  WorkoutStatus, 
+  SetResult, 
+  WorkoutAdaptation, 
+  AdaptationType,
+  MetricTemplate,
+  MetricType,
+  ExerciseSet,
+  SetMetric
+} from '../../domain/entities/Workout';
 
 export class WorkoutRepository implements IWorkoutRepository {
   constructor(private pool: Pool) {}
@@ -484,5 +497,104 @@ export class WorkoutRepository implements IWorkoutRepository {
       muscleGroup: row.muscle_group,
       equipmentType: row.equipment_type,
     });
+  }
+
+  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
+      const query = 'SELECT metric_type, required FROM exercise_metric_templates WHERE exercise_id = $1';
+      const result = await this.pool.query(query, [exerciseId]);
+      return result.rows.map(row => ({
+          metricType: row.metric_type as MetricType,
+          required: row.required,
+      }));
+  }
+
+  async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> {
+      const client = await this.pool.connect();
+      try {
+          await client.query('BEGIN');
+          // Вставляем подход
+          const setQuery = `
+              INSERT INTO exercise_sets (workout_exercise_id, set_number, set_type)
+              VALUES ($1, $2, $3)
+              RETURNING id, created_at
+          `;
+          const setResult = await client.query(setQuery, [
+              workoutExerciseId,
+              exerciseSet.setNumber,
+              exerciseSet.setType,
+          ]);
+          const setId = setResult.rows[0].id;
+
+          // Вставляем метрики
+          for (const metric of exerciseSet.metrics) {
+              const metricQuery = `
+                  INSERT INTO set_metrics (exercise_set_id, metric_type, value, unit)
+                  VALUES ($1, $2, $3, $4)
+              `;
+              await client.query(metricQuery, [setId, metric.metricType, metric.value, metric.unit]);
+          }
+
+          await client.query('COMMIT');
+          return new ExerciseSet({
+              ...exerciseSet,
+              id: setId,
+              workoutExerciseId,
+          });
+      } catch (e) {
+          await client.query('ROLLBACK');
+          throw e;
+      } finally {
+          client.release();
+      }
+  }
+
+  async getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> {
+      const query = `
+          SELECT 
+              es.id as set_id,
+              es.set_number,
+              es.set_type,
+              sm.id as metric_id,
+              sm.metric_type,
+              sm.value,
+              sm.unit
+          FROM exercise_sets es
+          LEFT JOIN set_metrics sm ON sm.exercise_set_id = es.id
+          WHERE es.workout_exercise_id = $1
+          ORDER BY es.set_number, sm.metric_type
+      `;
+      const result = await this.pool.query(query, [workoutExerciseId]);
+      // Группировка строк в объекты ExerciseSet
+      const setsMap = new Map<number, ExerciseSet>();
+      result.rows.forEach(row => {
+          if (!setsMap.has(row.set_id)) {
+              setsMap.set(row.set_id, new ExerciseSet({
+                  id: row.set_id,
+                  setNumber: row.set_number,
+                  setType: row.set_type,
+                  metrics: [],
+                  workoutExerciseId,
+              }));
+          }
+          if (row.metric_id) {
+              setsMap.get(row.set_id)!.metrics.push(new SetMetric({
+                  id: row.metric_id,
+                  metricType: row.metric_type as MetricType,
+                  value: parseFloat(row.value),
+                  unit: row.unit,
+              }));
+          }
+      });
+      return Array.from(setsMap.values()).sort((a, b) => a.setNumber - b.setNumber);
+  }
+
+  async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> {
+  const query = `
+    SELECT we.id FROM workout_exercises we
+    JOIN user_workouts uw ON we.workout_id = uw.workout_id
+    WHERE uw.id = $1 AND we.exercise_id = $2
+  `;
+  const res = await this.pool.query(query, [userWorkoutId, exerciseId]);
+  return res.rows.length > 0 ? res.rows[0].id : null;
   }
 }

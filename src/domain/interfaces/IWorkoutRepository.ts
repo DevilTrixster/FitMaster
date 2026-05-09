@@ -1,4 +1,13 @@
-import { Workout, UserWorkout, Exercise, WorkoutAdaptation, SetResult } from '../entities/Workout';
+import { 
+  Workout, 
+  UserWorkout, 
+  Exercise, 
+  WorkoutAdaptation, 
+  SetResult,
+  MetricTemplate,
+  ExerciseSet,
+  SetMetric
+} from '../entities/Workout';
 
 export interface IWorkoutRepository {
   // Базовые программы
@@ -61,4 +70,16 @@ export interface IWorkoutRepository {
   }[]>;
 
   getExerciseById(id: number): Promise<Exercise | null>;
+
+  // Получение шаблонов метрик для упражнения
+  getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]>;
+
+  // Сохранение подхода с метриками
+  saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet>;
+
+  // Получение подходов для упражнения в тренировке
+  getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]>;
+
+  // Получить ID записи workout_exercises по userWorkoutId и exerciseId
+  getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null>;
 }

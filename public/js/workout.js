@@ -14,7 +14,6 @@ let selectedRating = 3;
 let timerInterval = null;
 let timerSeconds = 0;
 
-// Загрузка тренировки
 async function loadWorkout() {
   try {
     const res = await fetch(`/api/workouts/current`, {
@@ -31,7 +30,74 @@ async function loadWorkout() {
   }
 }
 
-// Отрисовка
+// Создаёт поле ввода для метрики с учётом целевых значений
+function createMetricInput(metric, ex, exIdx, setIdx) {
+  const { metricType, unit } = metric;
+  const id = `metric-${exIdx}-${setIdx}-${metricType}`;
+  let placeholder = '';
+
+  switch (metricType) {
+    case 'reps':
+      placeholder = `${ex.repMin}–${ex.repMax}`;
+      return `
+        <div class="metric-group">
+          <label class="metric-label">Повторения</label>
+          <input type="number" 
+                 id="${id}" 
+                 class="set-input" 
+                 placeholder="${placeholder}" 
+                 min="${ex.repMin}" 
+                 max="${ex.repMax}" 
+                 step="1">
+        </div>`;
+    case 'weight':
+      placeholder = ex.targetWeight ? `${ex.targetWeight} кг` : 'Вес';
+      return `
+        <div class="metric-group">
+          <label class="metric-label">Вес</label>
+          <input type="number" 
+                 id="${id}" 
+                 class="set-input" 
+                 placeholder="${placeholder}" 
+                 step="0.5" 
+                 min="0">
+        </div>`;
+    case 'duration':
+      return `
+        <div class="metric-group">
+          <label class="metric-label">Время</label>
+          <input type="number" 
+                 id="${id}" 
+                 class="set-input" 
+                 placeholder="сек" 
+                 step="1" 
+                 min="0">
+        </div>`;
+    case 'distance':
+      return `
+        <div class="metric-group">
+          <label class="metric-label">Дистанция</label>
+          <input type="number" 
+                 id="${id}" 
+                 class="set-input" 
+                 placeholder="м" 
+                 step="0.1" 
+                 min="0">
+        </div>`;
+    default:
+      return `
+        <div class="metric-group">
+          <label class="metric-label">${metricType}</label>
+          <input type="number" 
+                 id="${id}" 
+                 class="set-input" 
+                 placeholder="–" 
+                 step="any" 
+                 min="0">
+        </div>`;
+  }
+}
+
 function renderWorkout() {
   document.querySelector('.nav-brand').textContent = currentWorkout.name;
   const container = document.getElementById('exercisesList');
@@ -40,99 +106,83 @@ function renderWorkout() {
   currentWorkout.exercises.forEach((ex, exIdx) => {
     const card = document.createElement('div');
     card.className = 'exercise-card';
-    
-    // Формируем текст рекомендации
-    const repRecommendation = `${ex.repMin}-${ex.repMax}`;
-    const weightRecommendation = ex.targetWeight > 0 ? `${ex.targetWeight} кг` : 'Вес';
-    
-    // Было: Array.from({length: ex.sets}, (_, i) => ...
-// Стало: всегда 4 подхода
 
-  card.innerHTML = `
-    <h3>${ex.name}</h3>
-    <span class="muscle-tag">${ex.muscleGroup}</span>
-    <div class="exercise-info">
-      <span>🔁 ${ex.sets} подхода</span>
-      <span>🔄 ${ex.repMin}–${ex.repMax} повт.</span>
-      <span>⏱️ Отдых: ${ex.restSeconds} сек</span>
-    </div>
+    // Шаблоны метрик из ответа или фолбэк
+    let metricTemplates = ex.metricTemplates;
+    if (!metricTemplates || metricTemplates.length === 0) {
+      metricTemplates = [];
+      if (ex.repMin && ex.repMax) {
+        metricTemplates.push({ metricType: 'reps', required: true, unit: 'count' });
+      }
+      if (ex.targetWeight) {
+        metricTemplates.push({ metricType: 'weight', required: false, unit: 'kg' });
+      }
+    }
 
-    <div id="sets-${exIdx}" class="sets-container">
-      ${Array.from({length: 4}, (_, i) => `
-        <div id="set-${exIdx}-${i}" class="set-row">
-          <span>Подход ${i + 1}</span>
-          <input type="number" id="reps-${exIdx}-${i}" 
-                placeholder="${ex.repMin}-${ex.repMax}" 
-                min="${ex.repMin}" max="${ex.repMax}">
-          <input type="number" id="weight-${exIdx}-${i}" 
-                placeholder="${weightRecommendation}" 
-                step="0.5">
-          <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${i})">✓</button>
-          <button class="btn-set-skip" onclick="skipSet(${exIdx}, ${i})">Пропустить</button>
-        </div>
-      `).join('')}
-    </div>
-  `;
-      container.appendChild(card);
-    });
+    card.innerHTML = `
+      <div class="exercise-header">
+        <h3>${ex.name}</h3>
+        <span class="muscle-tag">${ex.muscleGroup}</span>
+      </div>
+      <div class="exercise-stats">
+        <span class="stat-badge"> ${ex.sets} подхода</span>
+        <span class="stat-badge"> ⏱️ ${ex.restSeconds} сек</span>
+      </div>
+      <div class="sets-container" id="sets-${exIdx}">
+        ${Array.from({ length: ex.sets }, (_, setIdx) => {
+          const inputs = metricTemplates.map(m => createMetricInput(m, ex, exIdx, setIdx)).join('');
+          return `
+            <div id="set-${exIdx}-${setIdx}" class="set-row">
+              <span class="set-number">${setIdx + 1}</span>
+              <div class="set-inputs">${inputs}</div>
+              <div class="set-actions">
+                <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${setIdx})" title="Выполнено">✓</button>
+                <button class="btn-set-skip" onclick="skipSet(${exIdx}, ${setIdx})" title="Пропустить">↷</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+  });
 
   document.getElementById('finishBtn').disabled = false;
 }
 
-// Глобальная функция для кнопки подхода
+// Выполнение подхода
 window.completeSet = async (exIdx, setIdx) => {
   const ex = currentWorkout.exercises[exIdx];
-  const reps = parseInt(document.getElementById(`reps-${exIdx}-${setIdx}`).value) || ex.repMin;
-  const weight = parseFloat(document.getElementById(`weight-${exIdx}-${setIdx}`).value) || ex.targetWeight || 0;
-  
-  const btn = document.querySelector(`#sets-${exIdx} .set-row:nth-child(${setIdx+1}) .btn-set-complete`);
-  btn.disabled = true;
-  btn.textContent = '✅';
-
-  try {
-    await fetch('/api/workouts/save-set', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        workoutId: currentWorkout.id,
-        exerciseId: ex.id,
-        setNumber: setIdx + 1,
-        actualReps: reps,
-        actualWeight: weight,
-        completed: true
-      })
-    });
-    startRestTimer(ex.restSeconds);
-  } catch (e) {
-    alert('Ошибка сохранения подхода');
-    btn.disabled = false;
-  }
-};
-
-// Глобальная функция для выполнения подхода
-window.completeSet = async (exIdx, setIdx) => {
-  const ex = currentWorkout.exercises[exIdx];
-  const repsInput = document.getElementById(`reps-${exIdx}-${setIdx}`);
-  const weightInput = document.getElementById(`weight-${exIdx}-${setIdx}`);
-  const reps = parseInt(repsInput.value) || 0;
-  const weight = parseFloat(weightInput.value) || 0;
-  
-  if (reps === 0) {
-    alert('Введите количество повторений');
-    return;
-  }
-  
   const setRow = document.getElementById(`set-${exIdx}-${setIdx}`);
   const completeBtn = setRow.querySelector('.btn-set-complete');
   const skipBtn = setRow.querySelector('.btn-set-skip');
-  
+
+  const templates = ex.metricTemplates?.length > 0
+    ? ex.metricTemplates
+    : [
+        { metricType: 'reps', unit: 'count' },
+        { metricType: 'weight', unit: 'kg' }
+      ];
+
+  const metrics = [];
+  for (const tmpl of templates) {
+    const input = document.getElementById(`metric-${exIdx}-${setIdx}-${tmpl.metricType}`);
+    if (input) {
+      const val = parseFloat(input.value);
+      if (!isNaN(val)) {
+        metrics.push({ metricType: tmpl.metricType, value: val, unit: tmpl.unit });
+      }
+    }
+  }
+
+  if (metrics.length === 0) {
+    alert('Введите хотя бы одно значение');
+    return;
+  }
+
   completeBtn.disabled = true;
   skipBtn.disabled = true;
-  setRow.classList.add('completed');
-  
+
   try {
     await fetch('/api/workouts/save-set', {
       method: 'POST',
@@ -144,34 +194,31 @@ window.completeSet = async (exIdx, setIdx) => {
         workoutId: currentWorkout.id,
         exerciseId: ex.id,
         setNumber: setIdx + 1,
-        actualReps: reps,
-        actualWeight: weight,
-        completed: true,
-        skipped: false
+        setType: 'normal',
+        metrics: metrics
       })
     });
+    setRow.classList.add('completed');
     startRestTimer(ex.restSeconds);
   } catch (e) {
     alert('Ошибка сохранения подхода');
     completeBtn.disabled = false;
     skipBtn.disabled = false;
-    setRow.classList.remove('completed');
   }
 };
 
-// Глобальная функция для пропуска подхода
+// Пропуск подхода
 window.skipSet = async (exIdx, setIdx) => {
   const ex = currentWorkout.exercises[exIdx];
   const setRow = document.getElementById(`set-${exIdx}-${setIdx}`);
   const completeBtn = setRow.querySelector('.btn-set-complete');
   const skipBtn = setRow.querySelector('.btn-set-skip');
-  
+
   if (!confirm('Пропустить этот подход?')) return;
-  
-  skipBtn.disabled = true;
+
   completeBtn.disabled = true;
-  setRow.classList.add('skipped');
-  
+  skipBtn.disabled = true;
+
   try {
     await fetch('/api/workouts/save-set', {
       method: 'POST',
@@ -183,17 +230,15 @@ window.skipSet = async (exIdx, setIdx) => {
         workoutId: currentWorkout.id,
         exerciseId: ex.id,
         setNumber: setIdx + 1,
-        actualReps: null,
-        actualWeight: null,
-        completed: false,
-        skipped: true
+        skipped: true,
+        completed: false
       })
     });
+    setRow.classList.add('skipped');
   } catch (e) {
     alert('Ошибка при пропуске подхода');
-    skipBtn.disabled = false;
     completeBtn.disabled = false;
-    setRow.classList.remove('skipped');
+    skipBtn.disabled = false;
   }
 };
 
@@ -209,7 +254,6 @@ function startRestTimer(seconds) {
     if (timerSeconds <= 0) {
       clearInterval(timerInterval);
       document.getElementById('timerDisplay').textContent = '00:00';
-      // Можно добавить звук или вибрацию
     }
   }, 1000);
 }
@@ -226,7 +270,7 @@ document.getElementById('resetTimerBtn').onclick = () => {
   document.getElementById('timerDisplay').textContent = '00:00';
 };
 
-// Звёзды рейтинга
+// Рейтинг
 document.querySelectorAll('.star').forEach(star => {
   star.onclick = () => {
     selectedRating = parseInt(star.dataset.value);
@@ -236,8 +280,7 @@ document.querySelectorAll('.star').forEach(star => {
   };
 });
 
-// Завершение тренировки
-// Кнопка "Завершить" (показывает форму оценки)
+// Завершение
 const finishBtn = document.getElementById('finishBtn');
 if (finishBtn) {
   finishBtn.onclick = () => {
@@ -247,16 +290,11 @@ if (finishBtn) {
   };
 }
 
-// Кнопка "Сохранить и вернуться"
 const submitFinishBtn = document.getElementById('submitFinishBtn');
 if (submitFinishBtn) {
   submitFinishBtn.onclick = async () => {
     const workoutId = currentWorkout?.id;
-    if (!workoutId) {
-      alert('Ошибка: ID тренировки не найден');
-      return;
-    }
-
+    if (!workoutId) return alert('Ошибка: ID тренировки не найден');
     const wellnessRating = selectedRating || 3;
     const comments = document.getElementById('commentsInput')?.value || '';
 
@@ -270,26 +308,17 @@ if (submitFinishBtn) {
         body: JSON.stringify({ workoutId, wellnessRating, comments })
       });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'Не удалось завершить тренировку');
-      }
-
-      // Очищаем состояние активной тренировки
+      if (!response.ok) throw new Error((await response.json()).error || 'Не удалось завершить тренировку');
       localStorage.removeItem('currentWorkoutId');
-
-      // Устанавливаем флаг для обновления прогресса
       sessionStorage.setItem('workoutCompleted', 'true');
-
       alert('✅ Тренировка успешно завершена!');
-      window.location.href = '/progress'; // Перенаправляем на страницу прогресса
+      window.location.href = '/progress';
     } catch (err) {
-      console.error('❌ Ошибка завершения:', err);
+      console.error(err);
       alert('Ошибка: ' + err.message);
       submitFinishBtn.disabled = false;
     }
   };
 }
 
-// Старт
 loadWorkout();

@@ -9,37 +9,47 @@ export class WorkoutController {
     private rescheduleService: WorkoutRescheduleService
   ) {}
 
+
   async getCurrentWorkout(req: Request, res: Response): Promise<void> {
-  try {
-    const userId = (req as any).userId;
-    const workout = await this.workoutService.getCurrentWorkout(userId);
-    
-    if (!workout) {
-      res.status(404).json({ error: 'Нет активной тренировки' });
-      return;
+    try {
+      const userId = (req as any).userId;
+      const workout = await this.workoutService.getCurrentWorkout(userId);
+
+      if (!workout) {
+        res.status(404).json({ error: 'Нет активной тренировки' });
+        return;
+      }
+
+      // Получаем для каждого упражнения его metricTemplates
+      const exercisesWithMetrics = await Promise.all(
+        workout.workout.exercises.map(async (ex: any) => {
+          const templates = await this.workoutService.getExerciseMetricTemplates(ex.exercise.id!);
+          return {
+            id: ex.exercise.id,
+            name: ex.exercise.name,
+            sets: ex.sets,
+            repMin: ex.repMin,
+            repMax: ex.repMax,
+            restSeconds: ex.restSeconds,
+            targetWeight: ex.targetWeight || 0,
+            muscleGroup: ex.exercise.muscleGroup,
+            metricTemplates: templates,
+          };
+        })
+      );
+
+      res.json({
+        workout: {
+          id: workout.id,
+          name: workout.workout.name,
+          status: workout.status,
+          exercises: exercisesWithMetrics,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
-    
-    res.json({
-      workout: {
-        id: workout.id,
-        name: workout.workout.name,
-        status: workout.status,
-        exercises: workout.workout.exercises.map((ex: any) => ({
-          id: ex.exercise.id,
-          name: ex.exercise.name,
-          sets: ex.sets,
-          repMin: ex.repMin,        // ✅ Целевые повторения (мин)
-          repMax: ex.repMax,        // ✅ Целевые повторения (макс)
-          restSeconds: ex.restSeconds,
-          targetWeight: ex.targetWeight || 0,  // ✅ Целевой вес
-          muscleGroup: ex.exercise.muscleGroup,
-        })),
-      },
-    });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
   }
-}
 
   async startWorkout(req: Request, res: Response): Promise<void> {
     try {
@@ -228,29 +238,57 @@ export class WorkoutController {
   }
 
   async saveSetResult(req: Request, res: Response): Promise<void> {
-  try {
-    const userId = (req as any).userId;
-    const { workoutId, exerciseId, setNumber, actualReps, actualWeight } = req.body;
-    
-    console.log('💾 Сохранение результата:', { workoutId, exerciseId, setNumber, actualReps, actualWeight });
+    try {
+      const userId = (req as any).userId;
+      const { workoutId, exerciseId, setNumber, setType, metrics } = req.body;
 
-    const setResult = new SetResult({
-      setNumber,
-      targetReps: req.body.targetReps || 10,
-      targetWeight: req.body.targetWeight,
-      actualReps,
-      actualWeight,
-      completed: true,
-      completedAt: new Date(),
-    });
+      // Проверка обязательных полей
+      if (!workoutId || !exerciseId) {
+        res.status(400).json({ error: 'Не указан workoutId или exerciseId' });
+        return;
+      }
 
-    await this.workoutService.saveSetResult(workoutId, userId, exerciseId, setResult);
-    
-    console.log('✅ Результат сохранён');
-    res.json({ message: 'Результат сохранён' });
-  } catch (error: any) {
-    console.error('❌ Ошибка сохранения:', error);
-    res.status(500).json({ error: error.message });
-  }
+      // Если переданы метрики – сохраняем через новую систему
+      if (metrics && Array.isArray(metrics) && metrics.length > 0) {
+        // Валидация метрик (простая)
+        for (const m of metrics) {
+          if (!m.metricType || m.value === undefined) {
+            res.status(400).json({ error: 'Каждая метрика должна содержать metricType и value' });
+            return;
+          }
+        }
+        await this.workoutService.saveSetMetrics(
+          workoutId,
+          userId,
+          exerciseId,
+          setNumber || 1,      // если не передан, первый подход
+          setType || 'normal',
+          metrics
+        );
+        res.json({ message: 'Результат сохранён (новая модель)' });
+        return;
+      }
+
+      // Иначе используем старый метод
+      // Иначе используем старый метод
+      const { actualReps, actualWeight, targetReps, targetWeight, skipped } = req.body;
+      const setResult = new SetResult({
+        setNumber: setNumber || 1,
+        targetReps: targetReps || 10,
+        targetWeight: targetWeight || null,
+        actualReps: actualReps || null,
+        actualWeight: actualWeight || null,
+        completed: req.body.completed !== undefined ? req.body.completed : true,
+        skipped: skipped || false,
+        completedAt: new Date(),
+      });
+
+      await this.workoutService.saveSetResult(workoutId, userId, exerciseId, setResult);
+      console.log('✅ Результат сохранён (старая модель)');
+      res.json({ message: 'Результат сохранён' });
+    } catch (error: any) {
+      console.error('❌ Ошибка сохранения:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
 }

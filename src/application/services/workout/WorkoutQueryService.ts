@@ -1,4 +1,4 @@
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
+import { UserWorkout, WorkoutStatus, MetricTemplate } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { WorkoutSchedulingService } from './WorkoutSchedulingService';
 
@@ -113,5 +113,9 @@ export class WorkoutQueryService {
       }
     }
     return result;
+  }
+
+  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
+    return this.workoutRepository.getExerciseMetricTemplates(exerciseId);
   }
 }
