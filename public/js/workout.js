@@ -20,7 +20,7 @@ async function loadWorkout() {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Не удалось загрузить тренировку');
-    
+
     currentWorkout = (await res.json()).workout;
     localStorage.setItem('currentWorkoutId', currentWorkout.id);
     renderWorkout();
@@ -30,70 +30,55 @@ async function loadWorkout() {
   }
 }
 
-// Создаёт поле ввода для метрики с учётом целевых значений
-function createMetricInput(metric, ex, exIdx, setIdx) {
-  const { metricType, unit } = metric;
+// Генератор поля ввода по метрике (тип, значение по умолчанию, единицы)
+function createMetricInput(metric, exIdx, setIdx) {
+  const { metricType, defaultValue, unit } = metric;
   const id = `metric-${exIdx}-${setIdx}-${metricType}`;
-  let placeholder = '';
+  const unitLabels = {
+    count: 'повторений',
+    kg: 'кг',
+    sec: 'сек',
+    m: 'м',
+    kcal: 'ккал'
+  };
+  const placeholder =
+    defaultValue !== undefined ? `${defaultValue} ${unitLabels[unit] || unit || ''}`.trim() : '';
 
   switch (metricType) {
     case 'reps':
-      placeholder = `${ex.repMin}–${ex.repMax}`;
       return `
         <div class="metric-group">
           <label class="metric-label">Повторения</label>
-          <input type="number" 
-                 id="${id}" 
-                 class="set-input" 
-                 placeholder="${placeholder}" 
-                 min="${ex.repMin}" 
-                 max="${ex.repMax}" 
-                 step="1">
+          <input type="number" id="${id}" class="set-input"
+                 placeholder="${placeholder}" step="1" min="0">
         </div>`;
     case 'weight':
-      placeholder = ex.targetWeight ? `${ex.targetWeight} кг` : 'Вес';
       return `
         <div class="metric-group">
           <label class="metric-label">Вес</label>
-          <input type="number" 
-                 id="${id}" 
-                 class="set-input" 
-                 placeholder="${placeholder}" 
-                 step="0.5" 
-                 min="0">
+          <input type="number" id="${id}" class="set-input"
+                 placeholder="${placeholder}" step="0.5" min="0">
         </div>`;
     case 'duration':
       return `
         <div class="metric-group">
           <label class="metric-label">Время</label>
-          <input type="number" 
-                 id="${id}" 
-                 class="set-input" 
-                 placeholder="сек" 
-                 step="1" 
-                 min="0">
+          <input type="number" id="${id}" class="set-input"
+                 placeholder="${placeholder}" step="1" min="0">
         </div>`;
     case 'distance':
       return `
         <div class="metric-group">
           <label class="metric-label">Дистанция</label>
-          <input type="number" 
-                 id="${id}" 
-                 class="set-input" 
-                 placeholder="м" 
-                 step="0.1" 
-                 min="0">
+          <input type="number" id="${id}" class="set-input"
+                 placeholder="${placeholder}" step="0.1" min="0">
         </div>`;
     default:
       return `
         <div class="metric-group">
           <label class="metric-label">${metricType}</label>
-          <input type="number" 
-                 id="${id}" 
-                 class="set-input" 
-                 placeholder="–" 
-                 step="any" 
-                 min="0">
+          <input type="number" id="${id}" class="set-input"
+                 placeholder="${placeholder}" step="any" min="0">
         </div>`;
   }
 }
@@ -107,17 +92,7 @@ function renderWorkout() {
     const card = document.createElement('div');
     card.className = 'exercise-card';
 
-    // Шаблоны метрик из ответа или фолбэк
-    let metricTemplates = ex.metricTemplates;
-    if (!metricTemplates || metricTemplates.length === 0) {
-      metricTemplates = [];
-      if (ex.repMin && ex.repMax) {
-        metricTemplates.push({ metricType: 'reps', required: true, unit: 'count' });
-      }
-      if (ex.targetWeight) {
-        metricTemplates.push({ metricType: 'weight', required: false, unit: 'kg' });
-      }
-    }
+    const templates = ex.metricTemplates || [];
 
     card.innerHTML = `
       <div class="exercise-header">
@@ -125,12 +100,12 @@ function renderWorkout() {
         <span class="muscle-tag">${ex.muscleGroup}</span>
       </div>
       <div class="exercise-stats">
-        <span class="stat-badge"> ${ex.sets} подхода</span>
-        <span class="stat-badge"> ⏱️ ${ex.restSeconds} сек</span>
+        <span class="stat-badge">📐 ${ex.sets} подхода</span>
+        <span class="stat-badge">⏱️ ${ex.restSeconds} сек</span>
       </div>
       <div class="sets-container" id="sets-${exIdx}">
         ${Array.from({ length: ex.sets }, (_, setIdx) => {
-          const inputs = metricTemplates.map(m => createMetricInput(m, ex, exIdx, setIdx)).join('');
+          const inputs = templates.map(m => createMetricInput(m, exIdx, setIdx)).join('');
           return `
             <div id="set-${exIdx}-${setIdx}" class="set-row">
               <span class="set-number">${setIdx + 1}</span>
@@ -157,12 +132,7 @@ window.completeSet = async (exIdx, setIdx) => {
   const completeBtn = setRow.querySelector('.btn-set-complete');
   const skipBtn = setRow.querySelector('.btn-set-skip');
 
-  const templates = ex.metricTemplates?.length > 0
-    ? ex.metricTemplates
-    : [
-        { metricType: 'reps', unit: 'count' },
-        { metricType: 'weight', unit: 'kg' }
-      ];
+  const templates = ex.metricTemplates || [];
 
   const metrics = [];
   for (const tmpl of templates) {
@@ -209,7 +179,6 @@ window.completeSet = async (exIdx, setIdx) => {
 
 // Пропуск подхода
 window.skipSet = async (exIdx, setIdx) => {
-  const ex = currentWorkout.exercises[exIdx];
   const setRow = document.getElementById(`set-${exIdx}-${setIdx}`);
   const completeBtn = setRow.querySelector('.btn-set-complete');
   const skipBtn = setRow.querySelector('.btn-set-skip');
@@ -228,10 +197,10 @@ window.skipSet = async (exIdx, setIdx) => {
       },
       body: JSON.stringify({
         workoutId: currentWorkout.id,
-        exerciseId: ex.id,
+        exerciseId: currentWorkout.exercises[exIdx].id,
         setNumber: setIdx + 1,
-        skipped: true,
-        completed: false
+        setType: 'normal',
+        metrics: [] // пропущенный подход без метрик
       })
     });
     setRow.classList.add('skipped');
@@ -247,7 +216,7 @@ function startRestTimer(seconds) {
   clearInterval(timerInterval);
   timerSeconds = seconds;
   document.getElementById('timerDisplay').textContent = formatTime(timerSeconds);
-  
+
   timerInterval = setInterval(() => {
     timerSeconds--;
     document.getElementById('timerDisplay').textContent = formatTime(timerSeconds);
@@ -270,7 +239,7 @@ document.getElementById('resetTimerBtn').onclick = () => {
   document.getElementById('timerDisplay').textContent = '00:00';
 };
 
-// Рейтинг
+// Рейтинг звёздами
 document.querySelectorAll('.star').forEach(star => {
   star.onclick = () => {
     selectedRating = parseInt(star.dataset.value);
@@ -280,7 +249,7 @@ document.querySelectorAll('.star').forEach(star => {
   };
 });
 
-// Завершение
+// Завершение тренировки
 const finishBtn = document.getElementById('finishBtn');
 if (finishBtn) {
   finishBtn.onclick = () => {

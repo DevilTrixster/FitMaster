@@ -30,7 +30,6 @@ export interface MetricTemplate {
     unit?: string;
 }
 
-
 export class SetMetric {
     public readonly id?: number;
     public readonly exerciseSetId?: number;
@@ -100,134 +99,25 @@ export class Exercise {
 export class WorkoutExercise {
   public readonly exercise: Exercise;
   public readonly sets: number;
-  public readonly repMin: number;
-  public readonly repMax: number;
   public readonly restSeconds: number;
   public readonly orderIndex: number;
-  public readonly targetWeight?: number;
-
-  public readonly metricTemplates?: MetricTemplate[]; // список шаблонов метрик
+  public readonly metricTemplates?: MetricTemplate[];
   public readonly exerciseSets?: ExerciseSet[];
 
   constructor(data: {
     exercise: Exercise;
     sets: number;
-    repMin: number;
-    repMax: number;
     restSeconds: number;
     orderIndex: number;
-    targetWeight?: number;
+    metricTemplates?: MetricTemplate[];
+    exerciseSets?: ExerciseSet[];
   }) {
     this.exercise = data.exercise;
     this.sets = data.sets;
-    this.repMin = data.repMin;
-    this.repMax = data.repMax;
     this.restSeconds = data.restSeconds;
     this.orderIndex = data.orderIndex;
-    this.targetWeight = data.targetWeight;
-  }
-}
-
-export class SetResult {
-  public readonly setNumber: number;
-  public readonly targetReps: number;
-  public readonly targetWeight?: number;
-  public readonly actualReps?: number;
-  public readonly actualWeight?: number;
-  public readonly completed: boolean;
-  public readonly skipped: boolean;
-  public readonly completedAt?: Date;
-  public readonly notes?: string;
-
-  constructor(data: {
-    setNumber: number;
-    targetReps: number;
-    targetWeight?: number;
-    actualReps?: number;
-    actualWeight?: number;
-    completed: boolean;
-    skipped?: boolean;
-    completedAt?: Date;
-    notes?: string;
-  }) {
-    this.setNumber = data.setNumber;
-    this.targetReps = data.targetReps;
-    this.targetWeight = data.targetWeight;
-    this.actualReps = data.actualReps;
-    this.actualWeight = data.actualWeight;
-    this.completed = data.completed;
-    this.skipped = data.skipped || false;
-    this.completedAt = data.completedAt;
-    this.notes = data.notes;
-  }
-
-  /**
-   * Проверка успешности выполнения подхода
-   * Успешен только если выполнен и достигнут целевой показатель
-   */
-  public isSuccessful(): boolean {
-    if (this.skipped || !this.completed) return false;
-    if (this.actualReps === undefined || this.actualReps === null) return false;
-    return this.actualReps >= this.targetReps;
-  }
-
-  /**
-   * Нужно ли увеличивать нагрузку (превышение цели)
-   */
-  public needsProgression(): boolean {
-    if (this.skipped || !this.completed) return false;
-    if (this.actualReps === undefined || this.actualReps === null) return false;
-    return this.actualReps > this.targetReps + 2;
-  }
-
-  /**
-   * Нужно ли снижать нагрузку (невыполнение цели)
-   * Пропущенный подход считается как неудача
-   */
-  public needsRegression(): boolean {
-    if (this.skipped) return true; // Пропуск = регрессия
-    if (!this.completed) return false;
-    if (this.actualReps === undefined || this.actualReps === null) return false;
-    return this.actualReps < this.targetReps * 0.8; // Меньше 80% от цели
-  }
-}
-
-export class WorkoutExerciseResult {
-  public readonly workoutExercise: WorkoutExercise;
-  public readonly sets: SetResult[];
-  public readonly comments?: string;
-
-  constructor(data: {
-    workoutExercise: WorkoutExercise;
-    sets: SetResult[];
-    comments?: string;
-  }) {
-    this.workoutExercise = data.workoutExercise;
-    this.sets = data.sets;
-    this.comments = data.comments;
-  }
-
-  /**
-   * Все ли подходы выполнены успешно
-   */
-  public getAllSetsSuccessful(): boolean {
-    return this.sets.every(set => set.isSuccessful());
-  }
-
-  /**
-   * Процент успешных подходов
-   */
-  public getSuccessRate(): number {
-    if (this.sets.length === 0) return 0;
-    const successful = this.sets.filter(set => set.isSuccessful()).length;
-    return (successful / this.sets.length) * 100;
-  }
-
-  /**
-   * Сколько подходов пропущено
-   */
-  public getSkippedCount(): number {
-    return this.sets.filter(set => set.skipped).length;
+    this.metricTemplates = data.metricTemplates;
+    this.exerciseSets = data.exerciseSets;
   }
 }
 
@@ -263,7 +153,6 @@ export class UserWorkout {
   public readonly completedAt?: Date;
   public readonly wellnessRating?: number;
   public readonly comments?: string;
-  public readonly exerciseResults?: WorkoutExerciseResult[];
   public readonly startedAt?: Date;
   public readonly pausedAt?: Date;
   public readonly lastExerciseIndex?: number;
@@ -283,7 +172,6 @@ export class UserWorkout {
     startedAt?: Date;
     pausedAt?: Date;
     lastExerciseIndex?: number;
-    exerciseResults?: WorkoutExerciseResult[];
     rescheduledTo?: Date;
     rescheduleReason?: string;
   }) {
@@ -296,7 +184,6 @@ export class UserWorkout {
     this.completedAt = data.completedAt;
     this.wellnessRating = data.wellnessRating;
     this.comments = data.comments;
-    this.exerciseResults = data.exerciseResults;
     this.startedAt = data.startedAt;
     this.pausedAt = data.pausedAt;
     this.lastExerciseIndex = data.lastExerciseIndex;

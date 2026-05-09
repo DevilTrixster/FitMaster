@@ -1,4 +1,3 @@
-// src/interface/controllers/AuthController.ts
 import { Request, Response } from 'express';
 import { AuthService } from '../../application/services/AuthService';
 import { Gender } from '../../domain/entities/User';

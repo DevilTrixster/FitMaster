@@ -1,9 +1,8 @@
-import { UserWorkout, WorkoutStatus, SetResult, MetricType, MetricTemplate } from '../../domain/entities/Workout';
+import { UserWorkout, MetricType, MetricTemplate } from '../../domain/entities/Workout';
 import { WorkoutSchedulingService } from './workout/WorkoutSchedulingService';
 import { WorkoutLifecycleService } from './workout/WorkoutLifecycleService';
 import { WorkoutQueryService } from './workout/WorkoutQueryService';
 import { WorkoutResultsService } from './workout/WorkoutResultsService';
-
 
 export class WorkoutService {
   constructor(
@@ -12,7 +11,8 @@ export class WorkoutService {
     private queryService: WorkoutQueryService,
     private resultsService: WorkoutResultsService
   ) {}
-  
+
+  // Сохранение подхода с метриками
   async saveSetMetrics(
     workoutId: number,
     userId: number,
@@ -21,38 +21,30 @@ export class WorkoutService {
     setType: string,
     metrics: { metricType: MetricType; value: number; unit?: string }[]
   ): Promise<void> {
-    await this.resultsService.saveSetMetrics(workoutId, userId, exerciseId, setNumber, setType, metrics);
+    return this.resultsService.saveSetMetrics(workoutId, userId, exerciseId, setNumber, setType, metrics);
   }
-  /**
-   * Генерирует базовую программу тренировок на 4 недели
-   */
+
+  // Генерация базовой программы на 4 недели
   async generateBaseProgram(userId: number): Promise<UserWorkout[]> {
     return this.schedulingService.generateBaseProgram(userId);
   }
 
+  // Получение шаблонов метрик упражнения
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
     return this.queryService.getExerciseMetricTemplates(exerciseId);
-}
+  }
 
-  /**
-   * Генерирует дополнительные тренировки, если их не хватает
-   */
+  // Генерация дополнительных тренировок
   async generateAdditionalWorkouts(userId: number, count: number): Promise<void> {
     return this.schedulingService.generateAdditionalWorkouts(userId, count);
   }
 
-  // ==========  ЖИЗНЕННЫЙ ЦИКЛ ==========
-
-  /**
-   * Начинает тренировку (проверки + обновление статуса)
-   */
+  // Начать тренировку
   async startWorkout(workoutId: number, userId: number): Promise<UserWorkout> {
     return this.lifecycleService.startWorkout(workoutId, userId);
   }
 
-  /**
-   * Завершает тренировку + запускает адаптацию
-   */
+  // Завершить тренировку (запускает адаптацию)
   async completeWorkout(
     workoutId: number,
     userId: number,
@@ -60,49 +52,34 @@ export class WorkoutService {
     comments?: string
   ): Promise<void> {
     await this.lifecycleService.completeWorkout(workoutId, userId, wellnessRating, comments);
-    // Адаптация запускается внутри lifecycleService через resultsService
   }
 
-  /**
-   * Ставит тренировку на паузу
-   */
+  // Поставить на паузу
   async pauseWorkout(workoutId: number, userId: number, lastExerciseIndex: number): Promise<void> {
     return this.lifecycleService.pauseWorkout(workoutId, userId, lastExerciseIndex);
   }
 
-  /**
-   * Возобновляет тренировку с паузы
-   */
+  // Возобновить
   async resumeWorkout(workoutId: number, userId: number): Promise<void> {
     return this.lifecycleService.resumeWorkout(workoutId, userId);
   }
 
-  /**
-   * Получает активную (незавершённую) тренировку пользователя
-   */
+  // Активная тренировка
   async getActiveWorkout(userId: number): Promise<UserWorkout | null> {
     return this.lifecycleService.getActiveWorkout(userId);
   }
 
-  /**
-   * Получает текущую тренировку (следующую запланированную или активную)
-   */
+  // Текущая (активная или запланированная)
   async getCurrentWorkout(userId: number): Promise<UserWorkout | null> {
     return this.lifecycleService.getCurrentWorkout(userId);
   }
 
-  // ==========  ЧТЕНИЕ ДАННЫХ ==========
-
-  /**
-   * Получает список предстоящих тренировок с авто-очисткой просроченных
-   */
+  // Предстоящие тренировки
   async getUpcomingWorkouts(userId: number, limit: number = 5): Promise<UserWorkout[]> {
     return this.queryService.getUpcomingWorkouts(userId, limit);
   }
 
-  /**
-   * Получает историю тренировок с фильтрацией
-   */
+  // История тренировок
   async getWorkoutHistory(
     userId: number,
     limit: number,
@@ -114,37 +91,17 @@ export class WorkoutService {
     return this.queryService.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo);
   }
 
-  /**
-   * Получает все доступные упражнения из каталога
-   */
+  // Все упражнения каталога
   async getAllExercises() {
     return this.queryService.getAllExercises();
   }
 
-  /**
-   * Получает рекомендации по замене упражнений для пользователя
-   */
+  // Рекомендации по замене
   async getExerciseSubstitutions(userId: number) {
     return this.queryService.getExerciseSubstitutions(userId);
   }
 
-  // ==========  РЕЗУЛЬТАТЫ И АДАПТАЦИЯ ==========
-
-  /**
-   * Сохраняет результат выполнения одного подхода
-   */
-  async saveSetResult(
-    workoutId: number,
-    userId: number,
-    exerciseId: number,
-    setResult: SetResult
-  ): Promise<void> {
-    return this.resultsService.saveSetResult(workoutId, userId, exerciseId, setResult);
-  }
-
-  /**
-   * Запускает логику адаптации после завершения тренировки
-   */
+  // Запуск адаптации
   async triggerAdaptation(userId: number, completedWorkoutId: number, wellnessRating: number): Promise<void> {
     return this.resultsService.triggerAdaptation(userId, completedWorkoutId, wellnessRating);
   }

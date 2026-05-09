@@ -3,7 +3,6 @@ import {
   UserWorkout, 
   Exercise, 
   WorkoutAdaptation, 
-  SetResult,
   MetricTemplate,
   ExerciseSet,
   SetMetric
@@ -25,10 +24,6 @@ export interface IWorkoutRepository {
   pauseUserWorkout(id: number, lastExerciseIndex: number): Promise<void>;
   resumeUserWorkout(id: number): Promise<void>;
   getUserActiveWorkout(userId: number): Promise<UserWorkout | null>;
-  
-  // Результаты подходов
-  saveSetResult(userWorkoutId: number, exerciseId: number, setResult: SetResult): Promise<void>;
-  getExerciseResults(userWorkoutId: number, exerciseId: number): Promise<SetResult[]>;
   
   // Упражнения
   getAllExercises(): Promise<Exercise[]>;

@@ -6,7 +6,6 @@ import {
   Exercise, 
   WorkoutExercise, 
   WorkoutStatus, 
-  SetResult, 
   WorkoutAdaptation, 
   AdaptationType,
   MetricTemplate,
@@ -25,7 +24,7 @@ export class WorkoutRepository implements IWorkoutRepository {
     if (workoutResult.rows.length === 0) return null;
 
     const exercisesQuery = `
-      SELECT e.*, we.sets, we.rep_min, we.rep_max, we.rest_seconds, we.order_index
+      SELECT e.*, we.sets, we.rest_seconds, we.order_index
       FROM workout_exercises we
       JOIN exercises e ON we.exercise_id = e.id
       WHERE we.workout_id = $1
@@ -44,8 +43,6 @@ export class WorkoutRepository implements IWorkoutRepository {
       return new WorkoutExercise({
         exercise,
         sets: row.sets,
-        repMin: row.rep_min,
-        repMax: row.rep_max,
         restSeconds: row.rest_seconds,
         orderIndex: row.order_index,
       });
@@ -192,49 +189,6 @@ export class WorkoutRepository implements IWorkoutRepository {
       description: row.description,
       muscleGroup: row.muscle_group,
       equipmentType: row.equipment_type,
-    }));
-  }
-
-  async saveSetResult(userWorkoutId: number, exerciseId: number, setResult: SetResult): Promise<void> {
-    const query = `
-      INSERT INTO workout_results 
-      (user_workout_id, exercise_id, set_number, target_reps, target_weight, actual_reps, actual_weight, completed, completed_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `;
-    
-    const values = [
-      userWorkoutId,
-      exerciseId,
-      setResult.setNumber,
-      setResult.targetReps,
-      setResult.targetWeight || null,
-      setResult.actualReps || null,
-      setResult.actualWeight || null,
-      setResult.completed,
-      setResult.completedAt || new Date(),
-    ];
-
-    await this.pool.query(query, values);
-  }
-
-  async getExerciseResults(userWorkoutId: number, exerciseId: number): Promise<SetResult[]> {
-    const query = `
-      SELECT set_number, target_reps, target_weight, actual_reps, actual_weight, completed, completed_at
-      FROM workout_results
-      WHERE user_workout_id = $1 AND exercise_id = $2
-      ORDER BY set_number
-    `;
-    
-    const result = await this.pool.query(query, [userWorkoutId, exerciseId]);
-    
-    return result.rows.map((row: any) => new SetResult({
-      setNumber: row.set_number,
-      targetReps: row.target_reps,
-      targetWeight: row.target_weight,
-      actualReps: row.actual_reps,
-      actualWeight: row.actual_weight,
-      completed: row.completed,
-      completedAt: row.completed_at,
     }));
   }
 
@@ -500,11 +454,13 @@ export class WorkoutRepository implements IWorkoutRepository {
   }
 
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
-      const query = 'SELECT metric_type, required FROM exercise_metric_templates WHERE exercise_id = $1';
+      const query = 'SELECT metric_type, required, default_value, unit FROM exercise_metric_templates WHERE exercise_id = $1';
       const result = await this.pool.query(query, [exerciseId]);
       return result.rows.map(row => ({
-          metricType: row.metric_type as MetricType,
-          required: row.required,
+        metricType: row.metric_type as MetricType,
+        required: row.required,
+        defaultValue: row.default_value ? parseFloat(row.default_value) : undefined,
+        unit: row.unit,
       }));
   }
 

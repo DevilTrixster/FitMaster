@@ -1,12 +1,13 @@
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { 
-  WorkoutAdaptation, 
-  AdaptationType, 
-  SetResult, 
-  WorkoutExercise 
+import {
+  WorkoutAdaptation,
+  AdaptationType,
+  WorkoutExercise,
+  MetricType,
 } from '../../domain/entities/Workout';
 import { getAlternativeExercises } from '../../domain/utils/ExerciseAlternatives';
+import { SetAnalysisData } from './workout/WorkoutResultsService';
 
 export class WorkoutAdaptationService {
   constructor(
@@ -15,21 +16,17 @@ export class WorkoutAdaptationService {
   ) {}
 
   /**
-   * Главный метод: адаптация на основе результатов и самочувствия
-   * Учитывает:
-   * - Выполненные подходы
-   * - Пропущенные подходы
-   * - Самочувствие
-   * - Историю адаптаций
+   * Анализирует выполнение упражнения и возвращает адаптацию, если требуется.
+   *
+   * @param results - данные о выполненных подходах (метрики + цели)
    */
   async adaptExercise(
     userId: number,
     completedWorkoutId: number,
     exercise: WorkoutExercise,
     wellnessRating: number,
-    results: SetResult[]
+    results: SetAnalysisData[]
   ): Promise<WorkoutAdaptation | null> {
-    // Проверка наличия ID упражнения
     if (!exercise.exercise.id) {
       console.warn(`Упражнение "${exercise.exercise.name}" не имеет ID`);
       return null;
@@ -43,134 +40,117 @@ export class WorkoutAdaptationService {
     // 1. Анализ выполнения
     const completedResults = results.filter(r => r.completed && !r.skipped);
     const skippedResults = results.filter(r => r.skipped);
-    const failedResults = results.filter(r => !r.completed && !r.skipped && r.needsRegression());
-    
-    const allSuccessful = completedResults.length > 0 && 
-                          completedResults.every(r => r.isSuccessful());
+    const failedResults = results.filter(r => {
+      if (r.skipped) return false;
+      // Неудача: если нет данных по повторениям или они ниже целевого
+      if (r.reps === undefined || r.reps === null) return false;
+      if (r.targetReps === undefined || r.targetReps === null) return false;
+      return r.reps < r.targetReps * 0.8;
+    });
+
+    const allSuccessful =
+      completedResults.length > 0 &&
+      completedResults.every(r => {
+        if (r.reps === undefined || r.reps === null) return false;
+        if (r.targetReps === undefined || r.targetReps === null) return true;
+        return r.reps >= r.targetReps;
+      });
     const anyFailed = failedResults.length > 0;
     const skippedCount = skippedResults.length;
     const totalSets = results.length;
 
-    console.log(`📊 Анализ упражнения:`, {
-      total: totalSets,
-      completed: completedResults.length,
-      skipped: skippedCount,
-      failed: failedResults.length,
-      allSuccessful
-    });
+    console.log(`📊 Анализ: всего=${totalSets}, успешно=${completedResults.length}, пропущено=${skippedCount}, провалено=${failedResults.length}`);
 
-    // 2. История адаптаций для этого упражнения (последние 5)
+    // 2. История адаптаций (последние 5)
     const lastAdaptations = await this.workoutRepo.getUserAdaptations(
-      userId, 
-      exercise.exercise.id, 
+      userId,
+      exercise.exercise.id,
       5
     );
 
-    // 3. Проверка на "плато" (слишком частые увеличения)
     const consecutiveIncreases = lastAdaptations.filter(
       a => a.adaptationType === AdaptationType.IncreaseWeight
     ).length;
 
-    // 4. Логика принятия решения
+    // 3. Определяем новые значения (берём текущие из первой попавшейся цели)
+    const targetReps =
+      results.find(r => r.targetReps !== undefined)?.targetReps ?? 10;
+    const targetWeight =
+      results.find(r => r.targetWeight !== undefined)?.targetWeight ?? 0;
+
     let adaptationType: AdaptationType | null = null;
-    let newWeight = exercise.targetWeight || 0;
-    let newRepsMin = exercise.repMin;
-    let newRepsMax = exercise.repMax;
+    let newWeight = targetWeight;
+    let newRepsMin = targetReps;
+    let newRepsMax = targetReps;
     let reason = '';
 
-    // Сценарий A: Пропущено больше 50% подходов → серьёзное снижение
+    // Сценарии
     if (skippedCount > totalSets / 2) {
-      newWeight = Math.round(newWeight * 0.85); // Снижаем на 15%
+      newWeight = Math.round(newWeight * 0.85);
       adaptationType = AdaptationType.DecreaseWeight;
-      reason = `Пропущено ${skippedCount} из ${totalSets} подходов. Значительное снижение нагрузки.`;
-      
-      console.log(`⚠️ ${reason}`);
-    }
-    // Сценарий B: Плохое самочувствие → снижение нагрузки
-    else if (wellnessRating <= 2) {
-      newWeight = Math.round(newWeight * 0.9); // Снижаем на 10%
+      reason = `Пропущено ${skippedCount} из ${totalSets} подходов. Снижение нагрузки.`;
+    } else if (wellnessRating <= 2) {
+      newWeight = Math.round(newWeight * 0.9);
       adaptationType = AdaptationType.DecreaseWeight;
-      reason = `Низкое самочувствие (${wellnessRating}/5). Автоматическая разгрузка.`;
-      
-      console.log(`😔 ${reason}`);
-    }
-    // Сценарий C: Есть неудачи → регрессия
-    else if (anyFailed) {
-      newWeight = Math.round(newWeight * 0.9); // Снижаем на 10%
+      reason = `Низкое самочувствие (${wellnessRating}/5). Разгрузка.`;
+    } else if (anyFailed) {
+      newWeight = Math.round(newWeight * 0.9);
       adaptationType = AdaptationType.DecreaseWeight;
       reason = 'Невыполнение повторений. Снижение веса.';
-      
-      console.log(`❌ ${reason}`);
-    }
-    // Сценарий D: Успех → прогрессия
-    else if (allSuccessful) {
-      // Если было уже 3 увеличения подряд, предлагаем не вес, а повторения (периодизация)
+    } else if (allSuccessful) {
       if (consecutiveIncreases >= 3) {
-        newRepsMin = exercise.repMin + 1;
-        newRepsMax = exercise.repMax + 1;
+        newRepsMin = targetReps + 1;
+        newRepsMax = targetReps + 1;
         adaptationType = AdaptationType.IncreaseReps;
-        reason = 'Стабилизация веса. Увеличение повторений (периодизация).';
-        
-        console.log(`📈 ${reason}`);
+        reason = 'Стабилизация веса, увеличение повторений.';
       } else {
-        // Линейная прогрессия + небольшой бонус (2.5% - 5%)
-        const increasePercent = 0.025 + (Math.random() * 0.025);
+        const increasePercent = 0.025 + Math.random() * 0.025;
         newWeight = Math.round(newWeight * (1 + increasePercent));
         adaptationType = AdaptationType.IncreaseWeight;
-        reason = `Успешное выполнение. Прогрессия нагрузки (+${Math.round(increasePercent * 100)}%).`;
-        
-        console.log(`💪 ${reason}`);
+        reason = `Успех. Прогрессия веса (+${Math.round(increasePercent * 100)}%).`;
       }
     }
 
-    // Если изменений нет, возвращаем null
     if (!adaptationType) {
       console.log('➡️ Адаптация не требуется');
       return null;
     }
 
-    // 5. Создаем запись об адаптации
+    // 4. Создаём запись адаптации (используем старые поля для совместимости с таблицей)
     const adaptation = new WorkoutAdaptation({
       userId,
       exerciseId: exercise.exercise.id!,
-      previousWeight: exercise.targetWeight || newWeight,
+      previousWeight: targetWeight,
       newWeight,
-      previousReps: exercise.repMin,
+      previousReps: targetReps,
       newReps: newRepsMin,
       adaptationType,
       reason,
     });
 
-    // 6. ПРОВЕРКА НА ЗАСТОЙ (предложение альтернативы)
+    // 5. Проверка на застой и предложение замены
     if (anyFailed && lastAdaptations.length >= 3) {
       const consecutiveFailures = lastAdaptations.filter(
         a => a.adaptationType === AdaptationType.DecreaseWeight
       ).length;
 
       if (consecutiveFailures >= 3) {
-        // Предлагаем альтернативу
         const alternatives = getAlternativeExercises(exercise.exercise.id!);
-        
         if (alternatives.length > 0) {
-          const bestAlternative = alternatives[0];
-          
+          const best = alternatives[0];
           await this.workoutRepo.saveExerciseSubstitution(
             userId,
             exercise.exercise.id!,
-            bestAlternative.alternativeExerciseId,
-            bestAlternative.reason
+            best.alternativeExerciseId,
+            best.reason
           );
-          
-          console.log(`💡 Предложена замена упражнения "${exercise.exercise.name}" → ${bestAlternative.reason}`);
+          console.log(`💡 Предложена замена: "${exercise.exercise.name}" → ${best.reason}`);
         }
       }
     }
 
-    // 7. Сохраняем адаптацию
     await this.workoutRepo.saveAdaptation(adaptation);
-    
     console.log(`✅ Адаптация сохранена: ${exercise.exercise.name}`);
-    
     return adaptation;
   }
 }
