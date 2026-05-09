@@ -10,34 +10,24 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     password: formData.get('password'),
   };
 
-  console.log('Отправка данных:', data); // Для отладки
-
   try {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json', 
-      },
-      body: JSON.stringify(data), 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
 
     const result = await response.json();
-    console.log('Ответ сервера:', result); // Для отладки
 
     if (response.ok) {
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
-      
       showMessage('Вход успешен! Перенаправление...', 'success');
-      
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1500);
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
     } else {
       showMessage(result.error || 'Ошибка входа', 'error');
     }
   } catch (error) {
-    console.error('Ошибка:', error);
     showMessage('Ошибка соединения с сервером', 'error');
   }
 });
@@ -45,7 +35,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 function showMessage(text, type) {
   const messageEl = document.getElementById('message');
   if (!messageEl) return;
-  
   messageEl.textContent = text;
   messageEl.className = `message ${type}`;
 }

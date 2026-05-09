@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { ConflictError, UnauthorizedError } from '../../core/errors/ValidationError';
 import { User, Gender } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { WorkoutService } from './WorkoutService';
@@ -25,12 +26,12 @@ export class AuthService {
     // ... (проверки и хеширование без изменений)
     const existingByEmail = await this.userRepository.findByEmail(data.email);
     if (existingByEmail) {
-      throw new Error('Пользователь с таким email уже существует');
+      throw new ConflictError('Пользователь с таким email уже существует');
     }
 
     const existingByNickname = await this.userRepository.findByNickname(data.nickname);
     if (existingByNickname) {
-      throw new Error('Пользователь с таким никнеймом уже существует');
+      throw new ConflictError('Пользователь с таким никнеймом уже существует');
     }
 
     const saltRounds = 10;
@@ -54,12 +55,12 @@ export class AuthService {
   async login(email: string, password: string): Promise<{ user: User; token: string }> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      throw new Error('Неверный email или пароль');
+      throw new UnauthorizedError('Неверный email или пароль');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Неверный email или пароль');
+      throw new UnauthorizedError('Неверный email или пароль');
     }
 
     const token = this.generateToken(user.id!);

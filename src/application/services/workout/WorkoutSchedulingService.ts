@@ -1,6 +1,7 @@
 import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { InternalServerError, NotFoundError } from '../../../core/errors/ValidationError';
 
 export class WorkoutSchedulingService {
   constructor(
@@ -12,14 +13,14 @@ export class WorkoutSchedulingService {
   async generateBaseProgram(userId: number): Promise<UserWorkout[]> {
     const splitPrograms = await this.workoutRepository.getSplitPrograms();
     if (splitPrograms.length < 3) {
-      throw new Error('Не найдены программы для сплита (нужно 3: Грудь, Спина, Ноги)');
+      throw new InternalServerError('Не найдены программы для сплита (нужно 3: Грудь, Спина, Ноги)');
     }
 
     // Ротация: Пн – Грудь, Ср – Спина, Пт – Ноги
     const scheduleMap = [1, 2, 0];
 
     const user = await this.userRepository.findById(userId);
-    if (!user) throw new Error('Пользователь не найден');
+    if (!user) throw new NotFoundError('Пользователь не найден');
 
     const scheduledWorkouts: UserWorkout[] = [];
     const today = new Date();
@@ -65,7 +66,7 @@ export class WorkoutSchedulingService {
       : this.findNextMonday(new Date());
 
     const user = await this.userRepository.findById(userId);
-    if (!user) throw new Error('Пользователь не найден');
+    if (!user) throw new NotFoundError('Пользователь не найден');
 
     for (let i = 0; i < count; i++) {
       const workoutDate = this.findNextTrainingDay(startDate);

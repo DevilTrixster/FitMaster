@@ -9,8 +9,8 @@ export function createSubstitutionRoutes(
   const router = Router();
   router.use(authMiddleware);
 
-  router.get('/', (req, res) => controller.getSubstitutions(req, res));
-  router.post('/accept', (req, res) => controller.acceptSubstitution(req, res));
+  router.get('/', controller.getSubstitutions.bind(controller));
+  router.post('/accept', controller.acceptSubstitution.bind(controller));
 
   return router;
 }

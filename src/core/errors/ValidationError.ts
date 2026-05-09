@@ -27,3 +27,10 @@ export class UnauthorizedError extends AppError {
     this.name = 'UnauthorizedError';
   }
 }
+
+export class InternalServerError extends AppError {
+  constructor(message: string = 'Внутренняя ошибка сервера') {
+    super(message, 500);
+    this.name = 'InternalServerError';
+  }
+}

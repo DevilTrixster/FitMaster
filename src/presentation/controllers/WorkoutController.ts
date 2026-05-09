@@ -8,249 +8,200 @@ export class WorkoutController {
     private rescheduleService: WorkoutRescheduleService
   ) {}
 
-  // Текущая тренировка с шаблонами метрик
-  async getCurrentWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const workout = await this.workoutService.getCurrentWorkout(userId);
+  async getCurrentWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const workout = await this.workoutService.getCurrentWorkout(userId);
 
-      if (!workout) {
-        res.status(404).json({ error: 'Нет активной тренировки' });
-        return;
-      }
-
-      const exercisesWithMetrics = await Promise.all(
-        workout.workout.exercises.map(async (ex) => {
-          const templates = await this.workoutService.getExerciseMetricTemplates(ex.exercise.id!);
-          return {
-            id: ex.exercise.id,
-            name: ex.exercise.name,
-            sets: ex.sets,
-            restSeconds: ex.restSeconds,
-            muscleGroup: ex.exercise.muscleGroup,
-            metricTemplates: templates,
-          };
-        })
-      );
-
-      res.json({
-        workout: {
-          id: workout.id,
-          name: workout.workout.name,
-          status: workout.status,
-          exercises: exercisesWithMetrics,
-        },
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    if (!workout) {
+      res.status(404).json({ error: 'Нет активной тренировки' });
+      return;
     }
+
+    const exercisesWithMetrics = await Promise.all(
+      workout.workout.exercises.map(async (ex) => {
+        const templates = await this.workoutService.getExerciseMetricTemplates(ex.exercise.id!);
+        return {
+          id: ex.exercise.id,
+          name: ex.exercise.name,
+          sets: ex.sets,
+          restSeconds: ex.restSeconds,
+          muscleGroup: ex.exercise.muscleGroup,
+          metricTemplates: templates,
+        };
+      })
+    );
+
+    res.json({
+      workout: {
+        id: workout.id,
+        name: workout.workout.name,
+        status: workout.status,
+        exercises: exercisesWithMetrics,
+      },
+    });
   }
 
-  async startWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const { workoutId } = req.body;
+  async startWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const { workoutId } = req.body;
 
-      const workout = await this.workoutService.startWorkout(workoutId, userId);
-      res.json({ message: 'Тренировка начата', workout });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
+    const workout = await this.workoutService.startWorkout(workoutId, userId);
+    res.json({ message: 'Тренировка начата', workout });
   }
 
-  async completeWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const { workoutId, wellnessRating, comments } = req.body;
+  async completeWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const { workoutId, wellnessRating, comments } = req.body;
 
-      if (!workoutId) {
-        res.status(400).json({ error: 'Не указан ID тренировки' });
-        return;
-      }
-
-      await this.workoutService.completeWorkout(workoutId, userId, wellnessRating, comments);
-      res.json({ message: 'Тренировка завершена' });
-    } catch (error: any) {
-      console.error('❌ Ошибка в completeWorkout:', error);
-      res.status(400).json({ error: error.message });
+    if (!workoutId) {
+      res.status(400).json({ error: 'Не указан ID тренировки' });
+      return;
     }
+
+    await this.workoutService.completeWorkout(workoutId, userId, wellnessRating, comments);
+    res.json({ message: 'Тренировка завершена' });
   }
 
-  async pauseWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const { workoutId, lastExerciseIndex } = req.body;
+  async pauseWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const { workoutId, lastExerciseIndex } = req.body;
 
-      await this.workoutService.pauseWorkout(workoutId, userId, lastExerciseIndex || 0);
-      res.json({ message: 'Тренировка на паузе' });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
+    await this.workoutService.pauseWorkout(workoutId, userId, lastExerciseIndex || 0);
+    res.json({ message: 'Тренировка на паузе' });
   }
 
-  async resumeWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const { workoutId } = req.body;
+  async resumeWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const { workoutId } = req.body;
 
-      await this.workoutService.resumeWorkout(workoutId, userId);
-      res.json({ message: 'Тренировка возобновлена' });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
+    await this.workoutService.resumeWorkout(workoutId, userId);
+    res.json({ message: 'Тренировка возобновлена' });
   }
 
-  async getActiveWorkout(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const workout = await this.workoutService.getActiveWorkout(userId);
+  async getActiveWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const workout = await this.workoutService.getActiveWorkout(userId);
 
-      if (!workout) {
-        res.status(404).json({ error: 'Нет активной тренировки' });
-        return;
-      }
-
-      res.json({ workout });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    if (!workout) {
+      res.status(404).json({ error: 'Нет активной тренировки' });
+      return;
     }
+
+    res.json({ workout });
   }
 
-  async getWorkoutHistory(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const status = req.query.status as string;
-      const dateFrom = req.query.from as string;
-      const dateTo = req.query.to as string;
+  async getWorkoutHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const status = req.query.status as string;
+    const dateFrom = req.query.from as string;
+    const dateTo = req.query.to as string;
 
-      const workouts = await this.workoutService.getWorkoutHistory(
-        userId,
-        limit,
-        (page - 1) * limit,
-        status,
-        dateFrom,
-        dateTo
-      );
+    const workouts = await this.workoutService.getWorkoutHistory(
+      userId,
+      limit,
+      (page - 1) * limit,
+      status,
+      dateFrom,
+      dateTo
+    );
 
-      res.json({
-        workouts: workouts.map(w => ({
-          id: w.id,
-          workoutName: w.workout.name,
-          scheduledDate: w.scheduledDate,
-          scheduledTime: w.scheduledTime,
-          status: w.status,
-          wellnessRating: w.wellnessRating,
-          comments: w.comments,
-          completedAt: w.completedAt,
-        })),
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+    res.json({
+      workouts: workouts.map(w => ({
+        id: w.id,
+        workoutName: w.workout.name,
+        scheduledDate: w.scheduledDate,
+        scheduledTime: w.scheduledTime,
+        status: w.status,
+        wellnessRating: w.wellnessRating,
+        comments: w.comments,
+        completedAt: w.completedAt,
+      })),
+    });
   }
 
-  async rescheduleWorkout(req: Request, res: Response, next: NextFunction) {
-    try {
-      const userId = (req as any).userId;
-      const workoutId = parseInt(req.params.id as string);
-      const dto = req.body;
+  async rescheduleWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const workoutId = parseInt(req.params.id as string);
+    const dto = req.body;
 
-      await this.rescheduleService.reschedule(userId, workoutId, dto);
-      res.status(200).json({ message: 'Тренировка успешно перенесена', data: { newDate: dto.newDate } });
-    } catch (error) {
-      next(error);
-    }
+    await this.rescheduleService.reschedule(userId, workoutId, dto);
+    res.status(200).json({
+      message: 'Тренировка успешно перенесена',
+      data: { newDate: dto.newDate },
+    });
   }
 
-  async skipWorkout(req: Request, res: Response, next: NextFunction) {
-    try {
-      const userId = (req as any).userId;
-      const workoutId = parseInt(req.params.id as string);
-      const { reason } = req.body;
+  async skipWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const workoutId = parseInt(req.params.id as string);
+    const { reason } = req.body;
 
-      await this.rescheduleService.skip(userId, workoutId, reason);
-      res.status(200).json({ message: 'Тренировка пропущена' });
-    } catch (error) {
-      next(error);
-    }
+    await this.rescheduleService.skip(userId, workoutId, reason);
+    res.status(200).json({ message: 'Тренировка пропущена' });
   }
 
-  async getExercises(req: Request, res: Response): Promise<void> {
-    try {
-      const exercises = await this.workoutService.getAllExercises();
-      res.json(exercises.map(ex => ({
+  async getExercises(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const exercises = await this.workoutService.getAllExercises();
+    res.json(
+      exercises.map(ex => ({
         id: ex.id,
         name: ex.name,
         muscleGroup: ex.muscleGroup,
-      })));
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+      }))
+    );
   }
 
-  async getDashboard(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      if (!userId) {
-        res.status(401).json({ error: 'Пользователь не авторизован' });
-        return;
-      }
-
-      const upcomingWorkouts = await this.workoutService.getUpcomingWorkouts(userId, 5);
-
-      res.json({
-        upcomingWorkouts: upcomingWorkouts.map(uw => ({
-          id: uw.id,
-          workoutName: uw.workout.name,
-          scheduledDate: uw.scheduledDate,
-          scheduledTime: uw.scheduledTime,
-          status: uw.status,
-          wellnessRating: uw.wellnessRating,
-        })),
-      });
-    } catch (error: any) {
-      console.error('❌ Ошибка в getDashboard:', error);
-      res.status(500).json({ error: error.message });
+  async getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    if (!userId) {
+      res.status(401).json({ error: 'Пользователь не авторизован' });
+      return;
     }
+
+    const upcomingWorkouts = await this.workoutService.getUpcomingWorkouts(userId, 5);
+
+    res.json({
+      upcomingWorkouts: upcomingWorkouts.map(uw => ({
+        id: uw.id,
+        workoutName: uw.workout.name,
+        scheduledDate: uw.scheduledDate,
+        scheduledTime: uw.scheduledTime,
+        status: uw.status,
+        wellnessRating: uw.wellnessRating,
+      })),
+    });
   }
 
-  async saveSetResult(req: Request, res: Response): Promise<void> {
-    try {
-      const userId = (req as any).userId;
-      const { workoutId, exerciseId, setNumber, setType, metrics } = req.body;
+  async saveSetResult(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const { workoutId, exerciseId, setNumber, setType, metrics } = req.body;
 
-      if (!workoutId || !exerciseId) {
-        res.status(400).json({ error: 'Не указан workoutId или exerciseId' });
-        return;
-      }
+    if (!workoutId || !exerciseId) {
+      res.status(400).json({ error: 'Не указан workoutId или exerciseId' });
+      return;
+    }
 
-      if (metrics && Array.isArray(metrics)) {
-        // Валидация метрик (простая)
-        for (const m of metrics) {
-          if (!m.metricType || m.value === undefined) {
-            res.status(400).json({ error: 'Каждая метрика должна содержать metricType и value' });
-            return;
-          }
+    if (metrics && Array.isArray(metrics)) {
+      for (const m of metrics) {
+        if (!m.metricType || m.value === undefined) {
+          res.status(400).json({ error: 'Каждая метрика должна содержать metricType и value' });
+          return;
         }
-        await this.workoutService.saveSetMetrics(
-          workoutId,
-          userId,
-          exerciseId,
-          setNumber || 1,
-          setType || 'normal',
-          metrics
-        );
-        res.json({ message: 'Результат сохранён' });
-        return;
       }
-
-      // Если метрики не переданы, возвращаем ошибку
-      res.status(400).json({ error: 'Не переданы метрики выполнения' });
-    } catch (error: any) {
-      console.error('❌ Ошибка сохранения подхода:', error);
-      res.status(500).json({ error: error.message });
+      await this.workoutService.saveSetMetrics(
+        workoutId,
+        userId,
+        exerciseId,
+        setNumber || 1,
+        setType || 'normal',
+        metrics
+      );
+      res.json({ message: 'Результат сохранён' });
+      return;
     }
+
+    res.status(400).json({ error: 'Не переданы метрики выполнения' });
   }
 }

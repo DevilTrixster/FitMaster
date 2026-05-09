@@ -9,15 +9,9 @@ export function createProgressRoutes(
   const router = Router();
   router.use(authMiddleware);
 
-  router.get('/exercise/:id', (req, res, next) => 
-    progressController.getExerciseProgress(req, res, next)
-  );
-  router.get('/muscle-groups', (req, res, next) => 
-    progressController.getMuscleGroupStats(req, res, next)
-  );
-  router.get('/rpe', authMiddleware, (req, res) => 
-    progressController.getRPEData(req, res)
-  );
+  router.get('/exercise/:id', progressController.getExerciseProgress.bind(progressController));
+  router.get('/muscle-groups', progressController.getMuscleGroupStats.bind(progressController));
+  router.get('/rpe', progressController.getRPEData.bind(progressController));
 
   return router;
 }

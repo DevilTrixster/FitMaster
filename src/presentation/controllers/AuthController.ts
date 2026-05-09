@@ -1,63 +1,69 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../application/services/AuthService';
 import { Gender } from '../../domain/entities/User';
+import {
+  validateRequired,
+  validateEmailFormat,
+  validatePasswordStrength,
+} from '../../core/utils/validators';
 
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  // Обработка регистрации
-  async register(req: Request, res: Response): Promise<void> {
-    try {
-      const {
-        nickname,
-        password,
-        email,
-        firstName,
-        lastName,
-        birthDate,
-        gender,
-        height,
-        weight,
-      } = req.body;
+  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const {
+      nickname,
+      password,
+      email,
+      firstName,
+      lastName,
+      birthDate,
+      gender,
+      height,
+      weight,
+    } = req.body;
 
-      // Валидация входных данных
-      if (!nickname || !password || !email || !firstName || !lastName || !birthDate || !gender || !height || !weight) {
-        res.status(400).json({ error: 'Все поля обязательны для заполнения' });
-        return;
-      }
+    // Валидация – каждая функция бросит ValidationError при проблеме
+    validateRequired(nickname, 'nickname');
+    validateRequired(password, 'password');
+    validateRequired(email, 'email');
+    validateRequired(firstName, 'firstName');
+    validateRequired(lastName, 'lastName');
+    validateRequired(birthDate, 'birthDate');
+    validateRequired(gender, 'gender');
+    validateRequired(height, 'height');
+    validateRequired(weight, 'weight');
 
-      const result = await this.authService.register({
-        nickname,
-        password,
-        email,
-        firstName,
-        lastName,
-        birthDate: new Date(birthDate),
-        gender: gender as Gender,
-        height: Number(height),
-        weight: Number(weight),
-      });
+    validateEmailFormat(email);
+    validatePasswordStrength(password);
 
-      res.status(201).json({
-        message: 'Регистрация успешна',
-        user: {
-          id: result.user.id,
-          nickname: result.user.nickname,
-          email: result.user.email,
-          firstName: result.user.firstName,
-          lastName: result.user.lastName,
-        },
-        token: result.token,
-      });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
+    const result = await this.authService.register({
+      nickname,
+      password,
+      email,
+      firstName,
+      lastName,
+      birthDate: new Date(birthDate),
+      gender: gender as Gender,
+      height: Number(height),
+      weight: Number(weight),
+    });
+
+    res.status(201).json({
+      message: 'Регистрация успешна',
+      user: {
+        id: result.user.id,
+        nickname: result.user.nickname,
+        email: result.user.email,
+        firstName: result.user.firstName,
+        lastName: result.user.lastName,
+      },
+      token: result.token,
+    });
   }
 
-  // Обработка входа
-  async login(req: Request, res: Response): Promise<void> {
-  try {
-    // ✅ Проверка что body существует
+  async login(req: Request, res: Response, next: NextFunction): Promise<void> {
+    // Проверяем, что body получен
     if (!req.body) {
       res.status(400).json({ error: 'Тело запроса пустое' });
       return;
@@ -65,10 +71,8 @@ export class AuthController {
 
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email и пароль обязательны' });
-      return;
-    }
+    validateRequired(email, 'email');
+    validateRequired(password, 'password');
 
     const result = await this.authService.login(email, password);
 
@@ -83,8 +87,5 @@ export class AuthController {
       },
       token: result.token,
     });
-  } catch (error: any) {
-    res.status(401).json({ error: error.message });
   }
-}
 }

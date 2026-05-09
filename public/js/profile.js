@@ -1,19 +1,11 @@
-const token = localStorage.getItem('token');
-if (!token) window.location.href = '/auth/login.html';
+if (!checkAuth()) throw new Error('Not authenticated');
 
 const form = document.getElementById('profileForm');
 const messageDiv = document.getElementById('message');
 
-// Загрузка данных профиля
 async function loadProfile() {
   try {
-    const res = await fetch('/api/profile', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Ошибка загрузки');
-    
-    const user = await res.json();
-    
+    const user = await (await fetchWithAuth('/api/profile')).json();
     document.getElementById('nickname').value = user.nickname || '';
     document.getElementById('firstName').value = user.firstName || '';
     document.getElementById('lastName').value = user.lastName || '';
@@ -22,14 +14,12 @@ async function loadProfile() {
     document.getElementById('email').value = user.email || '';
     document.getElementById('preferredWorkoutTime').value = user.preferredWorkoutTime || '';
   } catch (err) {
-    showMessage('Не удалось загрузить данные профиля', 'error');
+    showNotification('Не удалось загрузить данные профиля', 'error');
   }
 }
 
-// Сохранение профиля
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
   const formData = {
     nickname: document.getElementById('nickname').value,
     firstName: document.getElementById('firstName').value,
@@ -40,40 +30,11 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
-    const res = await fetch('/api/profile', {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Ошибка сохранения');
-    }
-
-    showMessage('✅ Профиль успешно обновлен!', 'success');
+    await fetchWithAuth('/api/profile', { method: 'PUT', body: JSON.stringify(formData) });
+    showNotification('✅ Профиль успешно обновлен!');
   } catch (err) {
-    showMessage('❌ ' + err.message, 'error');
+    showNotification(err.message, 'error');
   }
 });
-
-function showMessage(text, type) {
-  messageDiv.textContent = text;
-  messageDiv.className = `message ${type}`;
-  setTimeout(() => {
-    messageDiv.className = 'message hidden';
-  }, 3000);
-}
-
-// Logout
-document.getElementById('logoutBtn')?.addEventListener('click', () => {
-  localStorage.removeItem('token');
-  window.location.href = '/auth/login.html';
-});
-
-
 
 loadProfile();

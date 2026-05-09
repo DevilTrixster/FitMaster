@@ -24,7 +24,8 @@ import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler
 import { ProfileController } from './presentation/controllers/ProfileController';
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
-import { WorkoutAdaptationService } from './application/services/WorkoutAdaptationService';
+import { WorkoutAdaptationService } from './application/services/adaptation/WorkoutAdaptationService';
+import { ExerciseSubstitutionService } from './application/services/adaptation/ExerciseSubstitutionService';
 import { 
   WorkoutSchedulingService,
   WorkoutLifecycleService,
@@ -32,6 +33,7 @@ import {
   WorkoutResultsService
 } from './application/services/workout';
 import { config } from './config/env';
+import { errorHandler } from './presentation/middleware/errorHandler';
 
 async function bootstrap() {
   const app = express();
@@ -60,7 +62,8 @@ async function bootstrap() {
     const profileService = new ProfileService(userRepository, workoutRepository);
     const profileController = new ProfileController(profileService);
     // Адаптация
-    const workoutAdaptationService = new WorkoutAdaptationService(workoutRepository, userRepository);
+    const substitutionService = new ExerciseSubstitutionService(workoutRepository);
+    const workoutAdaptationService = new WorkoutAdaptationService(workoutRepository, userRepository, substitutionService);
     //  Сервисы для WorkoutService
     const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
     const workoutResultsService = new WorkoutResultsService(workoutRepository, userRepository, workoutAdaptationService);
@@ -109,6 +112,7 @@ async function bootstrap() {
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
     app.get('/suggestions', (req, res) => res.sendFile(path.join(__dirname, '../public/suggestions.html')));
+    app.use(errorHandler);
 
     console.log('🚀 Сервер готов к работе');
 

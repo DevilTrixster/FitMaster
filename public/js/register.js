@@ -7,7 +7,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 
   const password = formData.get('password');
   const confirmPassword = formData.get('confirmPassword');
-  
   if (password !== confirmPassword) {
     showMessage('Пароли не совпадают', 'error');
     return;
@@ -28,9 +27,7 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   try {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
 
@@ -39,12 +36,8 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     if (response.ok) {
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
-      
       showMessage('Регистрация успешна! Программа тренировок создана', 'success');
-      
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1500);
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
     } else {
       showMessage(result.error || 'Ошибка регистрации', 'error');
     }
@@ -56,7 +49,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
 function showMessage(text, type) {
   const messageEl = document.getElementById('message');
   if (!messageEl) return;
-  
   messageEl.textContent = text;
   messageEl.className = `message ${type}`;
 }

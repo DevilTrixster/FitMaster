@@ -1,7 +1,7 @@
 import { User } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
-import { Database } from '../../infrastructure/database/Database';
+import { NotFoundError } from '../../core/errors/ValidationError';
 
 export class ProfileService {
   constructor(
@@ -25,69 +25,22 @@ export class ProfileService {
     }
   ): Promise<void> {
     const user = await this.userRepository.findById(userId);
-    if (!user) throw new Error('Пользователь не найден');
+    if (!user) throw new NotFoundError('Пользователь не найден');
 
-    // Обновляем через прямой SQL запрос
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    if (data.nickname !== undefined) {
-      updates.push(`nickname = $${paramIndex++}`);
-      values.push(data.nickname);
-    }
-    if (data.firstName !== undefined) {
-      updates.push(`first_name = $${paramIndex++}`);
-      values.push(data.firstName);
-    }
-    if (data.lastName !== undefined) {
-      updates.push(`last_name = $${paramIndex++}`);
-      values.push(data.lastName);
-    }
-    if (data.height !== undefined) {
-      updates.push(`height = $${paramIndex++}`);
-      values.push(data.height);
-    }
-    if (data.weight !== undefined) {
-      updates.push(`weight = $${paramIndex++}`);
-      values.push(data.weight);
-    }
-    if (data.preferredWorkoutTime !== undefined) {
-      updates.push(`preferred_workout_time = $${paramIndex++}::time`);
-      values.push(data.preferredWorkoutTime);
+    // Обновляем базовые поля через репозиторий (без preferredWorkoutTime)
+    const { preferredWorkoutTime, ...rest } = data;
+    if (Object.keys(rest).length > 0) {
+      await this.userRepository.updateUserFields(userId, rest);
     }
 
-    if (updates.length > 0) {
-      values.push(userId);
-      const query = `
-        UPDATE users 
-        SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $${paramIndex}
-      `;
-      
-      // ПРАВИЛЬНЫЙ ИМПОРТ: получаем пул через getInstance().getPool()
-      const db = Database.getInstance();
-      const pool = db.getPool();
-      await pool.query(query, values);
+    // Если время тренировки изменилось – обновляем все будущие тренировки
+    if (preferredWorkoutTime !== undefined) {
+      await this.workoutRepository.updateFutureWorkoutsTime(userId, preferredWorkoutTime);
     }
   }
 
-  // НОВЫЙ МЕТОД: Обновление времени всех будущих тренировок
+  // Отдельный метод для явного обновления времени тренировок
   async updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void> {
-    const query = `
-      UPDATE user_workouts
-      SET scheduled_time = $1::time,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = $2
-        AND status = 'scheduled'
-        AND scheduled_date >= CURRENT_DATE
-    `;
-
-    // ПРАВИЛЬНЫЙ ИМПОРТ
-    const db = Database.getInstance();
-    const pool = db.getPool();
-    await pool.query(query, [newTime, userId]);
-
-    console.log(`⏰ Обновлено время тренировок для пользователя ${userId}: ${newTime}`);
+    await this.workoutRepository.updateFutureWorkoutsTime(userId, newTime);
   }
 }

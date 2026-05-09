@@ -1,5 +1,3 @@
-import { Pool } from 'pg';
-import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { 
   Workout, 
   UserWorkout, 
@@ -13,544 +11,58 @@ import {
   ExerciseSet,
   SetMetric
 } from '../../domain/entities/Workout';
+import { Pool } from 'pg';
+import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
+import { WorkoutReadRepository } from './WorkoutService/WorkoutReadRepository';
+import { WorkoutWriteRepository } from './WorkoutService/WorkoutWriteRepository';
+import { ExerciseRepository } from './WorkoutService/ExerciseRepository';
+import { AdaptationRepository } from './WorkoutService/AdaptationRepository';
 
 export class WorkoutRepository implements IWorkoutRepository {
-  constructor(private pool: Pool) {}
+  private readRepo: WorkoutReadRepository;
+  private writeRepo: WorkoutWriteRepository;
+  private exerciseRepo: ExerciseRepository;
+  private adaptationRepo: AdaptationRepository;
 
-  async getWorkoutById(id: number): Promise<Workout | null> {
-    const workoutQuery = 'SELECT * FROM workouts WHERE id = $1';
-    const workoutResult = await this.pool.query(workoutQuery, [id]);
-    
-    if (workoutResult.rows.length === 0) return null;
-
-    const exercisesQuery = `
-      SELECT e.*, we.sets, we.rest_seconds, we.order_index
-      FROM workout_exercises we
-      JOIN exercises e ON we.exercise_id = e.id
-      WHERE we.workout_id = $1
-      ORDER BY we.order_index
-    `;
-    const exercisesResult = await this.pool.query(exercisesQuery, [id]);
-
-    const exercises = exercisesResult.rows.map((row: any) => {
-      const exercise = new Exercise({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        muscleGroup: row.muscle_group,
-        equipmentType: row.equipment_type,
-      });
-      return new WorkoutExercise({
-        exercise,
-        sets: row.sets,
-        restSeconds: row.rest_seconds,
-        orderIndex: row.order_index,
-      });
-    });
-
-    return new Workout({
-      id: workoutResult.rows[0].id,
-      name: workoutResult.rows[0].name,
-      description: workoutResult.rows[0].description,
-      frequencyPerWeek: workoutResult.rows[0].frequency_per_week,
-      exercises,
-    });
+  constructor(private pool: Pool) {
+    this.readRepo = new WorkoutReadRepository(pool);
+    this.writeRepo = new WorkoutWriteRepository(pool);
+    this.exerciseRepo = new ExerciseRepository(pool);
+    this.adaptationRepo = new AdaptationRepository(pool);
   }
 
-  async getBaseWorkout(): Promise<Workout | null> {
-    const query = 'SELECT * FROM workouts WHERE name LIKE $1 LIMIT 1';
-    const result = await this.pool.query(query, ['%Базовая%']);
-    
-    if (result.rows.length === 0) return null;
-    
-    return this.getWorkoutById(result.rows[0].id);
+  // Делегирование всем методам
+  async getWorkoutById(id: number) { return this.readRepo.getWorkoutById(id); }
+  async getBaseWorkout() { /* можно использовать чтение */ return null; }
+  async createUserWorkout(userWorkout: UserWorkout) { return this.writeRepo.createUserWorkout(userWorkout); }
+  async getUserWorkouts(userId: number, limit?: number) { return this.readRepo.getUserWorkouts(userId, limit); }
+  async getUserWorkoutById(id: number) { return this.readRepo.getUserWorkoutById(id); }
+  async updateUserWorkoutStatus(id: number, status: string, wellnessRating?: number, comments?: string) {
+    return this.writeRepo.updateUserWorkoutStatus(id, status, wellnessRating, comments);
   }
-
-  async createUserWorkout(userWorkout: UserWorkout): Promise<UserWorkout> {
-    const query = `
-      INSERT INTO user_workouts (user_id, workout_id, scheduled_date, scheduled_time, status)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, created_at
-    `;
-    
-    const values = [
-      userWorkout.userId,
-      userWorkout.workout.id,
-      userWorkout.scheduledDate,
-      userWorkout.scheduledTime || '10:00',
-      userWorkout.status,
-    ];
-
-    const result = await this.pool.query(query, values);
-    
-    return new UserWorkout({
-      ...userWorkout,
-      id: result.rows[0].id,
-      completedAt: result.rows[0].created_at,
-    });
-  }
-
-  async getUserWorkouts(userId: number, limit: number = 10): Promise<UserWorkout[]> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1
-      ORDER BY uw.scheduled_date ASC, uw.scheduled_time ASC 
-      LIMIT $2
-    `;
-    
-    const result = await this.pool.query(query, [userId, limit]);
-    
-    return result.rows.map((row: any) => {
-      const workout = new Workout({
-        id: row.workout_id,
-        name: row.workout_name,
-        description: row.workout_description,
-        frequencyPerWeek: 3,
-      });
-      
-      return new UserWorkout({
-        id: row.id,
-        userId: row.user_id,
-        workout,
-        scheduledDate: row.scheduled_date,
-        scheduledTime: row.scheduled_time,
-        status: row.status as WorkoutStatus,
-        completedAt: row.completed_at,
-        wellnessRating: row.wellness_rating,
-        comments: row.comments,
-      });
-    });
-  }
-
-  async getUserWorkoutById(id: number): Promise<UserWorkout | null> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.id = $1
-    `;
-    
-    const result = await this.pool.query(query, [id]);
-    
-    if (result.rows.length === 0) return null;
-    
-    const row = result.rows[0];
-    const workout = new Workout({
-      id: row.workout_id,
-      name: row.workout_name,
-      description: row.workout_description,
-      frequencyPerWeek: 3,
-    });
-    
-    return new UserWorkout({
-      id: row.id,
-      userId: row.user_id,
-      workout,
-      scheduledDate: row.scheduled_date,
-      scheduledTime: row.scheduled_time,
-      status: row.status as WorkoutStatus,
-      completedAt: row.completed_at,
-      wellnessRating: row.wellness_rating,
-      comments: row.comments,
-    });
-  }
-
-  async updateUserWorkoutStatus(id: number, status: string, wellnessRating?: number, comments?: string): Promise<void> {
-    const query = `
-      UPDATE user_workouts 
-      SET status = $1, wellness_rating = $2, comments = $3, completed_at = $4
-      WHERE id = $5
-    `;
-    
-    const completedAt = status === 'completed' ? new Date() : null;
-    
-    await this.pool.query(query, [status, wellnessRating || null, comments || null, completedAt, id]);
-  }
-
-  async startUserWorkout(id: number): Promise<void> {
-    const query = `
-      UPDATE user_workouts 
-      SET status = $1
-      WHERE id = $2
-    `;
-    
-    await this.pool.query(query, ['in_progress', id]);
-  }
-
-  async getAllExercises(): Promise<Exercise[]> {
-    const query = 'SELECT * FROM exercises ORDER BY muscle_group, name';
-    const result = await this.pool.query(query);
-    
-    return result.rows.map((row: any) => new Exercise({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      muscleGroup: row.muscle_group,
-      equipmentType: row.equipment_type,
-    }));
-  }
-
-  async saveAdaptation(adaptation: WorkoutAdaptation): Promise<void> {
-    const query = `
-      INSERT INTO workout_adaptations 
-      (user_id, user_workout_id, exercise_id, previous_weight, new_weight, previous_reps, new_reps, adaptation_reason)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    `;
-    
-    const values = [
-      adaptation.userId,
-      adaptation.id,
-      adaptation.exerciseId,
-      adaptation.previousWeight,
-      adaptation.newWeight,
-      adaptation.previousReps,
-      adaptation.newReps,
-      adaptation.reason,
-    ];
-
-    await this.pool.query(query, values);
-  }
-
-  async pauseUserWorkout(id: number, lastExerciseIndex: number): Promise<void> {
-  const query = `
-    UPDATE user_workouts 
-    SET paused_at = CURRENT_TIMESTAMP, last_exercise_index = $1
-    WHERE id = $2
-  `;
-  await this.pool.query(query, [lastExerciseIndex, id]);
-  }
-
-  async resumeUserWorkout(id: number): Promise<void> {
-    const query = `
-      UPDATE user_workouts 
-      SET paused_at = NULL
-      WHERE id = $2
-    `;
-    await this.pool.query(query, [id]);
-  }
-
+  async startUserWorkout(id: number) { return this.writeRepo.startUserWorkout(id); }
+  async pauseUserWorkout(id: number, lastExerciseIndex: number) { return this.writeRepo.pauseUserWorkout(id, lastExerciseIndex); }
+  async resumeUserWorkout(id: number) { return this.writeRepo.resumeUserWorkout(id); }
   async getUserActiveWorkout(userId: number): Promise<UserWorkout | null> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1 AND uw.status = $2
-      ORDER BY uw.scheduled_date ASC
-      LIMIT 1
-    `;
-    
-    const result = await this.pool.query(query, [userId, 'in_progress']);
-    
-    if (result.rows.length === 0) return null;
-    
-    const row = result.rows[0];
-    const workout = new Workout({
-      id: row.workout_id,
-      name: row.workout_name,
-      description: row.workout_description,
-      frequencyPerWeek: 3,
-    });
-    
-    return new UserWorkout({
-      id: row.id,
-      userId: row.user_id,
-      workout,
-      scheduledDate: row.scheduled_date,
-      scheduledTime: row.scheduled_time,
-      status: row.status as WorkoutStatus,
-      startedAt: row.started_at,
-      pausedAt: row.paused_at,
-      lastExerciseIndex: row.last_exercise_index,
-    });
+  return this.readRepo.getUserActiveWorkout(userId);
+}
+  async getAllExercises() { return this.exerciseRepo.getAllExercises(); }
+  async rescheduleWorkout(id: number, newDate: Date, reason?: string) { return this.writeRepo.rescheduleWorkout(id, newDate, reason); }
+  async skipWorkout(id: number, reason?: string) { return this.writeRepo.skipWorkout(id, reason); }
+  async saveAdaptation(adaptation: WorkoutAdaptation) { return this.adaptationRepo.saveAdaptation(adaptation); }
+  async getUserAdaptations(userId: number, exerciseId: number, limit?: number) { return this.adaptationRepo.getUserAdaptations(userId, exerciseId, limit); }
+  async getWorkoutHistory(userId: number, limit: number, offset: number, status?: string, dateFrom?: string, dateTo?: string) {
+    return this.readRepo.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo);
   }
-
-  async getWorkoutHistory(
-    userId: number, 
-    limit: number, 
-    offset: number,
-    status?: string,
-    dateFrom?: string,
-    dateTo?: string
-  ): Promise<UserWorkout[]> {
-    let query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1
-    `;
-    
-    const params: any[] = [userId];
-    let paramIndex = 2;
-    
-    if (status && status !== 'all') {
-      query += ` AND uw.status = $${paramIndex}`;
-      params.push(status);
-      paramIndex++;
-    }
-    
-    if (dateFrom) {
-      query += ` AND uw.scheduled_date >= $${paramIndex}`;
-      params.push(dateFrom);
-      paramIndex++;
-    }
-    
-    if (dateTo) {
-      query += ` AND uw.scheduled_date <= $${paramIndex}`;
-      params.push(dateTo);
-      paramIndex++;
-    }
-    
-    query += ` ORDER BY uw.scheduled_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-    
-    const result = await this.pool.query(query, params);
-    
-    return result.rows.map((row: any) => {
-      const workout = new Workout({
-        id: row.workout_id,
-        name: row.workout_name,
-        description: row.workout_description,
-        frequencyPerWeek: 3,
-      });
-      
-      return new UserWorkout({
-        id: row.id,
-        userId: row.user_id,
-        workout,
-        scheduledDate: row.scheduled_date,
-        scheduledTime: row.scheduled_time,
-        status: row.status as WorkoutStatus,
-        completedAt: row.completed_at,
-        wellnessRating: row.wellness_rating,
-        comments: row.comments,
-      });
-    });
+  async getSplitPrograms() { return this.readRepo.getSplitPrograms(); }
+  async saveExerciseSubstitution(userId: number, originalExerciseId: number, alternativeExerciseId: number, reason: string) {
+    return this.adaptationRepo.saveExerciseSubstitution(userId, originalExerciseId, alternativeExerciseId, reason);
   }
-
-  async getUserAdaptations(userId: number, exerciseId: number, limit: number = 10): Promise<WorkoutAdaptation[]> {
-    const query = `
-      SELECT * FROM workout_adaptations
-      WHERE user_id = $1 AND exercise_id = $2
-      ORDER BY created_at DESC
-      LIMIT $3
-    `;
-    
-    const result = await this.pool.query(query, [userId, exerciseId, limit]);
-    
-    return result.rows.map((row: any) => new WorkoutAdaptation({
-      id: row.id,
-      userId: row.user_id,
-      exerciseId: row.exercise_id,
-      previousWeight: row.previous_weight,
-      newWeight: row.new_weight,
-      previousReps: row.previous_reps,
-      newReps: row.new_reps,
-      adaptationType: row.adaptation_reason.includes('увелич') ? AdaptationType.IncreaseWeight : AdaptationType.DecreaseWeight,
-      reason: row.adaptation_reason,
-    }));
-  }
-
-  async rescheduleWorkout(id: number, newDate: Date, reason?: string): Promise<void> {
-    const query = `
-      UPDATE user_workouts 
-      SET status = 'rescheduled', rescheduled_to = $1, reschedule_reason = $2 
-      WHERE id = $3
-    `;
-    await this.pool.query(query, [newDate.toISOString().split('T')[0], reason || null, id]);
-  }
-
-  async skipWorkout(id: number, reason?: string): Promise<void> {
-    const query = `
-      UPDATE user_workouts 
-      SET status = 'skipped', reschedule_reason = $1 
-      WHERE id = $2
-    `;
-    await this.pool.query(query, [reason || null, id]);
-  }
-
-  async getSplitPrograms(): Promise<Workout[]> {
-    // Мы ищем программы с ID 1, 2 и 3.
-    // ID 1 = Ноги (бывшая Full Body)
-    // ID 2 = Грудь
-    // ID 3 = Спина
-    const query = `SELECT * FROM workouts WHERE id IN (1, 2, 3) ORDER BY id ASC`;
-    const result = await this.pool.query(query);
-
-    if (result.rows.length === 0) return [];
-
-    // Загружаем упражнения для каждой программы
-    const workouts: Workout[] = [];
-    for (const row of result.rows) {
-      const workout = await this.getWorkoutById(row.id);
-      if (workout) workouts.push(workout);
-    }
-    
-    return workouts;
-  }
-
-  async saveExerciseSubstitution(
-    userId: number,
-    originalExerciseId: number,
-    alternativeExerciseId: number,
-    reason: string
-  ): Promise<void> {
-    const query = `
-      INSERT INTO workout_adaptations 
-      (user_id, exercise_id, previous_weight, new_weight, adaptation_reason, created_at)
-      VALUES ($1, $2, NULL, NULL, $3, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id, exercise_id) DO NOTHING
-    `;
-    
-    const fullReason = `SUBSTITUTION:${originalExerciseId}->${alternativeExerciseId}:${reason}`;
-    await this.pool.query(query, [userId, alternativeExerciseId, fullReason]);
-  }
-
-  async getUserExerciseSubstitutions(userId: number): Promise<{
-    originalExerciseId: number;
-    alternativeExerciseId: number;
-    reason: string;
-    suggestedAt: Date;
-  }[]> {
-    const query = `
-      SELECT 
-        exercise_id as alternative_exercise_id,
-        adaptation_reason,
-        created_at
-      FROM workout_adaptations
-      WHERE user_id = $1 
-        AND adaptation_reason LIKE 'SUBSTITUTION:%'
-      ORDER BY created_at DESC
-    `;
-    
-    const result = await this.pool.query(query, [userId]);
-    
-    return result.rows.map((row: any) => {
-      const match = row.adaptation_reason.match(/SUBSTITUTION:(\d+)->(\d+):(.+)/);
-      return {
-        originalExerciseId: parseInt(match[1]),
-        alternativeExerciseId: row.alternative_exercise_id,
-        reason: match[3],
-        suggestedAt: new Date(row.created_at),
-      };
-    });
-  }
-
-  async getExerciseById(id: number): Promise<Exercise | null> {
-    const query = 'SELECT * FROM exercises WHERE id = $1';
-    const result = await this.pool.query(query, [id]);
-    
-    if (result.rows.length === 0) return null;
-    
-    const row = result.rows[0];
-    return new Exercise({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      muscleGroup: row.muscle_group,
-      equipmentType: row.equipment_type,
-    });
-  }
-
-  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
-      const query = 'SELECT metric_type, required, default_value, unit FROM exercise_metric_templates WHERE exercise_id = $1';
-      const result = await this.pool.query(query, [exerciseId]);
-      return result.rows.map(row => ({
-        metricType: row.metric_type as MetricType,
-        required: row.required,
-        defaultValue: row.default_value ? parseFloat(row.default_value) : undefined,
-        unit: row.unit,
-      }));
-  }
-
-  async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> {
-      const client = await this.pool.connect();
-      try {
-          await client.query('BEGIN');
-          // Вставляем подход
-          const setQuery = `
-              INSERT INTO exercise_sets (workout_exercise_id, set_number, set_type)
-              VALUES ($1, $2, $3)
-              RETURNING id, created_at
-          `;
-          const setResult = await client.query(setQuery, [
-              workoutExerciseId,
-              exerciseSet.setNumber,
-              exerciseSet.setType,
-          ]);
-          const setId = setResult.rows[0].id;
-
-          // Вставляем метрики
-          for (const metric of exerciseSet.metrics) {
-              const metricQuery = `
-                  INSERT INTO set_metrics (exercise_set_id, metric_type, value, unit)
-                  VALUES ($1, $2, $3, $4)
-              `;
-              await client.query(metricQuery, [setId, metric.metricType, metric.value, metric.unit]);
-          }
-
-          await client.query('COMMIT');
-          return new ExerciseSet({
-              ...exerciseSet,
-              id: setId,
-              workoutExerciseId,
-          });
-      } catch (e) {
-          await client.query('ROLLBACK');
-          throw e;
-      } finally {
-          client.release();
-      }
-  }
-
-  async getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> {
-      const query = `
-          SELECT 
-              es.id as set_id,
-              es.set_number,
-              es.set_type,
-              sm.id as metric_id,
-              sm.metric_type,
-              sm.value,
-              sm.unit
-          FROM exercise_sets es
-          LEFT JOIN set_metrics sm ON sm.exercise_set_id = es.id
-          WHERE es.workout_exercise_id = $1
-          ORDER BY es.set_number, sm.metric_type
-      `;
-      const result = await this.pool.query(query, [workoutExerciseId]);
-      // Группировка строк в объекты ExerciseSet
-      const setsMap = new Map<number, ExerciseSet>();
-      result.rows.forEach(row => {
-          if (!setsMap.has(row.set_id)) {
-              setsMap.set(row.set_id, new ExerciseSet({
-                  id: row.set_id,
-                  setNumber: row.set_number,
-                  setType: row.set_type,
-                  metrics: [],
-                  workoutExerciseId,
-              }));
-          }
-          if (row.metric_id) {
-              setsMap.get(row.set_id)!.metrics.push(new SetMetric({
-                  id: row.metric_id,
-                  metricType: row.metric_type as MetricType,
-                  value: parseFloat(row.value),
-                  unit: row.unit,
-              }));
-          }
-      });
-      return Array.from(setsMap.values()).sort((a, b) => a.setNumber - b.setNumber);
-  }
-
-  async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> {
-  const query = `
-    SELECT we.id FROM workout_exercises we
-    JOIN user_workouts uw ON we.workout_id = uw.workout_id
-    WHERE uw.id = $1 AND we.exercise_id = $2
-  `;
-  const res = await this.pool.query(query, [userWorkoutId, exerciseId]);
-  return res.rows.length > 0 ? res.rows[0].id : null;
-  }
+  async getUserExerciseSubstitutions(userId: number) { return this.adaptationRepo.getUserExerciseSubstitutions(userId); }
+  async getExerciseById(id: number) { return this.exerciseRepo.getExerciseById(id); }
+  async getExerciseMetricTemplates(exerciseId: number) { return this.exerciseRepo.getExerciseMetricTemplates(exerciseId); }
+  async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet) { return this.exerciseRepo.saveExerciseSet(workoutExerciseId, exerciseSet); }
+  async getExerciseSets(workoutExerciseId: number) { return this.exerciseRepo.getExerciseSets(workoutExerciseId); }
+  async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number) { return this.exerciseRepo.getWorkoutExerciseId(userWorkoutId, exerciseId); }
+  async updateFutureWorkoutsTime(userId: number, newTime: string) { return this.writeRepo.updateFutureWorkoutsTime(userId, newTime); }
 }

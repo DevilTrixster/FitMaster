@@ -9,8 +9,8 @@ export function createProfileRoutes(
   const router = Router();
   router.use(authMiddleware);
 
-  router.get('/', (req, res) => profileController.getProfile(req, res));
-  router.put('/', (req, res) => profileController.updateProfile(req, res));
+  router.get('/', profileController.getProfile.bind(profileController));
+  router.put('/', profileController.updateProfile.bind(profileController));
 
   return router;
 }

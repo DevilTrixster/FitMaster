@@ -1,3 +1,9 @@
+import {
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+  InternalServerError,
+} from '../../../core/errors/ValidationError';
 import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { WorkoutResultsService } from './WorkoutResultsService';
@@ -8,7 +14,7 @@ export class WorkoutLifecycleService {
     private resultsService: WorkoutResultsService
   ) {}
 
-  /** Начать тренировку: проверки, авто-завершение предыдущей, обновление статуса */
+  // Начать тренировку: проверки, авто-завершение предыдущей, обновление статуса 
   async startWorkout(workoutId: number, userId: number): Promise<UserWorkout> {
     // Завершаем старую активную тренировку, если есть
     const activeWorkout = await this.workoutRepository.getUserActiveWorkout(userId);
@@ -23,18 +29,18 @@ export class WorkoutLifecycleService {
     }
 
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!userWorkout) throw new Error('Тренировка не найдена');
-    if (userWorkout.userId !== userId) throw new Error('Доступ запрещён');
-    if (!userWorkout.canStart()) throw new Error('Тренировку нельзя начать');
+    if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
+    if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
+    if (!userWorkout.canStart()) throw new ValidationError('Тренировку нельзя начать');
 
     await this.workoutRepository.startUserWorkout(workoutId);
 
     const updated = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!updated) throw new Error('Ошибка обновления тренировки');
+    if (!updated) throw new InternalServerError('Ошибка обновления тренировки');
     return updated;
   }
 
-  /** Завершить тренировку и запустить адаптацию */
+  // Завершить тренировку и запустить адаптацию 
   async completeWorkout(
     workoutId: number,
     userId: number,
@@ -42,8 +48,8 @@ export class WorkoutLifecycleService {
     comments?: string
   ): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!userWorkout) throw new Error('Тренировка не найдена');
-    if (userWorkout.userId !== userId) throw new Error('Доступ запрещён');
+    if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
+    if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
 
     const rating = wellnessRating || 3;
 
@@ -57,33 +63,39 @@ export class WorkoutLifecycleService {
     await this.resultsService.triggerAdaptation(userId, workoutId, rating);
   }
 
-  /** Поставить тренировку на паузу */
+  // Поставить тренировку на паузу 
   async pauseWorkout(workoutId: number, userId: number, lastExerciseIndex: number): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!userWorkout || userWorkout.userId !== userId) {
-      throw new Error('Тренировка не найдена или доступ запрещён');
+    if (!userWorkout) {
+      throw new NotFoundError('Тренировка не найдена');
+    }
+    if (userWorkout.userId !== userId) {
+      throw new UnauthorizedError('Доступ запрещён');
     }
     if (userWorkout.status !== WorkoutStatus.InProgress) {
-      throw new Error('Нельзя поставить на паузу незавершённую тренировку');
+      throw new ValidationError('Нельзя поставить на паузу незавершённую тренировку');
     }
     await this.workoutRepository.pauseUserWorkout(workoutId, lastExerciseIndex);
   }
 
-  /** Возобновить тренировку */
+  // Возобновить тренировку 
   async resumeWorkout(workoutId: number, userId: number): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!userWorkout || userWorkout.userId !== userId) {
-      throw new Error('Тренировка не найдена или доступ запрещён');
+    if (!userWorkout) {
+      throw new NotFoundError('Тренировка не найдена');
+    }
+    if (userWorkout.userId !== userId) {
+      throw new UnauthorizedError('Доступ запрещён');
     }
     await this.workoutRepository.resumeUserWorkout(workoutId);
   }
 
-  /** Получить активную тренировку */
+  // Получить активную тренировку
   async getActiveWorkout(userId: number): Promise<UserWorkout | null> {
     return this.workoutRepository.getUserActiveWorkout(userId);
   }
 
-  /** Получить текущую тренировку (запланированную или активную) с упражнениями */
+  // Получить текущую тренировку (запланированную или активную) с упражнениями 
   async getCurrentWorkout(userId: number): Promise<UserWorkout | null> {
     const upcoming = await this.workoutRepository.getUserWorkouts(userId, 10);
     const workout = upcoming.find(

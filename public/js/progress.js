@@ -1,12 +1,10 @@
-// Progress page logic
-let token = localStorage.getItem('token');
+if (!checkAuth()) throw new Error('Not authenticated');
+
 let weightChartInstance = null;
-let volumeIntensityChartInstance = null;
+let repRangeChartInstance = null;
 let rpeChartInstance = null;
 let muscleDistributionChartInstance = null;
-let repRangeChartInstance = null;
 
-// СЛОВАРЬ ПЕРЕВОДОВ мышечных групп
 const muscleTranslations = {
   'chest': 'Грудь',
   'back': 'Спина',
@@ -20,49 +18,35 @@ const muscleTranslations = {
   'default': 'Другое'
 };
 
-// Проверка авторизации
-if (!token) {
-  window.location.href = '/auth/login.html';
-}
-
-// Загрузка данных при старте
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     await loadExercises();
     await loadMuscleDistributionStats('all');
     await loadOverallStats();
     await loadRPEData();
-    
-    // Обработчики фильтров для графика мышц
+
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
-        const period = e.target.dataset.period;
-        loadMuscleDistributionStats(period);
+        loadMuscleDistributionStats(e.target.dataset.period);
       });
     });
-    
-    // Обработчик для обновления при возврате на страницу
+
     window.addEventListener('pageshow', (event) => {
-      if (event.persisted) {
-        refreshAllData();
-      }
+      if (event.persisted) refreshAllData();
     });
-    
-    // Проверяем, есть ли флаг обновления после тренировки
-    const shouldRefresh = sessionStorage.getItem('workoutCompleted');
-    if (shouldRefresh === 'true') {
+
+    if (sessionStorage.getItem('workoutCompleted') === 'true') {
       sessionStorage.removeItem('workoutCompleted');
       await refreshAllData();
       showNotification('✅ Тренировка завершена! Прогресс обновлён.');
     }
   } catch (error) {
-    showError('Ошибка загрузки данных: ' + error.message);
+    showError(error.message);
   }
 });
 
-// Функция полного обновления всех данных
 async function refreshAllData() {
   try {
     await loadExercises();
@@ -70,30 +54,12 @@ async function refreshAllData() {
     await loadOverallStats();
     await loadRPEData();
   } catch (error) {
-    console.error('Ошибка обновления данных:', error);
+    console.error(error);
   }
 }
 
-// Показ уведомления
-function showNotification(message) {
-  const notification = document.createElement('div');
-  notification.className = 'notification success';
-  notification.style.cssText = `position: fixed; top: 20px; right: 20px; background: #43e97b; color: white; padding: 15px 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; animation: slideIn 0.3s ease-out;`;
-  notification.textContent = message;
-  document.body.appendChild(notification);
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease-out';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
-}
-
-// Загрузка списка упражнений
 async function loadExercises() {
-  const response = await fetch('/api/workouts/exercises', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!response.ok) throw new Error('Failed to load exercises');
-  const exercises = await response.json();
+  const exercises = await (await fetchWithAuth('/api/workouts/exercises')).json();
   const select = document.getElementById('exerciseSelect');
   if (exercises.length === 0) {
     select.innerHTML = '<option value="">Нет доступных упражнений</option>';
@@ -103,104 +69,64 @@ async function loadExercises() {
   select.innerHTML = exercises.map(ex =>
     `<option value="${ex.id}">${ex.name} (${ex.muscleGroup})</option>`
   ).join('');
-  
-  // Загружаем графики для первого упражнения
+
   if (exercises.length > 0) {
     await loadExerciseProgress(exercises[0].id);
   }
-  
-  // Обработчик изменения
+
   select.addEventListener('change', (e) => {
     const exerciseId = parseInt(e.target.value);
-    if (exerciseId) {
-      loadExerciseProgress(exerciseId);
-    }
+    if (exerciseId) loadExerciseProgress(exerciseId);
   });
 }
 
-// Загрузка прогресса по упражнению
 async function loadExerciseProgress(exerciseId) {
   try {
-    const response = await fetch(`/api/progress/exercise/${exerciseId}?limit=30`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!response.ok) {
-      clearExerciseCharts();
-      return;
-    }
-
+    const response = await fetchWithAuth(`/api/progress/exercise/${exerciseId}?limit=30`);
     const data = await response.json();
-
     if (!data.trend || data.trend.length === 0) {
       clearExerciseCharts();
       return;
     }
-
-    // График 1: Динамика веса
     renderWeightChart(data.trend);
-    
-    // График 2: Динамика объема и интенсивности
     renderRepRangeChart(data.trend);
   } catch (error) {
-    console.error('Ошибка загрузки прогресса:', error);
+    console.error(error);
     clearExerciseCharts();
   }
 }
 
-// Очистка графиков упражнения
 function clearExerciseCharts() {
-  if (weightChartInstance) {
-    weightChartInstance.destroy();
-    weightChartInstance = null;
-  }
-  if (repRangeChartInstance) {
-    volumeIntensityChartInstance.destroy();
-    volumeIntensityChartInstance = null;
-  }
+  if (weightChartInstance) { weightChartInstance.destroy(); weightChartInstance = null; }
+  if (repRangeChartInstance) { repRangeChartInstance.destroy(); repRangeChartInstance = null; }
 }
 
-// Загрузка статистики распределения по мышцам
 async function loadMuscleDistributionStats(period = 'all') {
-  const response = await fetch(`/api/progress/muscle-groups?period=${period}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!response.ok) throw new Error('Failed to load muscle group stats');
-  const data = await response.json();
-  renderMuscleDistributionChart(data);
+  const stats = await (await fetchWithAuth(`/api/progress/muscle-groups?period=${period}`)).json();
+  renderMuscleDistributionChart(stats);
 }
 
-// Загрузка данных RPE
 async function loadRPEData() {
-  const response = await fetch('/api/progress/rpe', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (!response.ok) {
-    console.warn('RPE data not available');
-    return;
-  }
-  const data = await response.json();
-  renderRPEChart(data);
+  try {
+    const data = await (await fetchWithAuth('/api/progress/rpe')).json();
+    renderRPEChart(data);
+  } catch { /* игнорируем */ }
 }
 
-// Загрузка общей статистики
 async function loadOverallStats() {
-  const response = await fetch('/api/progress/muscle-groups?period=all', {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  if (response.ok) {
-    const stats = await response.json();
+  try {
+    const stats = await (await fetchWithAuth('/api/progress/muscle-groups?period=all')).json();
     const totalWorkouts = stats.reduce((sum, s) => sum + s.totalWorkouts, 0);
-    const totalVolumeTons = stats.reduce((sum, s) => sum + s.totalVolume, 0) / 1000; // Переводим в тонны
+    const totalVolumeTons = stats.reduce((sum, s) => sum + s.totalVolume, 0) / 1000;
     const avgWellness = stats.length > 0
       ? stats.reduce((sum, s) => sum + (s.avgWellnessRating || 0), 0) / stats.length
       : 0;
-    
+
     document.getElementById('totalWorkouts').textContent = totalWorkouts;
     document.getElementById('avgWellness').textContent = avgWellness.toFixed(1);
     document.getElementById('totalVolume').textContent = Math.round(totalVolumeTons).toLocaleString();
-  }
+  } catch { /* игнорируем */ }
 }
-
 // Рендер графика веса
 function renderWeightChart(trend) {
   const ctx = document.getElementById('weightChart').getContext('2d');

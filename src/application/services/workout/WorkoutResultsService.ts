@@ -1,3 +1,4 @@
+// src/application/services/workout/WorkoutResultsService.ts
 import {
   MetricType,
   ExerciseSet,
@@ -7,17 +8,9 @@ import {
 } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { WorkoutAdaptationService } from '../WorkoutAdaptationService';
-
-// Временная структура для адаптации (заменяет SetResult)
-export interface SetAnalysisData {
-  completed: boolean;
-  skipped: boolean;
-  reps?: number;
-  weight?: number;
-  targetReps?: number;
-  targetWeight?: number;
-}
+import { WorkoutAdaptationService } from '../adaptation/WorkoutAdaptationService';
+import { UnauthorizedError, ValidationError } from '../../../core/errors/ValidationError';
+import { SetAnalysisData } from '../../dto/SetAnalysisData'; // единственное место определения
 
 export class WorkoutResultsService {
   constructor(
@@ -26,9 +19,6 @@ export class WorkoutResultsService {
     private adaptationService: WorkoutAdaptationService
   ) {}
 
-  /**
-   * Сохраняет подход с метриками (новая модель)
-   */
   async saveSetMetrics(
     workoutId: number,
     userId: number,
@@ -39,7 +29,7 @@ export class WorkoutResultsService {
   ): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
     if (!userWorkout || userWorkout.userId !== userId) {
-      throw new Error('Доступ запрещён');
+      throw new UnauthorizedError('Доступ запрещён');
     }
 
     const workoutExerciseId = await this.workoutRepository.getWorkoutExerciseId(
@@ -47,7 +37,7 @@ export class WorkoutResultsService {
       exerciseId
     );
     if (workoutExerciseId === null) {
-      throw new Error('Упражнение не найдено в тренировке');
+      throw new ValidationError('Упражнение не найдено в тренировке');
     }
 
     const exerciseSet = new ExerciseSet({
@@ -66,9 +56,6 @@ export class WorkoutResultsService {
     await this.workoutRepository.saveExerciseSet(workoutExerciseId, exerciseSet);
   }
 
-  /**
-   * Запускает адаптацию после завершения тренировки (новая логика)
-   */
   async triggerAdaptation(
     userId: number,
     completedWorkoutId: number,
@@ -91,11 +78,9 @@ export class WorkoutResultsService {
         exercise.exercise.id
       );
 
-      // Извлекаем цели из шаблонов
       const targetReps = templates.find((t) => t.metricType === MetricType.Reps)?.defaultValue;
       const targetWeight = templates.find((t) => t.metricType === MetricType.Weight)?.defaultValue;
 
-      // Преобразуем в формат для адаптации (все подходы считаем выполненными, пока нет флага skipped)
       const analysisData: SetAnalysisData[] = exerciseSets.map((set) => {
         const reps = set.metrics.find((m) => m.metricType === MetricType.Reps)?.value;
         const weight = set.metrics.find((m) => m.metricType === MetricType.Weight)?.value;
@@ -119,9 +104,6 @@ export class WorkoutResultsService {
     }
   }
 
-  /**
-   * Утилита для примерного стартового веса (оставлено для совместимости)
-   */
   calculateRecommendedWeight(userWeight: number, muscleGroup: string): number {
     const percentages: Record<string, number> = {
       chest: 0.5,

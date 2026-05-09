@@ -77,4 +77,7 @@ export interface IWorkoutRepository {
 
   // Получить ID записи workout_exercises по userWorkoutId и exerciseId
   getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null>;
+
+  // Обновление времени у всех будущих запланированных тренировок пользователя
+  updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void>;
 }
