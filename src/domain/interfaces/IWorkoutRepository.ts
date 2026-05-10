@@ -35,6 +35,9 @@ export interface IWorkoutRepository {
   // Адаптация
   saveAdaptation(adaptation: WorkoutAdaptation): Promise<void>;
   getUserAdaptations(userId: number, exerciseId: number, limit?: number): Promise<WorkoutAdaptation[]>;
+
+  // Получение последней адаптации для пользователя и упражнения
+  getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null>;
   
   // История с фильтрами (обновлённая сигнатура)
   getWorkoutHistory(

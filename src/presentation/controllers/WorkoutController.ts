@@ -18,18 +18,23 @@ export class WorkoutController {
     }
 
     const exercisesWithMetrics = await Promise.all(
-      workout.workout.exercises.map(async (ex) => {
-        const templates = await this.workoutService.getExerciseMetricTemplates(ex.exercise.id!);
-        return {
-          id: ex.exercise.id,
-          name: ex.exercise.name,
-          sets: ex.sets,
-          restSeconds: ex.restSeconds,
-          muscleGroup: ex.exercise.muscleGroup,
-          metricTemplates: templates,
-        };
-      })
-    );
+    workout.workout.exercises.map(async (ex) => {
+      const templates = await this.workoutService.getExerciseMetricTemplates(ex.exercise.id!);
+      // Актуальные цели из последней адаптации
+      const targets = await this.workoutService.getExerciseTargets(userId, ex.exercise.id!);
+      return {
+        id: ex.exercise.id,
+        name: ex.exercise.name,
+        sets: ex.sets,
+        restSeconds: ex.restSeconds,
+        muscleGroup: ex.exercise.muscleGroup,
+        metricTemplates: templates,
+        // Если адаптация есть — берём из неё, иначе из шаблона
+        targetReps: targets?.reps ?? templates.find(t => t.metricType === 'reps')?.defaultValue,
+        targetWeight: targets?.weight ?? templates.find(t => t.metricType === 'weight')?.defaultValue,
+      };
+    })
+  );
 
     res.json({
       workout: {

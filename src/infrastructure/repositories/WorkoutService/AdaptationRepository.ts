@@ -46,12 +46,41 @@ export class AdaptationRepository {
     await this.pool.query(query, [userId, alternativeExerciseId, fullReason]);
   }
 
-  async getUserExerciseSubstitutions(userId: number): Promise<{ originalExerciseId: number; alternativeExerciseId: number; reason: string; suggestedAt: Date; }[]> {
+  async getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null> {
+    const query = `
+      SELECT * FROM workout_adaptations
+      WHERE user_id = $1 AND exercise_id = $2
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    const res = await this.pool.query(query, [userId, exerciseId]);
+    if (res.rows.length === 0) return null;
+
+    const row = res.rows[0];
+    return new WorkoutAdaptation({
+      id: row.id,
+      userId: row.user_id,
+      exerciseId: row.exercise_id,
+      previousWeight: row.previous_weight,
+      newWeight: row.new_weight,
+      previousReps: row.previous_reps,
+      newReps: row.new_reps,
+      adaptationType: row.adaptation_reason.includes('увелич') ? AdaptationType.IncreaseWeight : AdaptationType.DecreaseWeight,
+      reason: row.adaptation_reason,
+    });
+  }
+
+  async getUserExerciseSubstitutions(userId: number): Promise<{
+    originalExerciseId: number;
+    alternativeExerciseId: number;
+    reason: string;
+    suggestedAt: Date;
+  }[]> {
     const result = await this.pool.query(
       `SELECT exercise_id as alternative_exercise_id, adaptation_reason, created_at
-       FROM workout_adaptations
-       WHERE user_id = $1 AND adaptation_reason LIKE 'SUBSTITUTION:%'
-       ORDER BY created_at DESC`,
+      FROM workout_adaptations
+      WHERE user_id = $1 AND adaptation_reason LIKE 'SUBSTITUTION:%'
+      ORDER BY created_at DESC`,
       [userId]
     );
     return result.rows.map((row: any) => {

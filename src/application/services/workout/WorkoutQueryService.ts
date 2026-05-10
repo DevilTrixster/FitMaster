@@ -1,5 +1,6 @@
 import { UserWorkout, WorkoutStatus, MetricTemplate } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
+import { WorkoutAdaptation } from '../../../domain/entities/Workout'
 import { WorkoutSchedulingService } from './WorkoutSchedulingService';
 
 /**
@@ -117,5 +118,9 @@ export class WorkoutQueryService {
 
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
     return this.workoutRepository.getExerciseMetricTemplates(exerciseId);
+  }
+
+  async getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null> {
+    return this.workoutRepository.getLatestAdaptation(userId, exerciseId);
   }
 }

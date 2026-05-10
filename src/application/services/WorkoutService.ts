@@ -34,6 +34,13 @@ export class WorkoutService {
     return this.queryService.getExerciseMetricTemplates(exerciseId);
   }
 
+  // Метод для получения целей
+  async getExerciseTargets(userId: number, exerciseId: number): Promise<{ reps: number; weight: number } | null> {
+    const adaptation = await this.queryService.getLatestAdaptation(userId, exerciseId);
+    if (!adaptation) return null;
+    return { reps: adaptation.newReps, weight: adaptation.newWeight };
+  }
+
   // Генерация дополнительных тренировок
   async generateAdditionalWorkouts(userId: number, count: number): Promise<void> {
     return this.schedulingService.generateAdditionalWorkouts(userId, count);

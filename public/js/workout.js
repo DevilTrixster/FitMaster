@@ -22,11 +22,10 @@ async function loadWorkout() {
   }
 }
 
-function createMetricInput(metric, exIdx, setIdx) {
+function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
   const { metricType, defaultValue, unit } = metric;
   const id = `metric-${exIdx}-${setIdx}-${metricType}`;
 
-  // Перевод единиц измерения
   const unitLabels = {
     count: 'повторений',
     kg: 'кг',
@@ -34,15 +33,12 @@ function createMetricInput(metric, exIdx, setIdx) {
     m: 'м',
     kcal: 'ккал'
   };
-
-  // Перевод названий метрик
   const labelMap = {
     reps: 'Повторения',
     weight: 'Вес',
     duration: 'Время',
     distance: 'Дистанция'
   };
-
   const stepMap = {
     reps: 1,
     weight: 0.5,
@@ -50,10 +46,14 @@ function createMetricInput(metric, exIdx, setIdx) {
     distance: 0.1
   };
 
-  const placeholder =
-    defaultValue !== undefined
-      ? `${defaultValue} ${unitLabels[unit] || unit || ''}`.trim()
-      : '';
+  // Приоритет: цель из адаптации -> значение из шаблона
+  let effectiveDefault = defaultValue;
+  if (metricType === 'reps' && targetReps !== undefined) effectiveDefault = targetReps;
+  if (metricType === 'weight' && targetWeight !== undefined) effectiveDefault = targetWeight;
+
+  const placeholder = effectiveDefault !== undefined
+    ? `${effectiveDefault} ${unitLabels[unit] || unit || ''}`.trim()
+    : '';
 
   return `
     <div class="metric-group">
@@ -74,6 +74,10 @@ function renderWorkout() {
     card.className = 'exercise-card';
     const templates = ex.metricTemplates || [];
 
+    // Целевые значения из адаптации (если есть)
+    const targetReps = ex.targetReps;
+    const targetWeight = ex.targetWeight;
+
     card.innerHTML = `
       <div class="exercise-header">
         <h3>${ex.name}</h3>
@@ -88,7 +92,7 @@ function renderWorkout() {
           <div id="set-${exIdx}-${setIdx}" class="set-row">
             <span class="set-number">${setIdx + 1}</span>
             <div class="set-inputs">
-              ${templates.map(m => createMetricInput(m, exIdx, setIdx)).join('')}
+              ${templates.map(m => createMetricInput(m, exIdx, setIdx, targetReps, targetWeight)).join('')}
             </div>
             <div class="set-actions">
               <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${setIdx})" title="Выполнено">✓</button>
