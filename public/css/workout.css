@@ -1,12 +1,11 @@
 /* Workout page - Dark Glass Theme */
-
 .container {
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
 
-/* Timer Section */
+/* Таймер */
 .timer-section {
   display: flex;
   align-items: center;
@@ -16,7 +15,7 @@
   border: 1px solid var(--card-border);
   padding: 1rem 2rem;
   border-radius: 20px;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   box-shadow: var(--shadow-md);
   backdrop-filter: blur(12px);
 }
@@ -31,14 +30,28 @@
   text-align: center;
 }
 
-/* Exercises Grid */
+/* Блок рекомендаций */
+.adaptation-hint {
+  background: rgba(78, 204, 163, 0.1);
+  border-left: 4px solid #4ecca3;
+  padding: 0.8rem 1.2rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  color: #4ecca3;
+  font-size: 0.95rem;
+  backdrop-filter: blur(5px);
+}
+
+.hidden { display: none !important; }
+
+/* Список упражнений */
 .exercises-grid {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
-/* Exercise Card */
+/* Карточка упражнения */
 .exercise-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -110,14 +123,14 @@
   gap: 0.3rem;
 }
 
-/* Sets Container */
+/* Контейнер подходов */
 .sets-container {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
 }
 
-/* One Set Row */
+/* Строка подхода */
 .set-row {
   display: flex;
   align-items: center;
@@ -190,7 +203,15 @@
   font-weight: 400;
 }
 
-/* Action Buttons */
+/* Подсказка с целевыми значениями */
+.target-hint {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  margin-top: 0.2rem;
+}
+
+/* Кнопки действий */
 .set-actions {
   display: flex;
   gap: 0.5rem;
@@ -245,7 +266,7 @@
   cursor: not-allowed;
 }
 
-/* Set States */
+/* Состояния выполненных/пропущенных подходов */
 .set-row.completed {
   border-left: 4px solid #4ecca3;
   background: rgba(78, 204, 163, 0.08);
@@ -257,7 +278,12 @@
   background: rgba(255, 165, 0, 0.05);
 }
 
-/* Completion Card */
+/* Карточка завершения */
+.finish-section {
+  margin-top: 2rem;
+  text-align: center;
+}
+
 .completion-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -320,47 +346,17 @@
   background: rgba(0, 0, 0, 0.3);
 }
 
-.hidden { display: none !important; }
-
-/* Responsive */
+/* Адаптивность */
 @media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-
-  .set-row {
-    flex-wrap: wrap;
-    gap: 0.8rem;
-  }
-
-  .set-inputs {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .metric-group {
-    min-width: 100%;
-  }
-
-  .set-actions {
-    margin-left: 0;
-    width: 100%;
-    justify-content: flex-end;
-  }
+  .container { padding: 1rem; }
+  .set-row { flex-wrap: wrap; gap: 0.8rem; }
+  .set-inputs { flex-direction: column; width: 100%; }
+  .metric-group { min-width: 100%; }
+  .set-actions { margin-left: 0; width: 100%; justify-content: flex-end; }
 }
 
 @media (max-width: 480px) {
-  .exercise-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .timer-section {
-    padding: 0.8rem 1rem;
-  }
-  
-  .timer-display {
-    font-size: 1.8rem;
-  }
+  .exercise-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .timer-section { padding: 0.8rem 1rem; }
+  .timer-display { font-size: 1.8rem; }
 }

@@ -93,4 +93,22 @@ export class AdaptationRepository {
       };
     });
   }
+
+  async getAllUserAdaptations(userId: number, limit: number = 20): Promise<WorkoutAdaptation[]> {
+    const result = await this.pool.query(
+      `SELECT * FROM workout_adaptations WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
+      [userId, limit]
+    );
+    return result.rows.map((row: any) => new WorkoutAdaptation({
+      id: row.id,
+      userId: row.user_id,
+      exerciseId: row.exercise_id,
+      previousWeight: row.previous_weight,
+      newWeight: row.new_weight,
+      previousReps: row.previous_reps,
+      newReps: row.new_reps,
+      adaptationType: row.adaptation_type,
+      reason: row.adaptation_reason,
+    }));
+  }
 }

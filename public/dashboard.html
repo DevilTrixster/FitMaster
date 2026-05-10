@@ -6,16 +6,17 @@
   <title>Личный кабинет - FitMaster</title>
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/dashboard.css">
-  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+  <!-- Навигация -->
   <nav class="navbar">
     <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
     <div class="nav-user">
       <a href="/dashboard" class="nav-link active">Личный кабинет</a>
       <a href="/history" class="nav-link">История</a>
       <a href="/progress" class="nav-link">Прогресс</a>
-      <a href="/suggestions" class="nav-link">Рекомендация</a>
+      <a href="/suggestions" class="nav-link">Рекомендации</a>
       <a href="/profile" class="nav-link">Профиль</a>
       <button id="logoutBtn" class="btn btn-outline">Выход</button>
     </div>
@@ -23,41 +24,73 @@
 
   <div class="container">
     <div class="dashboard-grid">
-      <!-- Левая колонка: Статистика -->
+      <!-- Боковая панель -->
       <aside class="sidebar">
-        <div class="card">
-          <h2 class="sidebar-title">📊 Статистика</h2>
+        <h2 class="sidebar-title">📊 Статистика</h2>
+        <!-- Старые карточки -->
+        <div class="stat-card">
+          <div class="stat-number" id="totalWorkouts">0</div>
+          <div class="stat-label">Всего тренировок</div>
+          <div class="progress-bar"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="avgWellness">0</div>
+          <div class="stat-label">Среднее самочувствие</div>
+          <div class="progress-bar"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="currentStreak">0</div>
+          <div class="stat-label">Дней подряд</div>
+          <div class="progress-bar"></div>
+        </div>
+
+        <!-- Блок: Состояние восстановления -->
+        <div class="recovery-section">
+          <h3 class="recovery-title">🧬 Состояние восстановления</h3>
           
-          <div class="stat-card">
-            <div class="stat-number" id="totalWorkouts">0</div>
-            <div class="stat-label">Тренировок</div>
-            <div class="progress-bar"></div>
+          <!-- Recovery Score (круглый индикатор) -->
+          <div class="recovery-metric">
+            <span class="metric-label">Готовность</span>
+            <div class="recovery-score-circle" id="recoveryScoreCircle">--</div>
           </div>
-          
-          <div class="stat-card">
-            <div class="stat-number" id="avgWellness">-</div>
-            <div class="stat-label">Самочувствие</div>
-            <div class="progress-bar"></div>
+
+          <!-- Утомление -->
+          <div class="recovery-metric">
+            <span class="metric-label">Утомление</span>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill fatigue-fill" id="fatigueBar" style="width: 0%"></div>
+            </div>
+            <span class="metric-value" id="fatigueValue">0%</span>
           </div>
-          
-          <div class="stat-card">
-            <div class="stat-number" id="currentStreak">0</div>
-            <div class="stat-label">Дней подряд</div>
-            <div class="progress-bar"></div>
+
+          <!-- Риск травмы -->
+          <div class="recovery-metric">
+            <span class="metric-label">Риск травмы</span>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill injury-fill" id="injuryBar" style="width: 0%"></div>
+            </div>
+            <span class="metric-value" id="injuryValue">0%</span>
           </div>
-          
+
+          <!-- Тренд производительности -->
+          <div class="recovery-metric">
+            <span class="metric-label">Тренд</span>
+            <span class="metric-value" id="trendValue">--</span>
+          </div>
+
+          <!-- Мышечное восстановление -->
+          <div class="muscle-recovery">
+            <h4>💪 Восстановление мышц</h4>
+            <div id="muscleBars"></div>
+          </div>
         </div>
       </aside>
 
-      <!-- Правая колонка: Предстоящие тренировки -->
-      <div class="main-content">
-        <div class="card">
-          <h2>📅 Предстоящие тренировки</h2>
-          <div id="upcomingWorkouts">
-            <div class="loading">Загрузка...</div>
-          </div>
-        </div>
-      </div>
+      <!-- Основной контент -->
+      <main class="main-content">
+        <h2>📅 Предстоящие тренировки</h2>
+        <div id="upcomingWorkouts"></div>
+      </main>
     </div>
   </div>
 

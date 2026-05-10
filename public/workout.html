@@ -9,46 +9,53 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
+  <!-- Навигация -->
   <nav class="navbar">
     <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
     <div class="nav-user">
-      <button id="finishBtn" class="btn btn-outline" disabled>Завершить тренировку</button>
+      <a href="/dashboard" class="nav-link">Личный кабинет</a>
+      <a href="/history" class="nav-link">История</a>
+      <a href="/progress" class="nav-link">Прогресс</a>
+      <a href="/suggestions" class="nav-link">Рекомендации</a>
+      <a href="/profile" class="nav-link">Профиль</a>
+      <button id="logoutBtn" class="btn btn-outline">Выход</button>
     </div>
   </nav>
 
   <div class="container">
-    <!-- Таймер отдыха -->
+    <!-- Секция таймера -->
     <div class="timer-section">
-      <div class="timer-icon">⏱️</div>
-      <div class="timer-display" id="timerDisplay">00:00</div>
-      <button id="startTimerBtn" class="btn btn-primary btn-small">Старт</button>
-      <button id="resetTimerBtn" class="btn btn-outline btn-small">Сброс</button>
+      <span class="timer-icon">⏱️</span>
+      <span class="timer-display" id="timerDisplay">00:00</span>
+      <button id="startTimerBtn" class="btn btn-small">Старт 60 с</button>
+      <button id="resetTimerBtn" class="btn btn-small">Сброс</button>
     </div>
 
-    <!-- Список упражнений -->
-    <div id="exercisesList" class="exercises-grid">
-      <!-- JS добавляет карточки -->
+    <!-- Блок рекомендаций (заполняется скриптом) -->
+    <div id="adaptationHint" class="adaptation-hint hidden"></div>
+
+    <!-- Упражнения -->
+    <div id="exercisesList" class="exercises-grid"></div>
+
+    <!-- Кнопка завершения -->
+    <div class="finish-section">
+      <button id="finishBtn" class="btn btn-primary btn-large" disabled>Завершить тренировку</button>
     </div>
 
-    <!-- Блок завершения -->
+    <!-- Карточка завершения -->
     <div id="completionSection" class="completion-card hidden">
-      <h2>🎉 Тренировка завершена!</h2>
-      <p>Оцени своё самочувствие и оставь комментарий</p>
-      
-      <div class="wellness-rating">
-        <label>Самочувствие:</label>
-        <div class="stars" id="starContainer">
-          <span class="star" data-value="1">⭐</span>
-          <span class="star" data-value="2">⭐</span>
-          <span class="star" data-value="3">⭐</span>
-          <span class="star" data-value="4">⭐</span>
-          <span class="star" data-value="5">⭐</span>
-        </div>
+      <h2>Тренировка завершена</h2>
+      <p>Оцените самочувствие</p>
+      <div class="stars">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star active" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
       </div>
-
-      <textarea id="commentsInput" placeholder="Комментарии к тренировке (необязательно)"></textarea>
-      
-      <button id="submitFinishBtn" class="btn btn-primary">Сохранить и вернуться</button>
+      <textarea id="commentsInput" placeholder="Заметки (необязательно)"></textarea>
+      <button id="submitFinishBtn" class="btn btn-primary btn-large">Сохранить и завершить</button>
     </div>
   </div>
 

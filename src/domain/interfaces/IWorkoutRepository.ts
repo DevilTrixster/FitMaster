@@ -83,4 +83,8 @@ export interface IWorkoutRepository {
 
   // Обновление времени у всех будущих запланированных тренировок пользователя
   updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void>;
+
+  getDailyWorkoutVolumes(userId: number, days: number): Promise<Array<{ date: string; volume: number }>>;
+
+  getAllUserAdaptations(userId: number, limit?: number): Promise<WorkoutAdaptation[]>;
 }

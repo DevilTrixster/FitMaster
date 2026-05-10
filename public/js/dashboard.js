@@ -23,8 +23,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         ⚠️ ${error.message}
       </div>`;
   }
+
+  // Загружаем recovery-данные параллельно
+  loadRecoveryInsights();
 });
 
+// ========== Функции отрисовки тренировок (без изменений) ==========
 function renderWorkouts(workouts) {
   const container = document.getElementById('upcomingWorkouts');
   if (!workouts || workouts.length === 0) {
@@ -119,4 +123,66 @@ function updateStats(workouts) {
     : '-';
   document.getElementById('avgWellness').textContent = avgWellness;
   document.getElementById('currentStreak').textContent = '0';
+}
+
+// ========== НОВАЯ ФУНКЦИЯ: загрузка Recovery Insights ==========
+async function loadRecoveryInsights() {
+  try {
+    const response = await fetchWithAuth('/api/analytics/recovery');
+    if (!response.ok) throw new Error('Failed to fetch recovery data');
+    const data = await response.json();
+
+    // Обновляем Recovery Score (круглый индикатор)
+    const score = data.recoveryScore || 0;
+    const circle = document.getElementById('recoveryScoreCircle');
+    circle.textContent = score;
+    circle.style.background = `conic-gradient(var(--accent) 0% ${score}%, rgba(255,255,255,0.1) ${score}% 100%)`;
+
+    // Fatigue
+    const fatigue = data.fatigueScore || 0;
+    document.getElementById('fatigueBar').style.width = `${fatigue}%`;
+    document.getElementById('fatigueValue').textContent = `${fatigue}%`;
+
+    // Injury Risk
+    const injury = data.injuryRisk || 0;
+    document.getElementById('injuryBar').style.width = `${injury}%`;
+    document.getElementById('injuryValue').textContent = `${injury}%`;
+
+    // Performance Trend
+    const trend = data.performanceTrend || 0;
+    const trendEl = document.getElementById('trendValue');
+    trendEl.textContent = trend > 0 ? `+${trend.toFixed(1)}%` : `${trend.toFixed(1)}%`;
+    trendEl.style.color = trend >= 0 ? '#4ecca3' : '#e94560';
+
+    // Мышечное восстановление
+    const muscleRecovery = data.muscleRecovery || {};
+    const muscles = {
+      chest: 'Грудь',
+      back: 'Спина',
+      legs: 'Ноги',
+      shoulders: 'Плечи',
+      arms: 'Руки',
+      core: 'Пресс'
+    };
+    const container = document.getElementById('muscleBars');
+    container.innerHTML = Object.entries(muscles).map(([key, name]) => {
+      const percentage = muscleRecovery[key] !== undefined ? muscleRecovery[key] : 100;
+      return `
+        <div class="muscle-bar-item">
+          <span class="muscle-name">${name}</span>
+          <div class="muscle-bar-bg">
+            <div class="muscle-bar-fill" style="width: ${percentage}%"></div>
+          </div>
+          <span class="muscle-percent">${percentage}%</span>
+        </div>`;
+    }).join('');
+  } catch (error) {
+    console.error('Recovery insights error:', error);
+    // Если ошибка – можно показать заглушку
+    document.getElementById('recoveryScoreCircle').textContent = '--';
+    document.getElementById('fatigueValue').textContent = '--';
+    document.getElementById('injuryValue').textContent = '--';
+    document.getElementById('trendValue').textContent = '--';
+    document.getElementById('muscleBars').innerHTML = '<p class="error-text">Не удалось загрузить данные восстановления</p>';
+  }
 }

@@ -37,35 +37,27 @@ export class WorkoutRepository implements IWorkoutRepository {
   async createUserWorkout(userWorkout: UserWorkout): Promise<UserWorkout> { return this.writeRepo.createUserWorkout(userWorkout); }
   async getUserWorkouts(userId: number, limit?: number): Promise<UserWorkout[]> { return this.readRepo.getUserWorkouts(userId, limit); }
   async getUserWorkoutById(id: number): Promise<UserWorkout | null> { return this.readRepo.getUserWorkoutById(id); }
-  async updateUserWorkoutStatus(id: number, status: string, wellnessRating?: number, comments?: string): Promise<void> {
-    return this.writeRepo.updateUserWorkoutStatus(id, status, wellnessRating, comments);
-  }
+  async updateUserWorkoutStatus(id: number, status: string, wellnessRating?: number, comments?: string): Promise<void> { return this.writeRepo.updateUserWorkoutStatus(id, status, wellnessRating, comments); }
   async startUserWorkout(id: number): Promise<void> { return this.writeRepo.startUserWorkout(id); }
   async pauseUserWorkout(id: number, lastExerciseIndex: number): Promise<void> { return this.writeRepo.pauseUserWorkout(id, lastExerciseIndex); }
   async resumeUserWorkout(id: number): Promise<void> { return this.writeRepo.resumeUserWorkout(id); }
-  async getUserActiveWorkout(userId: number): Promise<UserWorkout | null> {
-    return this.readRepo.getUserActiveWorkout(userId);
-  }
+  async getUserActiveWorkout(userId: number): Promise<UserWorkout | null> { return this.readRepo.getUserActiveWorkout(userId); }
   async getAllExercises(): Promise<Exercise[]> { return this.exerciseRepo.getAllExercises(); }
   async rescheduleWorkout(id: number, newDate: Date, reason?: string): Promise<void> { return this.writeRepo.rescheduleWorkout(id, newDate, reason); }
   async skipWorkout(id: number, reason?: string): Promise<void> { return this.writeRepo.skipWorkout(id, reason); }
   async saveAdaptation(adaptation: WorkoutAdaptation): Promise<void> { return this.adaptationRepo.saveAdaptation(adaptation); }
   async getUserAdaptations(userId: number, exerciseId: number, limit?: number): Promise<WorkoutAdaptation[]> { return this.adaptationRepo.getUserAdaptations(userId, exerciseId, limit); }
   async getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null> { return this.adaptationRepo.getLatestAdaptation(userId, exerciseId); }
-  async getWorkoutHistory(userId: number, limit: number, offset: number, status?: string, dateFrom?: string, dateTo?: string): Promise<UserWorkout[]> {
-    return this.readRepo.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo);
-  }
+  async getWorkoutHistory(userId: number, limit: number, offset: number, status?: string, dateFrom?: string, dateTo?: string): Promise<UserWorkout[]> { return this.readRepo.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo); }
   async getSplitPrograms(): Promise<Workout[]> { return this.readRepo.getSplitPrograms(); }
-  async saveExerciseSubstitution(userId: number, originalExerciseId: number, alternativeExerciseId: number, reason: string): Promise<void> {
-    return this.adaptationRepo.saveExerciseSubstitution(userId, originalExerciseId, alternativeExerciseId, reason);
-  }
-  async getUserExerciseSubstitutions(userId: number): Promise<Array<{ originalExerciseId: number; alternativeExerciseId: number; reason: string; suggestedAt: Date }>> {
-    return this.adaptationRepo.getUserExerciseSubstitutions(userId);
-  }
+  async saveExerciseSubstitution(userId: number, originalExerciseId: number, alternativeExerciseId: number, reason: string): Promise<void> { return this.adaptationRepo.saveExerciseSubstitution(userId, originalExerciseId, alternativeExerciseId, reason); }
+  async getUserExerciseSubstitutions(userId: number): Promise<Array<{ originalExerciseId: number; alternativeExerciseId: number; reason: string; suggestedAt: Date }>> { return this.adaptationRepo.getUserExerciseSubstitutions(userId);}
   async getExerciseById(id: number): Promise<Exercise | null> { return this.exerciseRepo.getExerciseById(id); }
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> { return this.exerciseRepo.getExerciseMetricTemplates(exerciseId); }
   async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> { return this.exerciseRepo.saveExerciseSet(workoutExerciseId, exerciseSet); }
   async getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> { return this.exerciseRepo.getExerciseSets(workoutExerciseId); }
   async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> { return this.exerciseRepo.getWorkoutExerciseId(userWorkoutId, exerciseId); }
   async updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void> { return this.writeRepo.updateFutureWorkoutsTime(userId, newTime); }
+  async getDailyWorkoutVolumes(userId: number, days: number): Promise<Array<{ date: string; volume: number }>> { return this.readRepo.getDailyWorkoutVolumes(userId, days);}
+  async getAllUserAdaptations(userId: number, limit?: number): Promise<WorkoutAdaptation[]> { return this.adaptationRepo.getAllUserAdaptations(userId, limit); }
 }

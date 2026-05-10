@@ -112,4 +112,8 @@ export class WorkoutService {
   async triggerAdaptation(userId: number, completedWorkoutId: number, wellnessRating: number): Promise<void> {
     return this.resultsService.triggerAdaptation(userId, completedWorkoutId, wellnessRating);
   }
+
+  async getAdaptations(userId: number, limit?: number) {
+    return this.queryService.getAdaptations(userId, limit);
+  }
 }

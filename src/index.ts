@@ -24,9 +24,8 @@ import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler
 import { ProfileController } from './presentation/controllers/ProfileController';
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
-import { WorkoutAdaptationService } from './application/services/adaptation/WorkoutAdaptationService';
 import { ExerciseSubstitutionService } from './application/services/adaptation/ExerciseSubstitutionService';
-import { 
+import {
   WorkoutSchedulingService,
   WorkoutLifecycleService,
   WorkoutQueryService,
@@ -34,6 +33,12 @@ import {
 } from './application/services/workout';
 import { config } from './config/env';
 import { errorHandler } from './presentation/middleware/errorHandler';
+import { IntelligentAdaptationService } from './application/services/adaptation/IntelligentAdaptationService';
+import { FatigueRecoveryService } from './application/services/adaptation/FatigueRecoveryService';
+import { FatigueRepository } from './infrastructure/repositories/FatigueRepository';
+import { PlateauDetectionService } from './application/services/adaptation/PlateauDetectionService';
+import { createAnalyticsRoutes } from './presentation/routes/analyticsRoutes';
+import { AnalyticsController } from './presentation/controllers/AnalyticsController';
 
 async function bootstrap() {
   const app = express();
@@ -42,35 +47,57 @@ async function bootstrap() {
     cors: { origin: '*', methods: ['GET', 'POST'] },
   });
 
-  // 1. Middleware
+  // Middleware
   app.use(cors());
   app.use(express.json());
   app.use(express.static(path.join(__dirname, '../public')));
 
-  // 2. Инициализация БД и зависимостей
   try {
     const database = Database.getInstance();
     await database.connect();
-    
-    // Репозитории
+
+    // === Репозитории ===
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
     const progressRepository = new ProgressRepository(database.getPool());
-    
+    const fatigueRepository = new FatigueRepository(database.getPool());
 
-    // Сервисы
+    // === Сервисы ===
     const profileService = new ProfileService(userRepository, workoutRepository);
     const profileController = new ProfileController(profileService);
-    // Адаптация
+
+    // Адаптация и утомление
     const substitutionService = new ExerciseSubstitutionService(workoutRepository);
-    const workoutAdaptationService = new WorkoutAdaptationService(workoutRepository, userRepository, substitutionService);
-    //  Сервисы для WorkoutService
+
+    // Сервис утомления/восстановления
+    const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository);
+
+    // Сервис обнаружения плато
+    const plateauService = new PlateauDetectionService(workoutRepository);
+
+    // Интеллектуальная адаптация (теперь с PlateauDetectionService)
+    const intelligentAdaptationService = new IntelligentAdaptationService(
+      workoutRepository,
+      userRepository,
+      substitutionService,
+      fatigueService,
+      plateauService                     // <-- пятый аргумент
+    );
+
+    // Сервисы тренировок
     const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
-    const workoutResultsService = new WorkoutResultsService(workoutRepository, userRepository, workoutAdaptationService);
+
+    const workoutResultsService = new WorkoutResultsService(
+      workoutRepository,
+      userRepository,
+      intelligentAdaptationService,
+      fatigueService
+    );
+
     const workoutLifecycleService = new WorkoutLifecycleService(workoutRepository, workoutResultsService);
     const workoutQueryService = new WorkoutQueryService(workoutRepository, workoutSchedulingService);
 
-    // Главный сервис (Facade)
+    // Главный фасад
     const workoutService = new WorkoutService(
       workoutSchedulingService,
       workoutLifecycleService,
@@ -91,18 +118,22 @@ async function bootstrap() {
     // Middleware
     const authMiddleware = createAuthMiddleware(authService);
 
-    // 3. Socket.IO
+    // Socket.IO
     const socketHandler = new WorkoutSocketHandler(io, workoutService);
     socketHandler.initialize();
 
-    // 4. API маршруты
+    // Аналитика
+    const analyticsController = new AnalyticsController(fatigueService, workoutService);
+
+    // API маршруты
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
     app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
     app.use('/api/profile', createProfileRoutes(profileController, authMiddleware));
     app.use('/api/substitutions', createSubstitutionRoutes(substitutionController, authMiddleware));
+    app.use('/api/analytics', createAnalyticsRoutes(analyticsController, authMiddleware));
 
-    // 5. Frontend маршруты
+    // Frontend
     app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
     app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../public/dashboard.html')));
     app.get('/history', (req, res) => res.sendFile(path.join(__dirname, '../public/history.html')));
@@ -112,6 +143,7 @@ async function bootstrap() {
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
     app.get('/suggestions', (req, res) => res.sendFile(path.join(__dirname, '../public/suggestions.html')));
+
     app.use(errorHandler);
 
     console.log('🚀 Сервер готов к работе');

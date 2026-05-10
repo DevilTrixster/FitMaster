@@ -123,4 +123,8 @@ export class WorkoutQueryService {
   async getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null> {
     return this.workoutRepository.getLatestAdaptation(userId, exerciseId);
   }
+
+  async getAdaptations(userId: number, limit: number = 20) {
+    return this.workoutRepository.getAllUserAdaptations(userId, limit);
+  }
 }

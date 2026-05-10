@@ -103,7 +103,7 @@ export class WorkoutReadRepository {
 
     const result = await this.pool.query(query, params);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
-    }
+  }
 
   async getSplitPrograms(): Promise<Workout[]> {
     const query = `SELECT * FROM workouts WHERE id IN (1, 2, 3) ORDER BY id ASC`;
@@ -128,6 +128,28 @@ export class WorkoutReadRepository {
     const result = await this.pool.query(query, [userId]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUserWorkout(result.rows[0]);
+  }
+
+  async getDailyWorkoutVolumes(userId: number, days: number): Promise<Array<{ date: string; volume: number }>> {
+    const query = `
+      SELECT uw.scheduled_date::text AS date,
+            COALESCE(SUM(sm.value * sm2.value), 0) AS volume
+      FROM user_workouts uw
+      JOIN workout_exercises we ON we.workout_id = uw.workout_id
+      JOIN exercise_sets es ON es.workout_exercise_id = we.id
+      LEFT JOIN set_metrics sm ON sm.exercise_set_id = es.id AND sm.metric_type = 'reps'
+      LEFT JOIN set_metrics sm2 ON sm2.exercise_set_id = es.id AND sm2.metric_type = 'weight'
+      WHERE uw.user_id = $1
+        AND uw.status = 'completed'
+        AND uw.scheduled_date >= CURRENT_DATE - $2::int
+      GROUP BY uw.scheduled_date
+      ORDER BY uw.scheduled_date DESC
+    `;
+    const result = await this.pool.query(query, [userId, days]);
+    return result.rows.map((row: any) => ({
+      date: row.date,
+      volume: parseFloat(row.volume),
+    }));
   }
 
   // Вспомогательный маппер

@@ -1,22 +1,21 @@
-// src/application/services/workout/WorkoutResultsService.ts
 import {
   MetricType,
   ExerciseSet,
   SetMetric,
-  WorkoutAdaptation,
-  AdaptationType,
 } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { WorkoutAdaptationService } from '../adaptation/WorkoutAdaptationService';
+import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';
+import { FatigueRecoveryService } from '../adaptation/FatigueRecoveryService';
 import { UnauthorizedError, ValidationError } from '../../../core/errors/ValidationError';
-import { SetAnalysisData } from '../../dto/SetAnalysisData'; // единственное место определения
+import { SetAnalysisData } from '../../dto/SetAnalysisData';
 
 export class WorkoutResultsService {
   constructor(
     private workoutRepository: IWorkoutRepository,
     private userRepository: IUserRepository,
-    private adaptationService: WorkoutAdaptationService
+    private adaptationService: IntelligentAdaptationService,
+    private fatigueService: FatigueRecoveryService
   ) {}
 
   async saveSetMetrics(
@@ -94,13 +93,7 @@ export class WorkoutResultsService {
         };
       });
 
-      await this.adaptationService.adaptExercise(
-        userId,
-        completedWorkoutId,
-        exercise,
-        wellnessRating,
-        analysisData
-      );
+      await this.fatigueService.saveDailyMetrics(userId);
     }
   }
 

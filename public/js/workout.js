@@ -17,9 +17,27 @@ async function loadWorkout() {
     currentWorkout = (await res.json()).workout;
     localStorage.setItem('currentWorkoutId', currentWorkout.id);
     renderWorkout();
+    showAdaptationHint(); // показать подсказку адаптации (если есть)
   } catch (err) {
     alert('Ошибка загрузки: ' + err.message);
   }
+}
+
+// Отображает общую рекомендацию по тренировке
+function showAdaptationHint() {
+  const hintEl = document.getElementById('adaptationHint');
+  // Здесь можно сделать запрос к /api/analytics/adaptations и показать последнюю,
+  // но для упрощения оставим скрытым.
+  // Если нужно показать, раскомментируйте:
+  // try {
+  //   const adaptRes = await fetchWithAuth('/api/analytics/adaptations?limit=1');
+  //   const adata = await adaptRes.json();
+  //   if (adata && adata.length > 0) {
+  //     hintEl.textContent = `💡 ${adata[0].reason}`;
+  //     hintEl.classList.remove('hidden');
+  //   }
+  // } catch(e) {}
+  hintEl.classList.add('hidden');
 }
 
 function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
@@ -46,7 +64,6 @@ function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
     distance: 0.1
   };
 
-  // Приоритет: цель из адаптации -> значение из шаблона
   let effectiveDefault = defaultValue;
   if (metricType === 'reps' && targetReps !== undefined) effectiveDefault = targetReps;
   if (metricType === 'weight' && targetWeight !== undefined) effectiveDefault = targetWeight;
@@ -55,12 +72,18 @@ function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
     ? `${effectiveDefault} ${unitLabels[unit] || unit || ''}`.trim()
     : '';
 
+  // Подсказка цели
+  const targetText = effectiveDefault !== undefined
+    ? `<span class="target-hint">Цель: ${effectiveDefault} ${unitLabels[unit] || unit}</span>`
+    : '';
+
   return `
     <div class="metric-group">
       <label class="metric-label">${labelMap[metricType] || metricType}</label>
       <input type="number" id="${id}" class="set-input"
              placeholder="${placeholder}"
              step="${stepMap[metricType] || 'any'}" min="0">
+      ${targetText}
     </div>`;
 }
 
@@ -74,7 +97,6 @@ function renderWorkout() {
     card.className = 'exercise-card';
     const templates = ex.metricTemplates || [];
 
-    // Целевые значения из адаптации (если есть)
     const targetReps = ex.targetReps;
     const targetWeight = ex.targetWeight;
 
