@@ -12,13 +12,10 @@ export class WorkoutService {
     private resultsService: WorkoutResultsService
   ) {}
 
-  // Сохранение подхода с метриками
+  // Сохранение метрик подхода
   async saveSetMetrics(
-    workoutId: number,
-    userId: number,
-    exerciseId: number,
-    setNumber: number,
-    setType: string,
+    workoutId: number, userId: number, exerciseId: number,
+    setNumber: number, setType: string,
     metrics: { metricType: MetricType; value: number; unit?: string }[]
   ): Promise<void> {
     return this.resultsService.saveSetMetrics(workoutId, userId, exerciseId, setNumber, setType, metrics);
@@ -34,7 +31,7 @@ export class WorkoutService {
     return this.queryService.getExerciseMetricTemplates(exerciseId);
   }
 
-  // Метод для получения целей
+  // Текущие цели упражнения из последней адаптации
   async getExerciseTargets(userId: number, exerciseId: number): Promise<{ reps: number; weight: number } | null> {
     const adaptation = await this.queryService.getLatestAdaptation(userId, exerciseId);
     if (!adaptation) return null;
@@ -52,12 +49,7 @@ export class WorkoutService {
   }
 
   // Завершить тренировку (запускает адаптацию)
-  async completeWorkout(
-    workoutId: number,
-    userId: number,
-    wellnessRating?: number,
-    comments?: string
-  ): Promise<void> {
+  async completeWorkout(workoutId: number, userId: number, wellnessRating?: number, comments?: string): Promise<void> {
     await this.lifecycleService.completeWorkout(workoutId, userId, wellnessRating, comments);
   }
 
@@ -76,7 +68,7 @@ export class WorkoutService {
     return this.lifecycleService.getActiveWorkout(userId);
   }
 
-  // Текущая (активная или запланированная)
+  // Текущая тренировка (активная или запланированная)
   async getCurrentWorkout(userId: number): Promise<UserWorkout | null> {
     return this.lifecycleService.getCurrentWorkout(userId);
   }
@@ -86,14 +78,10 @@ export class WorkoutService {
     return this.queryService.getUpcomingWorkouts(userId, limit);
   }
 
-  // История тренировок
+  // История тренировок с фильтрами
   async getWorkoutHistory(
-    userId: number,
-    limit: number,
-    offset: number,
-    status?: string,
-    dateFrom?: string,
-    dateTo?: string
+    userId: number, limit: number, offset: number,
+    status?: string, dateFrom?: string, dateTo?: string
   ): Promise<UserWorkout[]> {
     return this.queryService.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo);
   }
@@ -103,16 +91,17 @@ export class WorkoutService {
     return this.queryService.getAllExercises();
   }
 
-  // Рекомендации по замене
+  // Рекомендации по замене упражнений
   async getExerciseSubstitutions(userId: number) {
     return this.queryService.getExerciseSubstitutions(userId);
   }
 
-  // Запуск адаптации
+  // Запуск адаптации вручную (обычно вызывается автоматически)
   async triggerAdaptation(userId: number, completedWorkoutId: number, wellnessRating: number): Promise<void> {
     return this.resultsService.triggerAdaptation(userId, completedWorkoutId, wellnessRating);
   }
 
+  // Получение истории адаптаций
   async getAdaptations(userId: number, limit?: number) {
     return this.queryService.getAdaptations(userId, limit);
   }

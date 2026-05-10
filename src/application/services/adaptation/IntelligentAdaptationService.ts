@@ -26,6 +26,7 @@ export class IntelligentAdaptationService {
     const metrics = await this.fatigueService.calculateMetrics(userId);
     const muscleRecovery = metrics.muscleRecovery[muscleGroup] ?? 80;
 
+    // Принудительная разгрузка при очень низком восстановлении мышцы
     if (muscleRecovery < 50) {
       return new WorkoutAdaptation({
         userId,
@@ -35,7 +36,7 @@ export class IntelligentAdaptationService {
         previousReps: 0,
         newReps: 0,
         adaptationType: AdaptationType.DecreaseWeight,
-        reason: `Muscle recovery low (${muscleRecovery}%). Force deload.`,
+        reason: `Низкое восстановление мышцы (${muscleRecovery}%). Принудительная разгрузка.`,
       });
     }
 
@@ -55,36 +56,35 @@ export class IntelligentAdaptationService {
     if (avgReps >= targetReps && trend > 0) {
       newWeight = Math.round(newWeight * 1.025);
       adaptationType = AdaptationType.IncreaseWeight;
-      reason = 'Consistent progress. Increasing weight.';
+      reason = 'Стабильный прогресс. Повышение веса.';
     } else if (avgReps >= targetReps && trend <= 0) {
       adaptationType = AdaptationType.NoChange;
-      reason = 'Reps achieved but negative trend. Holding weight.';
+      reason = 'Повторения выполнены, но отрицательный тренд. Вес не меняется.';
     } else if (avgReps < targetReps * 0.8) {
       if (muscleRecovery < 70) {
         newWeight = Math.round(newWeight * 0.9);
         adaptationType = AdaptationType.DecreaseWeight;
-        reason = 'Low reps and low recovery. Reducing weight.';
+        reason = 'Низкие повторения и низкое восстановление. Снижение веса.';
       } else {
         adaptationType = AdaptationType.NoChange;
-        reason = 'Low reps but recovery ok. Keep weight.';
+        reason = 'Низкие повторения, но восстановление нормальное. Сохранение веса.';
       }
     } else {
       adaptationType = AdaptationType.NoChange;
-      reason = 'Moderate performance. Holding.';
+      reason = 'Умеренная производительность. Без изменений.';
     }
 
-    // ========== ЗАМЕНА ПРОВЕРКИ ПЛАТО ==========
-    // Используем выделенный сервис
+    // Проверка плато и предложение замены
     const isPlateau = await this.plateauService.isPlateau(userId, exerciseId);
     if (isPlateau) {
+      // TODO: передавать корректный объект упражнения, сейчас заглушка
       await this.substitutionService.suggestSubstitutionIfStalled(
         userId,
         { exercise: { id: exerciseId, name: '' } } as any,
         []
       );
-      reason += ' Plateau detected. Exercise substitution suggested.';
+      reason += ' Обнаружено плато. Предложена замена упражнения.';
     }
-    // =========================================
 
     if (adaptationType === AdaptationType.NoChange && reason === '') return null;
 

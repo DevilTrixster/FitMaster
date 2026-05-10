@@ -1,3 +1,4 @@
+// Центральный реэкспорт сервисов тренировок
 export { WorkoutService } from '../WorkoutService';
 export { WorkoutSchedulingService } from './WorkoutSchedulingService';
 export { WorkoutLifecycleService } from './WorkoutLifecycleService';

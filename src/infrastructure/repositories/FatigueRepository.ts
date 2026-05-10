@@ -14,8 +14,7 @@ export class FatigueRepository implements IFatigueRepository {
         recovery_score = EXCLUDED.recovery_score,
         performance_trend = EXCLUDED.performance_trend,
         injury_risk = EXCLUDED.injury_risk,
-        raw_data = EXCLUDED.raw_data,
-        updated_at = CURRENT_TIMESTAMP
+        raw_data = EXCLUDED.raw_data
     `;
     await this.pool.query(query, [
       metrics.userId,
@@ -39,8 +38,7 @@ export class FatigueRepository implements IFatigueRepository {
           ON CONFLICT (user_id, muscle_group)
           DO UPDATE SET
             last_trained_date = EXCLUDED.last_trained_date,
-            recovery_percentage = EXCLUDED.recovery_percentage,
-            updated_at = CURRENT_TIMESTAMP
+            recovery_percentage = EXCLUDED.recovery_percentage
         `;
         await client.query(query, [
           record.userId,

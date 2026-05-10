@@ -9,10 +9,12 @@ export class ProfileService {
     private workoutRepository: IWorkoutRepository
   ) {}
 
+  // Получение профиля пользователя
   async getProfile(userId: number): Promise<User | null> {
     return await this.userRepository.findById(userId);
   }
 
+  // Обновление данных профиля и времени тренировок
   async updateProfile(
     userId: number,
     data: {
@@ -27,7 +29,6 @@ export class ProfileService {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new NotFoundError('Пользователь не найден');
 
-    // Обновляем базовые поля через репозиторий (без preferredWorkoutTime)
     const { preferredWorkoutTime, ...rest } = data;
     if (Object.keys(rest).length > 0) {
       await this.userRepository.updateUserFields(userId, rest);
@@ -39,7 +40,7 @@ export class ProfileService {
     }
   }
 
-  // Отдельный метод для явного обновления времени тренировок
+  // Синхронизация времени будущих тренировок
   async updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void> {
     await this.workoutRepository.updateFutureWorkoutsTime(userId, newTime);
   }

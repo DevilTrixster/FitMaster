@@ -258,4 +258,13 @@ document.getElementById('submitFinishBtn').onclick = async () => {
   }
 };
 
+// Установка начального рейтинга (3 звезды)
+document.addEventListener('DOMContentLoaded', () => {
+  const stars = document.querySelectorAll('.star');
+  stars.forEach((star, index) => {
+    star.classList.toggle('active', index < 3);
+  });
+  selectedRating = 3;
+});
+
 loadWorkout();

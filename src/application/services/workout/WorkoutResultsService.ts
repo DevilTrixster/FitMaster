@@ -1,8 +1,4 @@
-import {
-  MetricType,
-  ExerciseSet,
-  SetMetric,
-} from '../../../domain/entities/Workout';
+import { MetricType, ExerciseSet, SetMetric } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';
@@ -18,6 +14,7 @@ export class WorkoutResultsService {
     private fatigueService: FatigueRecoveryService
   ) {}
 
+  // Сохраняет метрики выполненного подхода
   async saveSetMetrics(
     workoutId: number,
     userId: number,
@@ -43,18 +40,14 @@ export class WorkoutResultsService {
       setNumber,
       setType,
       metrics: metrics.map(
-        (m) =>
-          new SetMetric({
-            metricType: m.metricType,
-            value: m.value,
-            unit: m.unit,
-          })
+        (m) => new SetMetric({ metricType: m.metricType, value: m.value, unit: m.unit })
       ),
     });
 
     await this.workoutRepository.saveExerciseSet(workoutExerciseId, exerciseSet);
   }
 
+  // Адаптирует нагрузку всех упражнений завершённой тренировки
   async triggerAdaptation(
     userId: number,
     completedWorkoutId: number,
@@ -83,28 +76,28 @@ export class WorkoutResultsService {
       const analysisData: SetAnalysisData[] = exerciseSets.map((set) => {
         const reps = set.metrics.find((m) => m.metricType === MetricType.Reps)?.value;
         const weight = set.metrics.find((m) => m.metricType === MetricType.Weight)?.value;
-        return {
-          completed: true,
-          skipped: false,
-          reps,
-          weight,
-          targetReps,
-          targetWeight,
-        };
+        return { completed: true, skipped: false, reps, weight, targetReps, targetWeight };
       });
 
-      await this.fatigueService.saveDailyMetrics(userId);
+      // Вызов интеллектуальной адаптации для конкретного упражнения
+      await this.adaptationService.adaptExercise(
+        userId,
+        completedWorkoutId,
+        exercise.exercise.id!,
+        exercise.exercise.muscleGroup,
+        analysisData,
+        wellnessRating
+      );
     }
+
+    // Сохраняем метрики утомления и восстановления после завершения
+    await this.fatigueService.saveDailyMetrics(userId);
   }
 
+  // Рассчитывает рекомендуемый начальный вес для упражнения
   calculateRecommendedWeight(userWeight: number, muscleGroup: string): number {
     const percentages: Record<string, number> = {
-      chest: 0.5,
-      back: 0.6,
-      legs: 0.75,
-      shoulders: 0.3,
-      core: 0,
-      arms: 0.4,
+      chest: 0.5, back: 0.6, legs: 0.75, shoulders: 0.3, core: 0, arms: 0.4,
     };
     const base = percentages[muscleGroup] ?? 0.5;
     return Math.round(userWeight * base);
