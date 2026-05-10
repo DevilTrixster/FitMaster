@@ -1,2 +1,4 @@
+// Централизованный ре‑экспорт всех Data Transfer Object
+export * from './ProgressStatsDTO';
 export * from './RescheduleWorkoutDTO';
-// Здесь будут другие DTO
+export * from './SetAnalysisData';
