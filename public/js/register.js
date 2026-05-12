@@ -37,11 +37,16 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
       showMessage('Регистрация успешна! Программа тренировок создана', 'success');
-      setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
     } else {
+      // Показываем сообщение от сервера
       showMessage(result.error || 'Ошибка регистрации', 'error');
+      console.error('Ошибка регистрации:', result.error);
     }
   } catch (error) {
+    console.error('Сетевая ошибка:', error);
     showMessage('Ошибка соединения с сервером', 'error');
   }
 });
