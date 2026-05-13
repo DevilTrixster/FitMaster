@@ -7,6 +7,10 @@ import { Database } from './infrastructure/database/Database';
 import { UserRepository } from './infrastructure/repositories/UserRepository';
 import { WorkoutRepository } from './infrastructure/repositories/WorkoutRepository';
 import { AuthService } from './application/services/AuthService';
+import { ExerciseLikeRepository } from './infrastructure/repositories/ExerciseLikeRepository';
+import { ExerciseLikeService } from './application/services/ExerciseLikeService';
+import { LikeController } from './presentation/controllers/LikeController';
+import { createLikeRoutes } from './presentation/routes/likeRoutes';
 import { WorkoutService } from './application/services/WorkoutService';
 import { WorkoutRescheduleService } from './application/services/WorkoutRescheduleService';
 import { ProgressRepository } from './infrastructure/repositories/ProgressRepository';
@@ -18,13 +22,10 @@ import { createAuthRoutes } from './presentation/routes/authRoutes';
 import { createWorkoutRoutes } from './presentation/routes/workoutRoutes';
 import { createProgressRoutes } from './presentation/routes/progressRoutes';
 import { createAuthMiddleware } from './presentation/middleware/authMiddleware';
-import { SubstitutionController } from './presentation/controllers/SubstitutionController';
-import { createSubstitutionRoutes } from './presentation/routes/substitutionRoutes';
 import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler';
 import { ProfileController } from './presentation/controllers/ProfileController';
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
-import { ExerciseSubstitutionService } from './application/services/adaptation/ExerciseSubstitutionService';
 import {
   WorkoutSchedulingService,
   WorkoutLifecycleService,
@@ -66,9 +67,6 @@ async function bootstrap() {
     const profileService = new ProfileService(userRepository, workoutRepository);
     const profileController = new ProfileController(profileService);
 
-    // Адаптация и утомление
-    const substitutionService = new ExerciseSubstitutionService(workoutRepository);
-
     // Сервис утомления/восстановления
     const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository);
 
@@ -79,9 +77,8 @@ async function bootstrap() {
     const intelligentAdaptationService = new IntelligentAdaptationService(
       workoutRepository,
       userRepository,
-      substitutionService,
       fatigueService,
-      plateauService                     // <-- пятый аргумент
+      plateauService                 
     );
 
     // Сервисы тренировок
@@ -108,7 +105,6 @@ async function bootstrap() {
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);
     const authService = new AuthService(userRepository, workoutService);
-    const substitutionController = new SubstitutionController(workoutService);
 
     // Контроллеры
     const authController = new AuthController(authService);
@@ -117,6 +113,11 @@ async function bootstrap() {
 
     // Middleware
     const authMiddleware = createAuthMiddleware(authService);
+
+    // Лайки упражнений
+    const exerciseLikeRepository = new ExerciseLikeRepository(database.getPool());
+    const exerciseLikeService = new ExerciseLikeService(exerciseLikeRepository);
+    const likeController = new LikeController(exerciseLikeService);
 
     // Socket.IO
     const socketHandler = new WorkoutSocketHandler(io, workoutService);
@@ -130,7 +131,7 @@ async function bootstrap() {
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
     app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
     app.use('/api/profile', createProfileRoutes(profileController, authMiddleware));
-    app.use('/api/substitutions', createSubstitutionRoutes(substitutionController, authMiddleware));
+    app.use('/api/likes', createLikeRoutes(likeController, authMiddleware));
     app.use('/api/analytics', createAnalyticsRoutes(analyticsController, authMiddleware));
 
     // Frontend
@@ -142,7 +143,6 @@ async function bootstrap() {
     app.get('/register', (req, res) => res.sendFile(path.join(__dirname, '../public/auth/register.html')));
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
-    app.get('/suggestions', (req, res) => res.sendFile(path.join(__dirname, '../public/suggestions.html')));
 
     app.use(errorHandler);
 

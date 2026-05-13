@@ -1,45 +1,67 @@
 if (!checkAuth()) throw new Error('Not authenticated');
 
+let userLikes = {}; // { exerciseId: true/false }
+let currentWorkout = null;
+let selectedRating = 3;
+let timerInterval = null;
+let timerSeconds = 0;
+
 const urlParams = new URLSearchParams(window.location.search);
 let workoutId = urlParams.get('id') || localStorage.getItem('currentWorkoutId');
 if (!workoutId) {
   window.location.href = '/dashboard';
 }
 
-let currentWorkout = null;
-let selectedRating = 3;
-let timerInterval = null;
-let timerSeconds = 0;
+// ========== 1. Загрузка лайков пользователя ==========
+async function loadUserLikes() {
+  try {
+    const res = await fetchWithAuth('/api/likes');
+    userLikes = await res.json();
+  } catch (err) {
+    console.error('Не удалось загрузить лайки:', err);
+    userLikes = {};
+  }
+}
 
+// ========== 2. Загрузка тренировки ==========
 async function loadWorkout() {
   try {
     const res = await fetchWithAuth('/api/workouts/current');
-    currentWorkout = (await res.json()).workout;
+    const data = await res.json();
+    currentWorkout = data.workout;
     localStorage.setItem('currentWorkoutId', currentWorkout.id);
-    renderWorkout();
-    showAdaptationHint(); // показать подсказку адаптации (если есть)
+
+    await loadUserLikes();          // сначала лайки
+    renderWorkout();                // отрисовка
+    await showAdaptationHint();     // подсказка адаптации
+
   } catch (err) {
     alert('Ошибка загрузки: ' + err.message);
   }
 }
 
-// Отображает общую рекомендацию по тренировке
-function showAdaptationHint() {
+// ========== 3. Подсказка адаптации (рабочая) ==========
+async function showAdaptationHint() {
   const hintEl = document.getElementById('adaptationHint');
-  // Здесь можно сделать запрос к /api/analytics/adaptations и показать последнюю,
-  // но для упрощения оставим скрытым.
-  // Если нужно показать, раскомментируйте:
-  // try {
-  //   const adaptRes = await fetchWithAuth('/api/analytics/adaptations?limit=1');
-  //   const adata = await adaptRes.json();
-  //   if (adata && adata.length > 0) {
-  //     hintEl.textContent = `💡 ${adata[0].reason}`;
-  //     hintEl.classList.remove('hidden');
-  //   }
-  // } catch(e) {}
-  hintEl.classList.add('hidden');
+  if (!hintEl) return;
+
+  try {
+    const res = await fetchWithAuth('/api/analytics/adaptations?limit=1');
+    const adaptations = await res.json();
+    if (adaptations && adaptations.length > 0) {
+      const last = adaptations[0];
+      hintEl.textContent = `💡 Рекомендация: ${last.reason || 'Корректировка нагрузки'}`;
+      hintEl.classList.remove('hidden');
+    } else {
+      hintEl.classList.add('hidden');
+    }
+  } catch (err) {
+    console.warn('Не удалось загрузить рекомендации адаптации:', err);
+    hintEl.classList.add('hidden');
+  }
 }
 
+// ========== 4. Вспомогательная функция для инпутов ==========
 function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
   const { metricType, defaultValue, unit } = metric;
   const id = `metric-${exIdx}-${setIdx}-${metricType}`;
@@ -72,7 +94,6 @@ function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
     ? `${effectiveDefault} ${unitLabels[unit] || unit || ''}`.trim()
     : '';
 
-  // Подсказка цели
   const targetText = effectiveDefault !== undefined
     ? `<span class="target-hint">Цель: ${effectiveDefault} ${unitLabels[unit] || unit}</span>`
     : '';
@@ -87,6 +108,7 @@ function createMetricInput(metric, exIdx, setIdx, targetReps, targetWeight) {
     </div>`;
 }
 
+// ========== 5. Отрисовка тренировки (с кнопками лайков) ==========
 function renderWorkout() {
   document.querySelector('.nav-brand').textContent = currentWorkout.name;
   const container = document.getElementById('exercisesList');
@@ -96,14 +118,17 @@ function renderWorkout() {
     const card = document.createElement('div');
     card.className = 'exercise-card';
     const templates = ex.metricTemplates || [];
-
     const targetReps = ex.targetReps;
     const targetWeight = ex.targetWeight;
 
+    // Определяем активные классы для кнопок лайков
+    const isLiked = userLikes[ex.id] === true;
+    const isDisliked = userLikes[ex.id] === false;
+
     card.innerHTML = `
       <div class="exercise-header">
-        <h3>${ex.name}</h3>
-        <span class="muscle-tag">${ex.muscleGroup}</span>
+        <h3>${escapeHtml(ex.name)}</h3>
+        <span class="muscle-tag">${escapeHtml(ex.muscleGroup)}</span>
       </div>
       <div class="exercise-stats">
         <span class="stat-badge">📐 ${ex.sets} подхода</span>
@@ -120,14 +145,32 @@ function renderWorkout() {
               <button class="btn-set-complete" onclick="completeSet(${exIdx}, ${setIdx})" title="Выполнено">✓</button>
               <button class="btn-set-skip" onclick="skipSet(${exIdx}, ${setIdx})" title="Пропустить">↷</button>
             </div>
-          </div>`).join('')}
-      </div>`;
+          </div>
+        `).join('')}
+      </div>
+      <div class="exercise-likes">
+        <button class="like-btn ${isLiked ? 'active' : ''}" data-exercise-id="${ex.id}" data-liked="true">👍 Нравится</button>
+        <button class="dislike-btn ${isDisliked ? 'active' : ''}" data-exercise-id="${ex.id}" data-liked="false">👎 Не нравится</button>
+      </div>
+    `;
     container.appendChild(card);
   });
 
   document.getElementById('finishBtn').disabled = false;
 }
 
+// Простая защита от XSS
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+// ========== 6. Обработчики подходов ==========
 window.completeSet = async (exIdx, setIdx) => {
   const ex = currentWorkout.exercises[exIdx];
   const setRow = document.getElementById(`set-${exIdx}-${setIdx}`);
@@ -144,7 +187,10 @@ window.completeSet = async (exIdx, setIdx) => {
     }
   }
 
-  if (metrics.length === 0) { alert('Введите хотя бы одно значение'); return; }
+  if (metrics.length === 0) {
+    alert('Введите хотя бы одно значение');
+    return;
+  }
 
   completeBtn.disabled = true;
   skipBtn.disabled = true;
@@ -198,6 +244,7 @@ window.skipSet = async (exIdx, setIdx) => {
   }
 };
 
+// ========== 7. Таймер ==========
 function startRestTimer(seconds) {
   clearInterval(timerInterval);
   timerSeconds = seconds;
@@ -224,6 +271,7 @@ document.getElementById('resetTimerBtn').onclick = () => {
   document.getElementById('timerDisplay').textContent = '00:00';
 };
 
+// ========== 8. Звёзды самочувствия ==========
 document.querySelectorAll('.star').forEach(star => {
   star.onclick = () => {
     selectedRating = parseInt(star.dataset.value);
@@ -231,6 +279,7 @@ document.querySelectorAll('.star').forEach(star => {
   };
 });
 
+// ========== 9. Завершение тренировки ==========
 document.getElementById('finishBtn').onclick = () => {
   document.getElementById('completionSection').classList.remove('hidden');
   document.getElementById('exercisesList').style.display = 'none';
@@ -258,13 +307,43 @@ document.getElementById('submitFinishBtn').onclick = async () => {
   }
 };
 
-// Установка начального рейтинга (3 звезды)
+// ========== 10. Обработчик лайков (делегирование) ==========
+document.getElementById('exercisesList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.like-btn, .dislike-btn');
+  if (!btn) return;
+  e.preventDefault();
+
+  const exerciseId = parseInt(btn.dataset.exerciseId);
+  const liked = btn.dataset.liked === 'true';
+
+  try {
+    await fetchWithAuth(`/api/likes/${exerciseId}`, {
+      method: 'POST',
+      body: JSON.stringify({ liked })
+    });
+    // Обновить локальное состояние
+    userLikes[exerciseId] = liked;
+    // Обновить UI только для этой карточки
+    const parent = btn.closest('.exercise-likes');
+    if (parent) {
+      const likeBtn = parent.querySelector('.like-btn');
+      const dislikeBtn = parent.querySelector('.dislike-btn');
+      if (likeBtn) likeBtn.classList.toggle('active', liked === true);
+      if (dislikeBtn) dislikeBtn.classList.toggle('active', liked === false);
+    }
+  } catch (err) {
+    alert('Ошибка при сохранении оценки: ' + err.message);
+  }
+});
+
+// ========== 11. Инициализация и старт ==========
 document.addEventListener('DOMContentLoaded', () => {
+  // Установка начальных звёзд
   const stars = document.querySelectorAll('.star');
   stars.forEach((star, index) => {
     star.classList.toggle('active', index < 3);
   });
   selectedRating = 3;
-});
 
-loadWorkout();
+  loadWorkout();
+});

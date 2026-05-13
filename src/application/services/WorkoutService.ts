@@ -91,11 +91,6 @@ export class WorkoutService {
     return this.queryService.getAllExercises();
   }
 
-  // Рекомендации по замене упражнений
-  async getExerciseSubstitutions(userId: number) {
-    return this.queryService.getExerciseSubstitutions(userId);
-  }
-
   // Запуск адаптации вручную (обычно вызывается автоматически)
   async triggerAdaptation(userId: number, completedWorkoutId: number, wellnessRating: number): Promise<void> {
     return this.resultsService.triggerAdaptation(userId, completedWorkoutId, wellnessRating);

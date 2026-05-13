@@ -2,7 +2,6 @@ import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepositor
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities/Workout';
 import { SetAnalysisData } from '../../dto/SetAnalysisData';
-import { ExerciseSubstitutionService } from './ExerciseSubstitutionService';
 import { FatigueRecoveryService } from './FatigueRecoveryService';
 import { PlateauDetectionService } from './PlateauDetectionService';
 
@@ -10,7 +9,6 @@ export class IntelligentAdaptationService {
   constructor(
     private workoutRepo: IWorkoutRepository,
     private userRepo: IUserRepository,
-    private substitutionService: ExerciseSubstitutionService,
     private fatigueService: FatigueRecoveryService,
     private plateauService: PlateauDetectionService
   ) {}
@@ -74,16 +72,10 @@ export class IntelligentAdaptationService {
       reason = 'Умеренная производительность. Без изменений.';
     }
 
-    // Проверка плато и предложение замены
+    // Проверка плато
     const isPlateau = await this.plateauService.isPlateau(userId, exerciseId);
     if (isPlateau) {
-      // TODO: передавать корректный объект упражнения, сейчас заглушка
-      await this.substitutionService.suggestSubstitutionIfStalled(
-        userId,
-        { exercise: { id: exerciseId, name: '' } } as any,
-        []
-      );
-      reason += ' Обнаружено плато. Предложена замена упражнения.';
+      reason += ' Обнаружено плато. Рекомендуется смена упражнения.';
     }
 
     if (adaptationType === AdaptationType.NoChange && reason === '') return null;

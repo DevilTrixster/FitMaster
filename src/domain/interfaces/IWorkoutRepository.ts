@@ -52,21 +52,6 @@ export interface IWorkoutRepository {
   // Получение списка базовых программ для сплита (Грудь, Спина, Ноги)
   getSplitPrograms(): Promise<Workout[]>;
 
-  // Альтернативные упражнения
-  saveExerciseSubstitution(
-    userId: number,
-    originalExerciseId: number,
-    alternativeExerciseId: number,
-    reason: string
-  ): Promise<void>;
-
-  getUserExerciseSubstitutions(userId: number): Promise<{
-    originalExerciseId: number;
-    alternativeExerciseId: number;
-    reason: string;
-    suggestedAt: Date;
-  }[]>;
-
   getExerciseById(id: number): Promise<Exercise | null>;
 
   // Получение шаблонов метрик для упражнения

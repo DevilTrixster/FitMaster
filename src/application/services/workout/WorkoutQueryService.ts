@@ -3,19 +3,6 @@ import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepositor
 import { WorkoutAdaptation } from '../../../domain/entities/Workout'
 import { WorkoutSchedulingService } from './WorkoutSchedulingService';
 
-/**
- * Чтение и фильтрация данных о тренировках
- * 
- * Этот сервис знает:
- * - как получать списки тренировок с фильтрацией
- * - как авто-очищать просроченные запланированные тренировки
- * - как запрашивать упражнения и рекомендации
- * 
- * НЕ знает:
- * - как изменять статусы
- * - как генерировать новые тренировки (только делегирует при необходимости)
- * - как сохранять результаты
- */
 export class WorkoutQueryService {
   constructor(
     private workoutRepository: IWorkoutRepository,
@@ -96,26 +83,6 @@ export class WorkoutQueryService {
   /**
    * Получает рекомендации по замене упражнений для пользователя
    */
-  async getExerciseSubstitutions(userId: number) {
-    const substitutions = await this.workoutRepository.getUserExerciseSubstitutions(userId);
-    const result = [];
-
-    for (const sub of substitutions) {
-      const original = await this.workoutRepository.getExerciseById(sub.originalExerciseId);
-      const alternative = await this.workoutRepository.getExerciseById(sub.alternativeExerciseId);
-
-      if (original && alternative) {
-        result.push({
-          originalExercise: original,
-          alternativeExercise: alternative,
-          reason: sub.reason,
-          suggestedAt: sub.suggestedAt,
-        });
-      }
-    }
-    return result;
-  }
-
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
     return this.workoutRepository.getExerciseMetricTemplates(exerciseId);
   }

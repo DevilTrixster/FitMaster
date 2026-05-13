@@ -36,16 +36,6 @@ export class AdaptationRepository {
     }));
   }
 
-  async saveExerciseSubstitution(userId: number, originalExerciseId: number, alternativeExerciseId: number, reason: string): Promise<void> {
-    const query = `
-      INSERT INTO workout_adaptations 
-      (user_id, exercise_id, previous_weight, new_weight, adaptation_reason, created_at)
-      VALUES ($1, $2, NULL, NULL, $3, CURRENT_TIMESTAMP)
-    `;
-    const fullReason = `SUBSTITUTION:${originalExerciseId}->${alternativeExerciseId}:${reason}`;
-    await this.pool.query(query, [userId, alternativeExerciseId, fullReason]);
-  }
-
   async getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null> {
     const query = `
       SELECT * FROM workout_adaptations
@@ -67,30 +57,6 @@ export class AdaptationRepository {
       newReps: row.new_reps,
       adaptationType: row.adaptation_reason.includes('увелич') ? AdaptationType.IncreaseWeight : AdaptationType.DecreaseWeight,
       reason: row.adaptation_reason,
-    });
-  }
-
-  async getUserExerciseSubstitutions(userId: number): Promise<{
-    originalExerciseId: number;
-    alternativeExerciseId: number;
-    reason: string;
-    suggestedAt: Date;
-  }[]> {
-    const result = await this.pool.query(
-      `SELECT exercise_id as alternative_exercise_id, adaptation_reason, created_at
-      FROM workout_adaptations
-      WHERE user_id = $1 AND adaptation_reason LIKE 'SUBSTITUTION:%'
-      ORDER BY created_at DESC`,
-      [userId]
-    );
-    return result.rows.map((row: any) => {
-      const match = row.adaptation_reason.match(/SUBSTITUTION:(\d+)->(\d+):(.+)/);
-      return {
-        originalExerciseId: parseInt(match[1]),
-        alternativeExerciseId: row.alternative_exercise_id,
-        reason: match[3],
-        suggestedAt: new Date(row.created_at),
-      };
     });
   }
 
