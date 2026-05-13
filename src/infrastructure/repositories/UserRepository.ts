@@ -159,7 +159,11 @@ export class UserRepository implements IUserRepository {
 
   async updateAvatar(userId: number, avatarUrl: string): Promise<void> {
     const query = `UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
-    await this.pool.query(query, [avatarUrl, userId]);
+    const result = await this.pool.query(query, [avatarUrl, userId]);
+    
+    if (result.rowCount === 0) {
+      throw new Error('Пользователь не найден');
+    }
   }
 
   async updatePreferredDays(userId: number, days: number[]): Promise<void> {

@@ -1,7 +1,6 @@
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { InternalServerError, NotFoundError } from '../../../core/errors/ValidationError';
+import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
 
 export class WorkoutSchedulingService {
   constructor(
@@ -9,164 +8,120 @@ export class WorkoutSchedulingService {
     private userRepository: IUserRepository
   ) {}
 
-  /** Генерирует базовую программу на 4 недели (12 тренировок: Пн/Ср/Пт) */
+  /**
+   * Генерация базовой программы на 4 недели при регистрации
+   * (использует предпочтительные дни пользователя или по умолчанию ПН,СР,ПТ)
+   */
   async generateBaseProgram(userId: number): Promise<UserWorkout[]> {
-    const splitPrograms = await this.workoutRepository.getSplitPrograms();
-    if (splitPrograms.length < 3) {
-      throw new InternalServerError('Не найдены программы для сплита (нужно 3: Грудь, Спина, Ноги)');
+    // Получаем предпочтительные дни пользователя (если нет – по умолчанию 1,3,5)
+    let preferredDays = await this.userRepository.getPreferredDays(userId);
+    if (!preferredDays.length) {
+      preferredDays = [1, 3, 5]; // ПН, СР, ПТ
+      await this.userRepository.updatePreferredDays(userId, preferredDays);
     }
 
-    // Ротация: Пн – Грудь, Ср – Спина, Пт – Ноги
-    const scheduleMap = [1, 2, 0];
-
-    const user = await this.userRepository.findById(userId);
-    if (!user) throw new NotFoundError('Пользователь не найден');
-
-    const scheduledWorkouts: UserWorkout[] = [];
-    const today = new Date();
-    const startDate = this.findNextMonday(today);
-    const workoutTime = user.preferredWorkoutTime || '17:00';
-
-    for (let week = 0; week < 4; week++) {
-      const weekStart = new Date(startDate);
-      weekStart.setDate(startDate.getDate() + week * 7);
-
-      for (let i = 0; i < 3; i++) {
-        const workoutDate = new Date(weekStart);
-        workoutDate.setDate(weekStart.getDate() + [0, 2, 4][i]);
-
-        if (this.isDateInPast(workoutDate, today)) continue;
-
-        const targetWorkout = splitPrograms[scheduleMap[i]];
-
-        const userWorkout = new UserWorkout({
-          userId,
-          workout: targetWorkout,
-          scheduledDate: workoutDate,
-          scheduledTime: workoutTime,
-          status: WorkoutStatus.Scheduled,
-        });
-
-        const saved = await this.workoutRepository.createUserWorkout(userWorkout);
-        scheduledWorkouts.push(saved);
-      }
-    }
-
-    return scheduledWorkouts;
-  }
-
-  /** Генерирует дополнительные тренировки, если не хватает */
-  async generateAdditionalWorkouts(userId: number, count: number): Promise<void> {
-    const splitPrograms = await this.workoutRepository.getSplitPrograms();
-    if (splitPrograms.length < 3) return;
-
-    const lastWorkout = await this.workoutRepository.getUserWorkouts(userId, 1);
-    let startDate = lastWorkout.length > 0
-      ? this.findNextTrainingDay(new Date(lastWorkout[0].scheduledDate))
-      : this.findNextMonday(new Date());
-
-    const user = await this.userRepository.findById(userId);
-    if (!user) throw new NotFoundError('Пользователь не найден');
-
-    for (let i = 0; i < count; i++) {
-      const workoutDate = this.findNextTrainingDay(startDate);
-      const programIndex = this.getProgramIndexByDay(workoutDate.getDay());
-      const targetWorkout = splitPrograms[programIndex];
-
-      await this.workoutRepository.createUserWorkout(
-        new UserWorkout({
-          userId,
-          workout: targetWorkout,
-          scheduledDate: workoutDate,
-          scheduledTime: user.preferredWorkoutTime || '17:00',
-          status: WorkoutStatus.Scheduled,
-        })
-      );
-
-      // Сдвигаем на 2 дня вперёд для следующего поиска
-      startDate.setDate(startDate.getDate() + 2);
-    }
-  }
-
-  async regenerateFutureWorkouts(userId: number, days: number[]): Promise<void> {
+    // Удаляем все будущие тренировки, начиная с сегодня
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    await this.workoutRepository.deleteScheduledWorkoutsFrom(userId, today);
 
-    // Удаляем будущие запланированные тренировки (начиная с завтра)
-    await this.workoutRepository.deleteScheduledWorkoutsFrom(userId, tomorrow);
-
-    // Генерируем новые на 6 недель вперёд (42 дня)
-    await this.generateWorkoutsForDays(userId, days, 42);
+    // Генерируем на 4 недели вперёд
+    const workouts = await this.generateWorkoutsForDays(userId, preferredDays, 4);
+    await this.workoutRepository.createUserWorkoutBatch(workouts);
+    return workouts;
   }
 
-  // ---------- Приватные хелперы ----------
+  /**
+   * Регенерация расписания после смены предпочтительных дней
+   * @param userId 
+   * @param days массив чисел от 1 (ПН) до 7 (ВС)
+   */
+  async regenerateFutureWorkouts(userId: number, days: number[]): Promise<void> {
+    // Удаляем все будущие запланированные тренировки (начиная с сегодня)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    await this.workoutRepository.deleteScheduledWorkoutsFrom(userId, today);
 
-  private findNextMonday(date: Date): Date {
-    const result = new Date(date);
-    const day = result.getDay();
-    const daysUntilMonday = day === 0 ? 1 : (8 - day) % 7;
-    result.setDate(result.getDate() + (day === 1 ? 0 : daysUntilMonday));
-    result.setHours(0, 0, 0, 0);
-    return result;
+    // Генерируем новые на 6 недель вперёд
+    const workouts = await this.generateWorkoutsForDays(userId, days, 6);
+    if (workouts.length) {
+      await this.workoutRepository.createUserWorkoutBatch(workouts);
+    }
   }
 
-  private findNextTrainingDay(date: Date): Date {
-    const result = new Date(date);
-    const day = result.getDay();
-    if ([1, 3, 5].includes(day)) return result;
-    const shifts: Record<number, number> = { 0: 1, 2: 1, 4: 1, 6: 2 };
-    result.setDate(result.getDate() + (shifts[day] || 1));
-    return result;
+  /**
+   * Дополнительная генерация, если в ближайшее время нет тренировок
+   */
+  async generateAdditionalWorkouts(userId: number, count: number = 5): Promise<void> {
+    const preferredDays = await this.userRepository.getPreferredDays(userId);
+    if (!preferredDays.length) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Проверяем, есть ли уже запланированные тренировки
+    const existing = await this.workoutRepository.getUserWorkouts(userId, count);
+    const upcoming = existing.filter(w => w.status === WorkoutStatus.Scheduled && new Date(w.scheduledDate) >= today);
+    if (upcoming.length >= count) return;
+
+    // Генерируем недостающие
+    const workouts = await this.generateWorkoutsForDays(userId, preferredDays, 4);
+    await this.workoutRepository.createUserWorkoutBatch(workouts);
   }
 
-  private getProgramIndexByDay(dayOfWeek: number): number {
-    const map: Record<number, number> = { 1: 1, 3: 2, 5: 0 };
-    return map[dayOfWeek] ?? 0;
-  }
+  /**
+   * Основная логика: создание объектов UserWorkout для заданных дней на N недель
+   */
+  private async generateWorkoutsForDays(
+    userId: number,
+    days: number[],      // [2,4,6] для Вт, Чт, Сб
+    weeksCount: number
+  ): Promise<UserWorkout[]> {
+    if (!days.length) return [];
 
-  private isDateInPast(workoutDate: Date, today: Date): boolean {
-    const d1 = new Date(workoutDate.getFullYear(), workoutDate.getMonth(), workoutDate.getDate());
-    const d2 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    return d1 < d2;
-  }
+    days.sort((a,b) => a-b);  // [2,4,6]
 
-  private async generateWorkoutsForDays(userId: number, days: number[], daysForward: number): Promise<void> {
+    const splitPrograms = await this.workoutRepository.getSplitPrograms();
+    if (!splitPrograms.length) throw new Error('Нет программ');
+
     const user = await this.userRepository.findById(userId);
-    if (!user) throw new Error('User not found');
-    const preferredTime = user.preferredWorkoutTime || '17:00';
-    const programs = await this.workoutRepository.getSplitPrograms(); // [Ноги, Грудь, Спина]
-    if (programs.length === 0) return;
+    const defaultTime = user?.preferredWorkoutTime || '17:00';
 
-    const startDate = new Date();
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + daysForward);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const workoutsToCreate: UserWorkout[] = [];
-    let programIndex = 0;
-    for (let d = 0; d <= daysForward; d++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + d);
-      const dayOfWeek = currentDate.getDay(); // 0 = воскресенье
-      // Преобразуем в наш формат: 1 = Пн, 7 = Вс
-      let ourDay = dayOfWeek === 0 ? 7 : dayOfWeek;
-      if (days.includes(ourDay)) {
-        const program = programs[programIndex % programs.length];
-        const userWorkout = new UserWorkout({
+    const result: UserWorkout[] = [];
+
+    // Дата начала: сегодня (не раньше)
+    let startDate = new Date(today);
+
+    for (let week = 0; week < weeksCount; week++) {
+      for (let idx = 0; idx < days.length; idx++) {
+        const targetDay = days[idx];
+        // Вычисляем дату: идём от startDate, прибавляем неделю если нужно
+        let date = new Date(startDate);
+        date.setDate(startDate.getDate() + week * 7);
+        // Находим ближайший targetDay (1=ПН ... 7=ВС)
+        let currentDayNum = date.getDay(); // 0=ВС,1=ПН,...6=СБ
+        if (currentDayNum === 0) currentDayNum = 7;
+        let diff = targetDay - currentDayNum;
+        if (diff < 0) diff += 7;
+        date.setDate(date.getDate() + diff);
+        // Пропускаем, если дата уже прошла (но сегодня можно)
+        if (date < today) continue;
+
+        // Циклический выбор программы
+        const programIndex = (week * days.length + idx) % splitPrograms.length;
+        const program = splitPrograms[programIndex];
+
+        result.push(new UserWorkout({
           userId,
           workout: program,
-          scheduledDate: currentDate,
-          scheduledTime: preferredTime,
+          scheduledDate: date,
+          scheduledTime: defaultTime,
           status: WorkoutStatus.Scheduled,
-        });
-        workoutsToCreate.push(userWorkout);
-        programIndex++;
+        }));
       }
     }
-    if (workoutsToCreate.length) {
-      await this.workoutRepository.createUserWorkoutBatch(workoutsToCreate);
-    }
+    return result;
   }
 }

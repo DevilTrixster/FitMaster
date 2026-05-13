@@ -77,7 +77,7 @@ async function initNavAvatar() {
   if (!profileLink) return;
 
   // Получить аватар пользователя
-  let avatarUrl = '/default-avatar.png';
+  let avatarUrl = '/uploads/avatars/default-avatar.png';
   try {
     const user = await (await fetchWithAuth('/api/profile')).json();
     if (user.avatarUrl) avatarUrl = user.avatarUrl;

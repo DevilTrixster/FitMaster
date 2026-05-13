@@ -16,15 +16,13 @@ export class WorkoutQueryService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const upcomingWorkouts = await this.workoutRepository.getUserWorkouts(userId, 20);
+    let upcomingWorkouts = await this.workoutRepository.getUserWorkouts(userId, 20);
 
-    // Авто-помечаем просроченные как пропущенные
+    // Авто-пропуск просроченных
     for (const workout of upcomingWorkouts) {
       const workoutDate = new Date(workout.scheduledDate);
       workoutDate.setHours(0, 0, 0, 0);
-
       if (workoutDate < today && workout.status === WorkoutStatus.Scheduled) {
-        console.log(`⏰ Пропускаем устаревшую тренировку: #${workout.id}`);
         await this.workoutRepository.updateUserWorkoutStatus(
           workout.id!,
           WorkoutStatus.Skipped,
@@ -34,21 +32,13 @@ export class WorkoutQueryService {
       }
     }
 
-    // Фильтруем только актуальные статусы
+    // Фильтруем актуальные
     const filtered = upcomingWorkouts.filter(w =>
       w.status === WorkoutStatus.Scheduled || w.status === WorkoutStatus.InProgress
     );
 
-    // Если ничего нет — генерируем новые (делегирование)
-    if (filtered.length === 0) {
-      console.log('⚠️ Нет предстоящих тренировок. Генерируем новые...');
-      await this.schedulingService.generateAdditionalWorkouts(userId, 5);
-      const newWorkouts = await this.workoutRepository.getUserWorkouts(userId, 5);
-      return newWorkouts.filter(w =>
-        w.status === WorkoutStatus.Scheduled || w.status === WorkoutStatus.InProgress
-      );
-    }
-
+    // НЕ ГЕНЕРИРУЕМ НОВЫЕ, ЕСЛИ УЖЕ ЕСТЬ (даже если их меньше лимита)
+    // Просто возвращаем то, что есть
     return filtered.slice(0, limit);
   }
 

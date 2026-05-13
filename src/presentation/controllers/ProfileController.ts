@@ -56,30 +56,47 @@ export class ProfileController {
     res.json({ message: 'Профиль обновлён' });
   }
 
-  async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const userId = (req as any).userId;
-    if (!req.file) throw new ValidationError('Файл не загружен');
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-    await this.profileService.updateAvatar(userId, avatarUrl);
-    res.json({ avatarUrl });
-  }
-
   async getPreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const days = await this.profileService.getPreferredDays(userId);
     res.json({ days });
   }
 
+  async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    console.log('📸 Upload avatar request, userId:', userId);
+    console.log('req.file:', req.file);
+
+    if (!req.file) {
+      res.status(400).json({ error: 'Файл не загружен' });
+      return;
+    }
+
+    try {
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      console.log('Saving avatarUrl:', avatarUrl);
+      await this.profileService.updateAvatar(userId, avatarUrl);
+      console.log('Avatar saved successfully');
+      res.json({ avatarUrl });
+    } catch (error: any) {
+      console.error('❌ Avatar upload error:', error);
+      res.status(500).json({ error: 'Не удалось сохранить аватар: ' + error.message });
+    }
+  }
+
   async updatePreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const { days } = req.body;
+
     if (!Array.isArray(days) || days.length < 1 || days.length > 3) {
       throw new ValidationError('Выберите от 1 до 3 дней недели');
     }
+
     const valid = days.every(d => Number.isInteger(d) && d >= 1 && d <= 7);
     if (!valid) throw new ValidationError('Некорректные дни');
+
     await this.profileService.updatePreferredDays(userId, days);
-    // Регенерация будущих тренировок будет вызвана внутри updatePreferredDays сервиса
+    // Регенерация будущих тренировок уже происходит внутри сервиса
     res.json({ message: 'Дни тренировок обновлены' });
   }
 }

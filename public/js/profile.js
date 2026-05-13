@@ -13,9 +13,12 @@ async function loadProfile() {
     document.getElementById('weight').value = user.weight || '';
     document.getElementById('email').value = user.email || '';
     document.getElementById('preferredWorkoutTime').value = user.preferredWorkoutTime || '';
-    if (user.avatarUrl) {
-      document.getElementById('avatarPreview').src = user.avatarUrl;
-    }
+    
+    // Аватар – если есть загруженный, иначе дефолтный
+    const avatarSrc = user.avatarUrl 
+      ? user.avatarUrl 
+      : '/uploads/avatars/default-avatar.png';
+    document.getElementById('avatarPreview').src = avatarSrc;
   } catch (err) {
     showNotification('Не удалось загрузить профиль', 'error');
   }
@@ -125,21 +128,46 @@ function updateCalendar() {
 document.getElementById('uploadAvatarBtn').addEventListener('click', () => {
   document.getElementById('avatarInput').click();
 });
+
 document.getElementById('avatarInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+
+  // Проверка типа файла
+  const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowed.includes(file.type)) {
+    alert('Разрешены только JPG, PNG, GIF, WEBP');
+    return;
+  }
+
   const formData = new FormData();
   formData.append('avatar', file);
+
   try {
     const res = await fetchWithAuth('/api/profile/avatar', {
       method: 'POST',
       body: formData,
-      headers: {}
+      // Не указываем Content-Type – пусть браузер сам установит multipart
     });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Ошибка загрузки');
+    }
+
     const { avatarUrl } = await res.json();
-    document.getElementById('avatarPreview').src = avatarUrl;
-    showNotification('Аватар обновлён');
+    
+    // Обновляем картинку на странице
+    const avatarImg = document.getElementById('avatarPreview');
+    if (avatarImg) avatarImg.src = avatarUrl;
+
+    // Обновляем аватар в навигации (если есть)
+    const navAvatar = document.querySelector('.nav-avatar-img');
+    if (navAvatar) navAvatar.src = avatarUrl;
+
+    showNotification('✅ Аватар обновлён!', 'success');
   } catch (err) {
+    console.error(err);
     alert('Ошибка загрузки: ' + err.message);
   }
 });
