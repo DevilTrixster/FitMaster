@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProfileService } from '../../application/services/ProfileService';
 import { validateTimeFormat } from '../../core/utils/validators';
-import { UnauthorizedError } from '../../core/errors/ValidationError';
+import { UnauthorizedError, ValidationError } from '../../core/errors/ValidationError';
 
 export class ProfileController {
   constructor(private profileService: ProfileService) {}
@@ -9,13 +9,11 @@ export class ProfileController {
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const user = await this.profileService.getProfile(userId);
-
     if (!user) {
-      // Отправляем 404, но не через Error, потому что это не исключительная ситуация
       res.status(404).json({ error: 'Пользователь не найден' });
       return;
     }
-
+    const preferredDays = await this.profileService.getPreferredDays(userId);
     res.json({
       id: user.id,
       nickname: user.nickname,
@@ -27,26 +25,17 @@ export class ProfileController {
       gender: user.gender,
       birthDate: user.birthDate,
       preferredWorkoutTime: user.preferredWorkoutTime,
+      avatarUrl: (user as any).avatar_url || null,
+      preferredDays,
     });
   }
 
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
+    if (!userId) throw new UnauthorizedError('Не авторизован');
 
-    if (!userId) {
-      throw new UnauthorizedError('Не авторизован');
-    }
+    const { nickname, firstName, lastName, height, weight, preferredWorkoutTime } = req.body;
 
-    const {
-      nickname,
-      firstName,
-      lastName,
-      height,
-      weight,
-      preferredWorkoutTime,
-    } = req.body;
-
-    // Валидация времени (если передано)
     if (preferredWorkoutTime !== undefined) {
       validateTimeFormat(preferredWorkoutTime);
     }
@@ -65,5 +54,32 @@ export class ProfileController {
     }
 
     res.json({ message: 'Профиль обновлён' });
+  }
+
+  async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    if (!req.file) throw new ValidationError('Файл не загружен');
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    await this.profileService.updateAvatar(userId, avatarUrl);
+    res.json({ avatarUrl });
+  }
+
+  async getPreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const days = await this.profileService.getPreferredDays(userId);
+    res.json({ days });
+  }
+
+  async updatePreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const { days } = req.body;
+    if (!Array.isArray(days) || days.length < 1 || days.length > 3) {
+      throw new ValidationError('Выберите от 1 до 3 дней недели');
+    }
+    const valid = days.every(d => Number.isInteger(d) && d >= 1 && d <= 7);
+    if (!valid) throw new ValidationError('Некорректные дни');
+    await this.profileService.updatePreferredDays(userId, days);
+    // Регенерация будущих тренировок будет вызвана внутри updatePreferredDays сервиса
+    res.json({ message: 'Дни тренировок обновлены' });
   }
 }

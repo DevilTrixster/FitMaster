@@ -72,4 +72,13 @@ export interface IWorkoutRepository {
   getDailyWorkoutVolumes(userId: number, days: number): Promise<Array<{ date: string; volume: number }>>;
 
   getAllUserAdaptations(userId: number, limit?: number): Promise<WorkoutAdaptation[]>;
+
+  // Календарь
+  getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]>;
+
+  //  Регенерация тренировок при смене дней недели
+  deleteScheduledWorkoutsFrom(userId: number, fromDate: Date): Promise<void>;
+  createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void>; // для массовой вставки
+
+  postponeWorkout(workoutId: number, newDate: Date): Promise<void>;
 }

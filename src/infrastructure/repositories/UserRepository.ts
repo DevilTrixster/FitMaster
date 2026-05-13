@@ -156,4 +156,20 @@ export class UserRepository implements IUserRepository {
     const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
     await this.pool.query(query, values);
   }
+
+  async updateAvatar(userId: number, avatarUrl: string): Promise<void> {
+    const query = `UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
+    await this.pool.query(query, [avatarUrl, userId]);
+  }
+
+  async updatePreferredDays(userId: number, days: number[]): Promise<void> {
+    const query = `UPDATE users SET preferred_days = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
+    await this.pool.query(query, [days, userId]);
+  }
+
+  async getPreferredDays(userId: number): Promise<number[]> {
+    const res = await this.pool.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
+    if (res.rows.length === 0) return [1,3,5];
+    return res.rows[0].preferred_days || [1,3,5];
+  }
 }

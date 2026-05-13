@@ -26,12 +26,7 @@ import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler
 import { ProfileController } from './presentation/controllers/ProfileController';
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
-import {
-  WorkoutSchedulingService,
-  WorkoutLifecycleService,
-  WorkoutQueryService,
-  WorkoutResultsService
-} from './application/services/workout';
+import { WorkoutSchedulingService, WorkoutLifecycleService, WorkoutQueryService, WorkoutResultsService } from './application/services/workout';
 import { config } from './config/env';
 import { errorHandler } from './presentation/middleware/errorHandler';
 import { IntelligentAdaptationService } from './application/services/adaptation/IntelligentAdaptationService';
@@ -50,7 +45,8 @@ async function bootstrap() {
 
   // Middleware
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '5mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '5mb' }));
   app.use(express.static(path.join(__dirname, '../public')));
 
   try {
@@ -64,24 +60,21 @@ async function bootstrap() {
     const fatigueRepository = new FatigueRepository(database.getPool());
 
     // === Сервисы ===
-    const profileService = new ProfileService(userRepository, workoutRepository);
-    const profileController = new ProfileController(profileService);
-
     // Сервис утомления/восстановления
     const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository);
 
     // Сервис обнаружения плато
     const plateauService = new PlateauDetectionService(workoutRepository);
 
-    // Интеллектуальная адаптация (теперь с PlateauDetectionService)
+    // Интеллектуальная адаптация
     const intelligentAdaptationService = new IntelligentAdaptationService(
       workoutRepository,
       userRepository,
       fatigueService,
-      plateauService                 
+      plateauService
     );
 
-    // Сервисы тренировок
+    // Сервисы тренировок (единственное объявление WorkoutSchedulingService)
     const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
 
     const workoutResultsService = new WorkoutResultsService(
@@ -94,13 +87,17 @@ async function bootstrap() {
     const workoutLifecycleService = new WorkoutLifecycleService(workoutRepository, workoutResultsService);
     const workoutQueryService = new WorkoutQueryService(workoutRepository, workoutSchedulingService);
 
-    // Главный фасад
+    // Главный фасад WorkoutService
     const workoutService = new WorkoutService(
       workoutSchedulingService,
       workoutLifecycleService,
       workoutQueryService,
-      workoutResultsService
-    );
+      workoutResultsService,
+      workoutRepository);
+
+    // ProfileService теперь получает workoutSchedulingService
+    const profileService = new ProfileService(userRepository, workoutRepository, workoutSchedulingService);
+    const profileController = new ProfileController(profileService);
 
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);

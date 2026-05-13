@@ -13,4 +13,8 @@ export interface IUserRepository {
     height?: number;
     weight?: number;
   }): Promise<void>;
+
+  updateAvatar(userId: number, avatarUrl: string): Promise<void>;
+  updatePreferredDays(userId: number, days: number[]): Promise<void>;
+  getPreferredDays(userId: number): Promise<number[]>;
 }

@@ -58,4 +58,8 @@ export class WorkoutRepository implements IWorkoutRepository {
   async updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void> { return this.writeRepo.updateFutureWorkoutsTime(userId, newTime); }
   async getDailyWorkoutVolumes(userId: number, days: number): Promise<Array<{ date: string; volume: number }>> { return this.readRepo.getDailyWorkoutVolumes(userId, days);}
   async getAllUserAdaptations(userId: number, limit?: number): Promise<WorkoutAdaptation[]> { return this.adaptationRepo.getAllUserAdaptations(userId, limit); }
+  async getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]> { return this.readRepo.getWorkoutsInRange(userId, startDate, endDate); }
+  async deleteScheduledWorkoutsFrom(userId: number, fromDate: Date): Promise<void> { return this.writeRepo.deleteScheduledWorkoutsFrom(userId, fromDate);}
+  async createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void> { return this.writeRepo.createUserWorkoutBatch(workouts); }
+  async postponeWorkout(workoutId: number, newDate: Date): Promise<void> { return this.writeRepo.postponeWorkout(workoutId, newDate); }
 }

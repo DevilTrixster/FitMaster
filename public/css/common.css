@@ -434,3 +434,43 @@ input::placeholder, textarea::placeholder {
     width: 100%;
   }
 }
+.nav-user {
+  position: relative;
+}
+.nav-avatar-img {
+  transition: transform 0.2s;
+}
+.nav-avatar-img:hover {
+  transform: scale(1.05);
+}
+.avatar-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 0.5rem 0;
+  min-width: 150px;
+  display: none;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+}
+.avatar-dropdown.show {
+  display: block;
+}
+.avatar-dropdown a, .avatar-dropdown button {
+  display: block;
+  padding: 0.6rem 1rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.avatar-dropdown a:hover, .avatar-dropdown button:hover {
+  background: rgba(255,255,255,0.1);
+}

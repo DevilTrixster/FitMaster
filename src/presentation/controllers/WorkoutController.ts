@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { WorkoutService } from '../../application/services/WorkoutService';
 import { WorkoutRescheduleService } from '../../application/services/WorkoutRescheduleService';
+import { ValidationError, NotFoundError } from '../../core/errors/ValidationError';
+import { WorkoutStatus } from '../../domain/entities/Workout';
 
 export class WorkoutController {
   constructor(
@@ -208,5 +210,48 @@ export class WorkoutController {
     }
 
     res.status(400).json({ error: 'Не переданы метрики выполнения' });
+  }
+
+  async getCalendar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const year = parseInt(req.query.year as string, 10);
+    const month = parseInt(req.query.month as string, 10);
+    if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
+      throw new ValidationError('Неверные параметры года или месяца');
+    }
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+    const workouts = await this.workoutService.getWorkoutsInRange(userId, startDate, endDate);
+    const calendar: Record<string, { status: string; workoutId?: number }> = {};
+    for (const w of workouts) {
+      const dateStr = w.scheduledDate.toISOString().split('T')[0];
+      calendar[dateStr] = { status: w.status, workoutId: w.id };
+    }
+    res.json({ calendar });
+  }
+
+  async postponeWorkout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const workoutId = parseInt(req.params.id as string, 10);
+    if (isNaN(workoutId)) throw new ValidationError('Invalid workout id');
+
+    const workout = await this.workoutService.getUserWorkoutById(workoutId);
+    if (!workout || workout.userId !== userId) throw new NotFoundError('Тренировка не найдена');
+    if (workout.status !== WorkoutStatus.Scheduled) throw new ValidationError('Можно перенести только запланированную тренировку');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const workoutDate = new Date(workout.scheduledDate);
+    workoutDate.setHours(0, 0, 0, 0);
+    if (workoutDate.getTime() !== today.getTime()) {
+      throw new ValidationError('Можно перенести только тренировку на сегодня');
+    }
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    await this.workoutService.postponeWorkout(workoutId, tomorrow);
+
+    res.json({ message: 'Тренировка перенесена на завтра' });
   }
 }

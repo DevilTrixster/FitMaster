@@ -18,8 +18,10 @@ export function createWorkoutRoutes(
   router.post('/pause', workoutController.pauseWorkout.bind(workoutController));
   router.post('/resume', workoutController.resumeWorkout.bind(workoutController));
   router.post('/save-set', workoutController.saveSetResult.bind(workoutController));
+  router.post('/:id/postpone', workoutController.postponeWorkout.bind(workoutController));
   router.get('/active', workoutController.getActiveWorkout.bind(workoutController));
   router.get('/exercises', workoutController.getExercises.bind(workoutController));
+  router.get('/calendar', workoutController.getCalendar.bind(workoutController));
 
   router.patch('/workouts/:id/reschedule', workoutController.rescheduleWorkout.bind(workoutController));
   router.patch('/workouts/:id/skip', workoutController.skipWorkout.bind(workoutController));

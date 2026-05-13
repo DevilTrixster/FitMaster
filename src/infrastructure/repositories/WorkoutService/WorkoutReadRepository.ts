@@ -152,6 +152,18 @@ export class WorkoutReadRepository {
     }));
   }
 
+  async getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]> {
+    const query = `
+      SELECT uw.*, w.name as workout_name, w.description as workout_description
+      FROM user_workouts uw
+      JOIN workouts w ON uw.workout_id = w.id
+      WHERE uw.user_id = $1 AND uw.scheduled_date BETWEEN $2 AND $3
+      ORDER BY uw.scheduled_date ASC
+    `;
+    const result = await this.pool.query(query, [userId, startDate, endDate]);
+    return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
+  }
+
   // Вспомогательный маппер
   private mapRowToUserWorkout(row: any): UserWorkout {
     const workout = new Workout({

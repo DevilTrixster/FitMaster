@@ -2,11 +2,13 @@ import { User } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { NotFoundError } from '../../core/errors/ValidationError';
+import { WorkoutSchedulingService } from './workout/WorkoutSchedulingService';
 
 export class ProfileService {
   constructor(
     private userRepository: IUserRepository,
-    private workoutRepository: IWorkoutRepository
+    private workoutRepository: IWorkoutRepository,
+    private workoutSchedulingService: WorkoutSchedulingService
   ) {}
 
   // Получение профиля пользователя
@@ -38,6 +40,19 @@ export class ProfileService {
     if (preferredWorkoutTime !== undefined) {
       await this.workoutRepository.updateFutureWorkoutsTime(userId, preferredWorkoutTime);
     }
+  }
+
+  async updateAvatar(userId: number, avatarUrl: string): Promise<void> {
+    await this.userRepository.updateAvatar(userId, avatarUrl);
+  }
+
+  async getPreferredDays(userId: number): Promise<number[]> {
+    return this.userRepository.getPreferredDays(userId);
+  }
+
+  async updatePreferredDays(userId: number, days: number[]): Promise<void> {
+    await this.userRepository.updatePreferredDays(userId, days);
+    await this.workoutSchedulingService.regenerateFutureWorkouts(userId, days);
   }
 
   // Синхронизация времени будущих тренировок

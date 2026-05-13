@@ -3,13 +3,15 @@ import { WorkoutSchedulingService } from './workout/WorkoutSchedulingService';
 import { WorkoutLifecycleService } from './workout/WorkoutLifecycleService';
 import { WorkoutQueryService } from './workout/WorkoutQueryService';
 import { WorkoutResultsService } from './workout/WorkoutResultsService';
+import { IWorkoutRepository } from '@domain/interfaces/IWorkoutRepository';
 
 export class WorkoutService {
   constructor(
     private schedulingService: WorkoutSchedulingService,
     private lifecycleService: WorkoutLifecycleService,
     private queryService: WorkoutQueryService,
-    private resultsService: WorkoutResultsService
+    private resultsService: WorkoutResultsService,
+    private workoutRepository: IWorkoutRepository 
   ) {}
 
   // Сохранение метрик подхода
@@ -99,5 +101,21 @@ export class WorkoutService {
   // Получение истории адаптаций
   async getAdaptations(userId: number, limit?: number) {
     return this.queryService.getAdaptations(userId, limit);
+  }
+
+  async getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]> {
+    return this.queryService.getWorkoutsInRange(userId, startDate, endDate);
+  }
+
+  async getUserWorkoutById(workoutId: number): Promise<UserWorkout | null> {
+    return this.workoutRepository.getUserWorkoutById(workoutId);
+  }
+
+  async rescheduleWorkout(workoutId: number, newDate: Date, reason?: string): Promise<void> {
+    return this.workoutRepository.rescheduleWorkout(workoutId, newDate, reason);
+  }
+
+  async postponeWorkout(workoutId: number, newDate: Date): Promise<void> {
+    return this.workoutRepository.postponeWorkout(workoutId, newDate);
   }
 }

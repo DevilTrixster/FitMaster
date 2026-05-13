@@ -94,4 +94,8 @@ export class WorkoutQueryService {
   async getAdaptations(userId: number, limit: number = 20) {
     return this.workoutRepository.getAllUserAdaptations(userId, limit);
   }
+
+  async getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]> {
+    return this.workoutRepository.getWorkoutsInRange(userId, startDate, endDate);
+  }
 }

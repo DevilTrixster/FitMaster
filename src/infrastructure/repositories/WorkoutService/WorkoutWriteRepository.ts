@@ -72,4 +72,48 @@ export class WorkoutWriteRepository {
     `;
     await this.pool.query(query, [newTime, userId]);
   }
+
+  async deleteScheduledWorkoutsFrom(userId: number, fromDate: Date): Promise<void> {
+  const query = `
+    DELETE FROM user_workouts
+    WHERE user_id = $1 AND status = 'scheduled' AND scheduled_date >= $2
+  `;
+  await this.pool.query(query, [userId, fromDate]);
+  }
+
+  async createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void> {
+    if (workouts.length === 0) return;
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (const w of workouts) {
+        const query = `
+          INSERT INTO user_workouts (user_id, workout_id, scheduled_date, scheduled_time, status)
+          VALUES ($1, $2, $3, $4, $5)
+        `;
+        await client.query(query, [
+          w.userId,
+          w.workout.id,
+          w.scheduledDate,
+          w.scheduledTime || '10:00',
+          w.status
+        ]);
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  }
+
+  async postponeWorkout(workoutId: number, newDate: Date): Promise<void> {
+    const query = `
+      UPDATE user_workouts 
+      SET scheduled_date = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `;
+    await this.pool.query(query, [newDate.toISOString().split('T')[0], workoutId]);
+  }
 }

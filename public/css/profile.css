@@ -1,13 +1,11 @@
 .message.hidden {
   display: none;
 }
-/* --- Заголовок страницы --- */
 .profile-header {
   text-align: center;
   margin-bottom: 3rem;
   position: relative;
 }
-
 .profile-header h1 {
   font-size: 2.5rem;
   font-weight: 800;
@@ -15,28 +13,22 @@
   margin-bottom: 0.5rem;
   text-shadow: 0 2px 20px rgba(233, 69, 96, 0.3);
 }
-
 .profile-header .subtitle {
   color: rgba(255, 255, 255, 0.6);
   font-size: 1.1rem;
 }
-
-/* --- Карточка профиля --- */
 .profile-card {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
   padding: 3rem;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
 }
-
-/* Декоративный градиент вверху карточки */
 .profile-card::before {
   content: '';
   position: absolute;
@@ -48,40 +40,26 @@
   background-size: 200% 100%;
   animation: shimmer 3s infinite linear;
 }
-
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
-/* --- Сетка полей --- */
-.profile-form {
-  display: grid;
-  gap: 2rem;
-}
-
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+  margin-bottom: 1.5rem;
 }
-
 .form-group {
   display: flex;
   flex-direction: column;
 }
-
 .form-group label {
   margin-bottom: 0.6rem;
   color: rgba(255, 255, 255, 0.8);
   font-weight: 600;
   font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
-
-/* Иконки для лейблов (опционально) */
 .form-group label::before {
   content: '';
   display: inline-block;
@@ -89,9 +67,8 @@
   height: 6px;
   background: var(--accent);
   border-radius: 50%;
+  margin-right: 0.5rem;
 }
-
-/* --- Поля ввода --- */
 .form-group input {
   padding: 1rem 1.25rem;
   background: rgba(255, 255, 255, 0.08);
@@ -100,150 +77,176 @@
   color: #ffffff;
   font-size: 1rem;
   transition: all 0.3s ease;
-  outline: none;
 }
-
-.form-group input:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.1);
-}
-
 .form-group input:focus {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.12);
   box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.15);
-  transform: translateY(-1px);
 }
-
-/* Поле только для чтения (Email) */
-.form-group input:disabled,
-.form-group input[readonly] {
+.form-group input:disabled {
   background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.4);
   cursor: not-allowed;
 }
-
-.form-group input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+.form-hint {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.3rem;
 }
-
-/* --- Время тренировки (специальный стиль) --- */
-.form-group input[type="time"] {
-  cursor: pointer;
-}
-
-.form-group input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  cursor: pointer;
-  opacity: 0.6;
-}
-
-.form-group input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-/* --- Кнопка сохранения --- */
-.btn-save {
+.btn-primary, .btn-secondary {
   width: 100%;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, var(--accent), #ff006e);
-  color: #ffffff;
+  padding: 1rem;
   border: none;
-  border-radius: 14px;
-  font-size: 1.1rem;
+  border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 2rem;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
+  transition: 0.3s;
 }
-
-.btn-save::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: 0.5s;
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #ff006e);
+  color: white;
 }
-
-.btn-save:hover::before {
-  left: 100%;
-}
-
-.btn-save:hover {
-  transform: translateY(-3px);
+.btn-primary:hover {
+  transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(233, 69, 96, 0.5);
 }
-
-.btn-save:active {
-  transform: translateY(-1px);
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
 }
-
-/* --- Сообщения об успехе/ошибке --- */
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 .message {
-  padding: 1.25rem;
+  padding: 1rem;
   border-radius: 12px;
   margin-bottom: 2rem;
   font-weight: 600;
   text-align: center;
-  animation: fadeIn 0.3s ease-out;
-  border-left: 4px solid;
 }
-
 .message.success {
   background: rgba(78, 204, 163, 0.15);
   color: #4ecca3;
-  border-left-color: #4ecca3;
+  border-left: 4px solid #4ecca3;
 }
-
 .message.error {
   background: rgba(233, 69, 96, 0.15);
   color: #ff8fa3;
-  border-left-color: var(--accent);
+  border-left: 4px solid #e94560;
 }
-
-/* --- Анимации --- */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Аватар */
+.avatar-section {
+  text-align: center;
+  margin: 3rem 0 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
-
-/* --- Адаптивность --- */
+.avatar-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  margin-bottom: 1rem;
+}
+/* Календарь */
+.calendar-section {
+  margin: 2rem 0;
+}
+.calendar-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  padding: 1rem;
+}
+.calendar-day-header {
+  text-align: center;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  padding: 0.5rem;
+}
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.calendar-day.completed { background: #4ecca3; color: #1a1a2e; }
+.calendar-day.skipped { background: #e94560; }
+.calendar-day.scheduled, .calendar-day.in_progress { background: #ffa500; }
+.calendar-day.empty { background: rgba(255,255,255,0.03); cursor: default; }
+/* Настройка дней */
+.days-settings {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.days-checkboxes {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.days-checkboxes label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255,255,255,0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 40px;
+  cursor: pointer;
+}
+.hint {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.5);
+}
 @media (max-width: 768px) {
-  .profile-card {
-    padding: 2rem 1.5rem;
-    margin: 1rem;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
-  }
-  
-  .profile-header h1 {
-    font-size: 1.8rem;
-  }
+  .profile-card { padding: 1.5rem; }
+  .form-row { grid-template-columns: 1fr; gap: 1rem; }
+  .calendar-grid { gap: 0.3rem; }
 }
 
-@media (max-width: 480px) {
-  .profile-card {
-    padding: 1.5rem 1rem;
-    border-radius: 16px;
-  }
-  
-  .form-group input {
-    padding: 0.85rem 1rem;
-    font-size: 0.95rem;
-  }
-  
-  .btn-save {
-    padding: 1rem;
-    font-size: 1rem;
-  }
+.calendar-legend {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+}
+.legend-color {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  margin-right: 0.3rem;
+}
+.legend-color.completed { background: #4ecca3; }
+.legend-color.skipped { background: #e94560; }
+.legend-color.scheduled { background: #ffa500; }
+
+.avatar-section, .calendar-section, .days-settings {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.days-checkboxes label {
+  transition: 0.2s;
+}
+.days-checkboxes label:hover {
+  background: rgba(255,255,255,0.15);
 }
