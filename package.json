@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+
+    "migrate:create": "node-pg-migrate create -m src/infrastructure/database/migrations -j ts",
+    "migrate:up": "node-pg-migrate up -m src/infrastructure/database/migrations -f database.json",
+    "migrate:down": "node-pg-migrate down -m src/infrastructure/database/migrations -f database.json",
+    "migrate:status": "node-pg-migrate status -m src/infrastructure/database/migrations -f database.json"
   },
   "keywords": [],
   "author": "Spiridonov",
@@ -18,7 +23,6 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
-    "pg": "^8.20.0",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
@@ -32,7 +36,9 @@
     "@types/pg": "^8.18.0",
     "@types/socket.io": "^3.0.1",
     "cors": "^2.8.6",
+    "node-pg-migrate": "^8.0.4",
     "nodemon": "^3.1.14",
+    "pg": "^8.20.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   }
