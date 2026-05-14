@@ -224,7 +224,8 @@ export class WorkoutController {
     const workouts = await this.workoutService.getWorkoutsInRange(userId, startDate, endDate);
     const calendar: Record<string, { status: string; workoutId?: number }> = {};
     for (const w of workouts) {
-      const dateStr = w.scheduledDate.toISOString().split('T')[0];
+      const d = w.scheduledDate;
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       calendar[dateStr] = { status: w.status, workoutId: w.id };
     }
     res.json({ calendar });

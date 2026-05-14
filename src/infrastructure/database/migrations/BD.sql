@@ -1,9 +1,10 @@
--- ============================================
--- FitMaster – Полная схема базы данных (v5.0)
--- PostgreSQL – fitmaster_db
--- ============================================
+-- =====================================================
+-- FitMaster – Полная схема базы данных (финальная версия)
+-- Поддержка: аватар, выбор дней недели, лайки/дизлайки
+-- =====================================================
 
--- 1. Удаляем все таблицы, если они существуют
+-- 1. Удаление всех таблиц (CASCADE удалит зависимые объекты)
+DROP TABLE IF EXISTS exercise_likes CASCADE;
 DROP TABLE IF EXISTS fatigue_recovery CASCADE;
 DROP TABLE IF EXISTS muscle_recovery CASCADE;
 DROP TABLE IF EXISTS workout_adaptations CASCADE;
@@ -15,9 +16,8 @@ DROP TABLE IF EXISTS exercise_metric_templates CASCADE;
 DROP TABLE IF EXISTS exercises CASCADE;
 DROP TABLE IF EXISTS workouts CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS workout_results CASCADE;  -- не используется, удаляем
 
--- 2. ENUM TYPES
+-- 2. ENUM типы (создаются только если отсутствуют)
 DO $$ BEGIN
     CREATE TYPE gender_type AS ENUM ('male', 'female');
 EXCEPTION WHEN duplicate_object THEN null;
@@ -48,11 +48,11 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
 
--- ============================================
--- 3. ТАБЛИЦЫ
--- ============================================
+-- =====================================================
+-- 3. СОЗДАНИЕ ТАБЛИЦ
+-- =====================================================
 
--- Пользователи
+-- Пользователи (расширено: avatar_url, preferred_days)
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     nickname VARCHAR(50) UNIQUE NOT NULL,
@@ -65,6 +65,8 @@ CREATE TABLE users (
     height INTEGER NOT NULL CHECK (height > 100 AND height < 250),
     weight DECIMAL(5,2) NOT NULL CHECK (weight > 30 AND weight < 300),
     preferred_workout_time TIME DEFAULT '17:00:00',
+    avatar_url VARCHAR(500),
+    preferred_days INTEGER[] DEFAULT ARRAY[1,3,5],
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -80,7 +82,7 @@ CREATE TABLE workouts (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Упражнения (расширенные поля для адаптации)
+-- Упражнения
 CREATE TABLE exercises (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -150,7 +152,7 @@ CREATE TABLE exercise_sets (
     UNIQUE(workout_exercise_id, set_number)
 );
 
--- Метрики подходов (сколько повторений / вес / время)
+-- Метрики подходов
 CREATE TABLE set_metrics (
     id SERIAL PRIMARY KEY,
     exercise_set_id INTEGER NOT NULL REFERENCES exercise_sets(id) ON DELETE CASCADE,
@@ -200,9 +202,20 @@ CREATE TABLE muscle_recovery (
     UNIQUE(user_id, muscle_group)
 );
 
--- ============================================
+-- Лайки / дизлайки упражнений
+CREATE TABLE exercise_likes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    liked BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, exercise_id)
+);
+
+-- =====================================================
 -- 4. ИНДЕКСЫ
--- ============================================
+-- =====================================================
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_nickname ON users(nickname);
 CREATE INDEX idx_user_workouts_user_id ON user_workouts(user_id);
@@ -217,26 +230,29 @@ CREATE INDEX idx_set_metrics_exercise_set ON set_metrics(exercise_set_id);
 CREATE INDEX idx_exercise_sets_workout_exercise ON exercise_sets(workout_exercise_id);
 CREATE INDEX idx_fatigue_recovery_user_date ON fatigue_recovery(user_id, date DESC);
 CREATE INDEX idx_muscle_recovery_user ON muscle_recovery(user_id);
+CREATE INDEX idx_exercise_likes_user ON exercise_likes(user_id);
+CREATE INDEX idx_exercise_likes_exercise ON exercise_likes(exercise_id);
 
--- ============================================
--- 5. ТРИГГЕРЫ для updated_at
--- ============================================
+-- =====================================================
+-- 5. ТРИГГЕРЫ ДЛЯ updated_at
+-- =====================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE 'plpgsql';
 
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_workouts_updated_at BEFORE UPDATE ON workouts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_exercises_updated_at BEFORE UPDATE ON exercises FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_user_workouts_updated_at BEFORE UPDATE ON user_workouts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_exercise_likes_updated_at BEFORE UPDATE ON exercise_likes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- ============================================
--- 6. БАЗОВЫЕ ДАННЫЕ
--- ============================================
+-- =====================================================
+-- 6. БАЗОВЫЕ ДАННЫЕ (упражнения, шаблоны, программы)
+-- =====================================================
 
 -- Упражнения
 INSERT INTO exercises (id, name, description, muscle_group, equipment_type) VALUES
