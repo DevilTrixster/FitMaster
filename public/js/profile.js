@@ -37,21 +37,36 @@ async function loadPreferredDays() {
 }
 
 async function savePreferredDays() {
-  const days = Array.from(document.querySelectorAll('.days-checkboxes input:checked'))
-    .map(cb => parseInt(cb.value))
+  const checkboxes = document.querySelectorAll('.days-checkboxes input:checked');
+  console.log('🔍 Checked checkboxes:', checkboxes);
+  
+  const days = Array.from(checkboxes)
+    .map(cb => {
+      const val = parseInt(cb.value);
+      console.log(`  - Checkbox with value ${cb.value} -> ${val}`);
+      return val;
+    })
     .sort((a,b) => a-b);
+  
+  console.log('📤 Sending days to server:', days);
+  
   if (days.length === 0 || days.length > 3) {
     alert('Выберите от 1 до 3 дней');
     return;
   }
+  
   try {
-    await fetchWithAuth('/api/profile/preferred-days', {
+    const response = await fetchWithAuth('/api/profile/preferred-days', {
       method: 'PUT',
       body: JSON.stringify({ days })
     });
+    const data = await response.json();
+    console.log('✅ Server response:', data);
     showNotification('Дни тренировок сохранены! Расписание обновлено.', 'success');
-    loadCalendar(currentYear, currentMonth);
+    // Принудительно обновляем календарь
+    await loadCalendar(currentYear, currentMonth);
   } catch (err) {
+    console.error('❌ Error saving days:', err);
     alert('Ошибка: ' + err.message);
   }
 }
@@ -68,8 +83,8 @@ async function loadCalendar(year, month) {
 }
 
 function renderCalendar(year, month, calendarData) {
-  const firstDay = new Date(year, month-1, 1);
-  const startWeekday = firstDay.getDay();
+  const firstDay = new Date(year, month - 1, 1);
+  const startWeekday = firstDay.getDay(); // 0=Вс, 1=Пн, ..., 6=Сб
   const daysInMonth = new Date(year, month, 0).getDate();
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
@@ -82,6 +97,7 @@ function renderCalendar(year, month, calendarData) {
     grid.appendChild(header);
   });
 
+  // Смещение, чтобы понедельник был первым
   let offset = (startWeekday === 0 ? 6 : startWeekday - 1);
   for (let i = 0; i < offset; i++) {
     const empty = document.createElement('div');
@@ -90,13 +106,15 @@ function renderCalendar(year, month, calendarData) {
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const dayData = calendarData[dateStr];
     let statusClass = '';
     if (dayData) {
       if (dayData.status === 'completed') statusClass = 'completed';
       else if (dayData.status === 'skipped') statusClass = 'skipped';
-      else if (dayData.status === 'scheduled' || dayData.status === 'in_progress') statusClass = 'scheduled';
+      else if (dayData.status === 'scheduled' || dayData.status === 'in_progress' || dayData.status === 'rescheduled') {
+        statusClass = 'scheduled';
+      }
     } else {
       statusClass = 'empty';
     }

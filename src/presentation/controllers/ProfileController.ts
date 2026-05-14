@@ -73,10 +73,9 @@ export class ProfileController {
     }
 
     try {
+      // Формируем путь относительно public
       const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-      console.log('Saving avatarUrl:', avatarUrl);
       await this.profileService.updateAvatar(userId, avatarUrl);
-      console.log('Avatar saved successfully');
       res.json({ avatarUrl });
     } catch (error: any) {
       console.error('❌ Avatar upload error:', error);
@@ -87,16 +86,13 @@ export class ProfileController {
   async updatePreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const { days } = req.body;
-
+    console.log('🔁 ProfileController.updatePreferredDays received:', { userId, days });
     if (!Array.isArray(days) || days.length < 1 || days.length > 3) {
       throw new ValidationError('Выберите от 1 до 3 дней недели');
     }
-
     const valid = days.every(d => Number.isInteger(d) && d >= 1 && d <= 7);
     if (!valid) throw new ValidationError('Некорректные дни');
-
     await this.profileService.updatePreferredDays(userId, days);
-    // Регенерация будущих тренировок уже происходит внутри сервиса
     res.json({ message: 'Дни тренировок обновлены' });
   }
 }

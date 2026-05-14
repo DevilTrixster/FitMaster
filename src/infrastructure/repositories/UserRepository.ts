@@ -167,13 +167,19 @@ export class UserRepository implements IUserRepository {
   }
 
   async updatePreferredDays(userId: number, days: number[]): Promise<void> {
+    console.log(`💾 Updating preferred_days for user ${userId} to:`, days);
     const query = `UPDATE users SET preferred_days = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
     await this.pool.query(query, [days, userId]);
+    // Сразу проверим
+    const check = await this.pool.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
+    console.log(`✅ After update, DB contains:`, check.rows[0]?.preferred_days);
   }
 
   async getPreferredDays(userId: number): Promise<number[]> {
     const res = await this.pool.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
     if (res.rows.length === 0) return [1,3,5];
-    return res.rows[0].preferred_days || [1,3,5];
+    const days = res.rows[0].preferred_days;
+    console.log(`📖 getPreferredDays for user ${userId}:`, days);
+    return days || [1,3,5];
   }
 }

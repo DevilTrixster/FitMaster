@@ -51,8 +51,11 @@ export class ProfileService {
   }
 
   async updatePreferredDays(userId: number, days: number[]): Promise<void> {
+    console.log(`📅 ProfileService.updatePreferredDays for user ${userId}:`, days);
     await this.userRepository.updatePreferredDays(userId, days);
+    console.log('✅ Preferred days updated in DB, now regenerating workouts...');
     await this.workoutSchedulingService.regenerateFutureWorkouts(userId, days);
+    console.log('🏋️ Workouts regenerated');
   }
 
   // Синхронизация времени будущих тренировок

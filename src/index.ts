@@ -45,7 +45,8 @@ async function bootstrap() {
 
   // Middleware
   app.use(cors());
-  // Пропускаем парсинг JSON для multipart/form-data запросов
+
+  // Middleware для пропуска парсинга тела multipart запросов
   app.use((req, res, next) => {
     const contentType = req.headers['content-type'] || '';
     if (contentType.startsWith('multipart/form-data')) {

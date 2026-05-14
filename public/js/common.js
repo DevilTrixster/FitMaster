@@ -15,17 +15,16 @@ async function fetchWithAuth(url, options = {}) {
   const token = getToken();
   if (!token) throw new Error('Нет токена');
 
-  const defaultHeaders = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
+  const headers = { ...options.headers };
+  // Для FormData не добавляем Content-Type – браузер сам установит multipart
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  headers['Authorization'] = `Bearer ${token}`;
 
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -72,11 +71,9 @@ async function initNavAvatar() {
   const navUser = document.querySelector('.nav-user');
   if (!navUser) return;
 
-  // Найти ссылку "Профиль"
   const profileLink = Array.from(navUser.querySelectorAll('a')).find(a => a.textContent.trim() === 'Профиль');
   if (!profileLink) return;
 
-  // Получить аватар пользователя
   let avatarUrl = '/uploads/avatars/default-avatar.png';
   try {
     const user = await (await fetchWithAuth('/api/profile')).json();
@@ -85,7 +82,6 @@ async function initNavAvatar() {
     console.warn('Не удалось загрузить аватар');
   }
 
-  // Создать элемент аватара
   const avatarImg = document.createElement('img');
   avatarImg.src = avatarUrl;
   avatarImg.className = 'nav-avatar-img';
@@ -98,11 +94,9 @@ async function initNavAvatar() {
   avatarImg.style.border = '2px solid var(--accent)';
   avatarImg.style.transition = 'transform 0.2s, box-shadow 0.2s';
 
-  // Заменить ссылку на аватар
   const parent = profileLink.parentElement;
   parent.replaceChild(avatarImg, profileLink);
 
-  // Создать выпадающее меню
   const dropdown = document.createElement('div');
   dropdown.className = 'avatar-dropdown';
   dropdown.innerHTML = `
@@ -111,7 +105,6 @@ async function initNavAvatar() {
   `;
   parent.appendChild(dropdown);
 
-  // Обработчики
   avatarImg.addEventListener('click', (e) => {
     e.stopPropagation();
     dropdown.classList.toggle('show');
@@ -133,7 +126,6 @@ function handleLogout() {
   window.location.href = '/auth/login.html';
 }
 
-// Инициализация при загрузке DOM
 document.addEventListener('DOMContentLoaded', () => {
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
