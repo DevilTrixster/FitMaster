@@ -26,16 +26,22 @@ import { WorkoutSocketHandler } from './presentation/socket/WorkoutSocketHandler
 import { ProfileController } from './presentation/controllers/ProfileController';
 import { ProfileService } from './application/services/ProfileService';
 import { createProfileRoutes } from './presentation/routes/profileRoutes';
-import { WorkoutSchedulingService, WorkoutLifecycleService, WorkoutQueryService, WorkoutResultsService } from './application/services/workout';
+import {
+  WorkoutSchedulingService,
+  WorkoutLifecycleService,
+  WorkoutQueryService,
+  WorkoutResultsService,
+} from './application/services/workout';
 import { config } from './config/env';
 import { errorHandler } from './presentation/middleware/errorHandler';
-import { IntelligentAdaptationService } from './application/services/adaptation/IntelligentAdaptationService';
+import { InitialTargetsService} from './application/services/adaptation/IntelligentAdaptationService';
 import { FatigueRecoveryService } from './application/services/adaptation/FatigueRecoveryService';
 import { FatigueRepository } from './infrastructure/repositories/FatigueRepository';
 import { PlateauDetectionService } from './application/services/adaptation/PlateauDetectionService';
 import { createAnalyticsRoutes } from './presentation/routes/analyticsRoutes';
 import { AnalyticsController } from './presentation/controllers/AnalyticsController';
 
+// Точка входа в приложение.
 async function bootstrap() {
   const app = express();
   const httpServer = createServer(app);
@@ -43,10 +49,11 @@ async function bootstrap() {
     cors: { origin: '*', methods: ['GET', 'POST'] },
   });
 
-  // Middleware
+  // ------------------ Middleware ------------------
+  // Разрешаем CORS для всех источников (для разработки)
   app.use(cors());
 
-  // Middleware для пропуска парсинга тела multipart запросов
+  // Интеллектуальный парсинг тела запроса:
   app.use((req, res, next) => {
     const contentType = req.headers['content-type'] || '';
     if (contentType.startsWith('multipart/form-data')) {
@@ -55,83 +62,99 @@ async function bootstrap() {
     express.json({ limit: '5mb' })(req, res, next);
   });
   app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+
+  // Раздача статических файлов (HTML, CSS, JS клиентской части)
   app.use(express.static(path.join(__dirname, '../public')));
 
   try {
+    // ------------------ Подключение к БД ------------------
     const database = Database.getInstance();
     await database.connect();
 
-    // === Репозитории ===
+    // ------------------ Репозитории ------------------
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
     const progressRepository = new ProgressRepository(database.getPool());
     const fatigueRepository = new FatigueRepository(database.getPool());
 
-    // === Сервисы ===
-    // Сервис утомления/восстановления
+    // ------------------ Базовые сервисы ------------------
+    // Сервис учёта утомления и восстановления (FatigueRecovery)
     const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository);
-
-    // Сервис обнаружения плато
+    // Сервис обнаружения плато (застоя в прогрессе)
     const plateauService = new PlateauDetectionService(workoutRepository);
-
-    // Интеллектуальная адаптация
-    const intelligentAdaptationService = new IntelligentAdaptationService(
+    // Интеллектуальная адаптация нагрузки (увеличение/снижение веса/повторений)
+    const intelligentAdaptationService = new InitialTargetsService(
       workoutRepository,
       userRepository,
       fatigueService,
       plateauService
     );
 
-    // Сервисы тренировок (единственное объявление WorkoutSchedulingService)
+    // ------------------ Сервисы управления тренировками ------------------
+    // Планирование тренировок (генерация расписания по дням недели)
     const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
-
+    // Обработка результатов тренировок (сохранение подходов, запуск адаптации)
     const workoutResultsService = new WorkoutResultsService(
       workoutRepository,
       userRepository,
       intelligentAdaptationService,
       fatigueService
     );
-
+    // Жизненный цикл тренировки (начало, пауза, возобновление, завершение)
     const workoutLifecycleService = new WorkoutLifecycleService(workoutRepository, workoutResultsService);
+    // Запросы данных о тренировках (история, предстоящие, упражнения)
     const workoutQueryService = new WorkoutQueryService(workoutRepository, workoutSchedulingService);
-
-    // Главный фасад WorkoutService
+    // Фасад, объединяющий все операции с тренировками
     const workoutService = new WorkoutService(
       workoutSchedulingService,
       workoutLifecycleService,
       workoutQueryService,
       workoutResultsService,
-      workoutRepository);
+      workoutRepository
+    );
 
-    // ProfileService теперь получает workoutSchedulingService
-    const profileService = new ProfileService(userRepository, workoutRepository, workoutSchedulingService);
+    // ------------------ Сервис начальных целей упражнений ------------------
+    // Устанавливает стартовые веса и повторения на основе уровня опыта пользователя
+    const initialTargetsService = new InitialTargetsService(workoutRepository, userRepository);
+
+    // ------------------ Профиль и аутентификация ------------------
+    // Сервис профиля (получение/обновление данных, аватар, дни тренировок)
+    const profileService = new ProfileService(
+      userRepository,
+      workoutRepository,
+      workoutSchedulingService,
+      initialTargetsService
+    );
     const profileController = new ProfileController(profileService);
 
-    const rescheduleService = new WorkoutRescheduleService(workoutRepository);
-    const progressService = new ProgressAnalyticsService(progressRepository);
-    const authService = new AuthService(userRepository, workoutService);
-
-    // Контроллеры
+    // Сервис аутентификации (регистрация, логин, JWT)
+    const authService = new AuthService(userRepository, workoutService, initialTargetsService);
     const authController = new AuthController(authService);
-    const workoutController = new WorkoutController(workoutService, rescheduleService);
+
+    // ------------------ Прочие сервисы ------------------
+    // Перенос тренировок (reschedule/skip)
+    const rescheduleService = new WorkoutRescheduleService(workoutRepository);
+    // Аналитика прогресса (графики, статистика по группам мышц)
+    const progressService = new ProgressAnalyticsService(progressRepository);
     const progressController = new ProgressController(progressService);
 
-    // Middleware
+    // ------------------ Контроллеры ------------------
+    const workoutController = new WorkoutController(workoutService, rescheduleService);
+    const analyticsController = new AnalyticsController(fatigueService, workoutService);
+
+    // ------------------ Middleware авторизации ------------------
     const authMiddleware = createAuthMiddleware(authService);
 
-    // Лайки упражнений
+    // ------------------ Лайки упражнений ------------------
     const exerciseLikeRepository = new ExerciseLikeRepository(database.getPool());
     const exerciseLikeService = new ExerciseLikeService(exerciseLikeRepository);
     const likeController = new LikeController(exerciseLikeService);
 
-    // Socket.IO
+    // ------------------ WebSocket (Socket.IO) ------------------
     const socketHandler = new WorkoutSocketHandler(io, workoutService);
     socketHandler.initialize();
 
-    // Аналитика
-    const analyticsController = new AnalyticsController(fatigueService, workoutService);
-
-    // API маршруты
+    // ------------------ Маршруты API ------------------
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
     app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
@@ -139,7 +162,7 @@ async function bootstrap() {
     app.use('/api/likes', createLikeRoutes(likeController, authMiddleware));
     app.use('/api/analytics', createAnalyticsRoutes(analyticsController, authMiddleware));
 
-    // Frontend
+    // ------------------ Отдача HTML-страниц ------------------
     app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
     app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../public/dashboard.html')));
     app.get('/history', (req, res) => res.sendFile(path.join(__dirname, '../public/history.html')));
@@ -149,10 +172,12 @@ async function bootstrap() {
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
 
+    // Глобальный обработчик ошибок
     app.use(errorHandler);
 
     console.log('🚀 Сервер готов к работе');
 
+    // ------------------ Запуск HTTP сервера ------------------
     httpServer.listen(config.server.port, () => {
       console.log(`🌐 Сервер запущен на порту ${config.server.port}`);
       console.log(`📍 Главная: http://localhost:${config.server.port}/`);

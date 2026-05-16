@@ -13,6 +13,3 @@ Thumbs.db
 
 # Логи
 *.log
-
-# Свой путь к базе данных
-database.json

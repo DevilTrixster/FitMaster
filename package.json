@@ -10,8 +10,9 @@
 
     "migrate:create": "node-pg-migrate create -m src/infrastructure/database/migrations -j ts",
     "migrate:up": "node-pg-migrate up -m src/infrastructure/database/migrations -f database.json",
-    "migrate:down": "node-pg-migrate down -m src/infrastructure/database/migrations -f database.json",
-    "migrate:status": "node-pg-migrate status -m src/infrastructure/database/migrations -f database.json"
+    "migrate:down": "node-pg-migrate down -m src/infrastructure/database/migrations -f database.json --ignore-down",
+    "migrate:status": "node-pg-migrate status -m src/infrastructure/database/migrations -f database.json",
+    "migrate:reset": "node-pg-migrate down -m src/infrastructure/database/migrations -f database.json --ignore-down --count 100"
   },
   "keywords": [],
   "author": "Spiridonov",

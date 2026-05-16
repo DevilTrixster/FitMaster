@@ -2,10 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { ProfileService } from '../../application/services/ProfileService';
 import { validateTimeFormat } from '../../core/utils/validators';
 import { UnauthorizedError, ValidationError } from '../../core/errors/ValidationError';
+import { ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 
 export class ProfileController {
   constructor(private profileService: ProfileService) {}
 
+  // Возвращает полный профиль пользователя (включая уровень и цель).
   async getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const user = await this.profileService.getProfile(userId);
@@ -27,14 +29,30 @@ export class ProfileController {
       preferredWorkoutTime: user.preferredWorkoutTime,
       avatarUrl: (user as any).avatar_url || null,
       preferredDays,
+      experienceLevel: user.experienceLevel,
+      fitnessGoal: user.fitnessGoal,
     });
   }
 
+  /**
+   * Обновление профиля.
+   * Принимает nickname, firstName, lastName, height, weight,
+   * preferredWorkoutTime, experienceLevel, fitnessGoal.
+   */
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     if (!userId) throw new UnauthorizedError('Не авторизован');
 
-    const { nickname, firstName, lastName, height, weight, preferredWorkoutTime } = req.body;
+    const {
+      nickname,
+      firstName,
+      lastName,
+      height,
+      weight,
+      preferredWorkoutTime,
+      experienceLevel,
+      fitnessGoal,
+    } = req.body;
 
     if (preferredWorkoutTime !== undefined) {
       validateTimeFormat(preferredWorkoutTime);
@@ -47,8 +65,11 @@ export class ProfileController {
       height,
       weight,
       preferredWorkoutTime,
+      experienceLevel: experienceLevel as ExperienceLevel,
+      fitnessGoal: fitnessGoal as FitnessGoal,
     });
 
+    // Если изменилось время – синхронизируем будущие тренировки
     if (preferredWorkoutTime) {
       await this.profileService.updateFutureWorkoutsTime(userId, preferredWorkoutTime);
     }
@@ -56,24 +77,22 @@ export class ProfileController {
     res.json({ message: 'Профиль обновлён' });
   }
 
+  // Получение предпочтительных дней тренировок (массив чисел 1..7).
   async getPreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const days = await this.profileService.getPreferredDays(userId);
     res.json({ days });
   }
 
+  // Загрузка аватара (multipart/form-data, поле avatar). 
   async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
-    console.log('📸 Upload avatar request, userId:', userId);
-    console.log('req.file:', req.file);
 
     if (!req.file) {
       res.status(400).json({ error: 'Файл не загружен' });
       return;
     }
-
     try {
-      // Формируем путь относительно public
       const avatarUrl = `/uploads/avatars/${req.file.filename}`;
       await this.profileService.updateAvatar(userId, avatarUrl);
       res.json({ avatarUrl });
@@ -83,6 +102,7 @@ export class ProfileController {
     }
   }
 
+  // Обновление предпочтительных дней тренировок (от 1 до 3 дней). 
   async updatePreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const { days } = req.body;

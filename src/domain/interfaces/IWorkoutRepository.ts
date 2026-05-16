@@ -81,4 +81,5 @@ export interface IWorkoutRepository {
   createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void>; // для массовой вставки
 
   postponeWorkout(workoutId: number, newDate: Date): Promise<void>;
+  deleteGlobalAdaptations(userId: number): Promise<void>;
 }

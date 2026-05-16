@@ -1,17 +1,27 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { ConflictError, UnauthorizedError } from '../../core/errors/ValidationError';
-import { User, Gender } from '../../domain/entities/User';
+import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { WorkoutService } from './WorkoutService';
+import { InitialTargetsService } from './adaptation/IntelligentAdaptationService';
 
 export class AuthService {
   constructor(
     private userRepository: IUserRepository,
-    private workoutService: WorkoutService
+    private workoutService: WorkoutService,
+    private initialTargetsService: InitialTargetsService
   ) {}
 
-  // Регистрация нового пользователя с автоматическим созданием программы
+  /**
+   * Регистрация нового пользователя.
+   * - Проверяет уникальность email и nickname.
+   * - Хеширует пароль.
+   * - Создаёт пользователя в БД.
+   * - Генерирует JWT.
+   * - Создаёт базовую программу тренировок.
+   * - Инициализирует начальные цели упражнений на основе выбранного уровня.
+   */
   async register(data: {
     nickname: string;
     password: string;
@@ -22,6 +32,8 @@ export class AuthService {
     gender: Gender;
     height: number;
     weight: number;
+    experienceLevel?: ExperienceLevel;
+    fitnessGoal?: FitnessGoal;
   }): Promise<{ user: User; token: string }> {
     const existingByEmail = await this.userRepository.findByEmail(data.email);
     if (existingByEmail) throw new ConflictError('Пользователь с таким email уже существует');
@@ -31,18 +43,24 @@ export class AuthService {
 
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(data.password, saltRounds);
-
-    const user = new User({ ...data, password: hashedPassword });
+    const user = new User({
+      ...data,
+      password: hashedPassword,
+      experienceLevel: data.experienceLevel || ExperienceLevel.Novice,
+      fitnessGoal: data.fitnessGoal || FitnessGoal.Maintenance,
+    });
     const savedUser = await this.userRepository.createUser(user);
     const token = this.generateToken(savedUser.id!);
 
     // Генерация базовой программы на 4 недели
     await this.workoutService.generateBaseProgram(savedUser.id!);
+    // Установка начального веса/повторений по уровню
+    await this.initialTargetsService.initializeTargets(savedUser.id!);
 
     return { user: savedUser, token };
   }
 
-  // Аутентификация по email и паролю
+  // Аутентификация пользователя по email и паролю.
   async login(email: string, password: string): Promise<{ user: User; token: string }> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) throw new UnauthorizedError('Неверный email или пароль');
@@ -54,13 +72,13 @@ export class AuthService {
     return { user, token };
   }
 
-  // Генерация JWT токена
+  // Генерация JWT токена (срок жизни 7 дней).
   private generateToken(userId: number): string {
     const secret = process.env.JWT_SECRET || 'fitmaster-secret-key';
     return jwt.sign({ userId }, secret, { expiresIn: '7d' });
   }
 
-  // Проверка JWT токена
+  // Верификация JWT токена, возвращает userId.
   verifyToken(token: string): { userId: number } {
     const secret = process.env.JWT_SECRET || 'fitmaster-secret-key';
     return jwt.verify(token, secret) as { userId: number };

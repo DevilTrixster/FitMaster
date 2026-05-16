@@ -48,10 +48,7 @@ export class WorkoutSchedulingService {
     await this.workoutRepository.createUserWorkoutBatch(workouts);
   }
 
-  /**
-   * Исправленная генерация: для каждого из выбранных дней недели (1=Пн...7=Вс)
-   * создаёт тренировку на ближайшую дату, начиная с today, и повторяет weeksCount недель.
-   */
+  //Исправленная генерация: для каждого из выбранных дней недели (1=Пн...7=Вс) создаёт тренировку на ближайшую дату, начиная с today, и повторяет weeksCount недель.
   private async generateWorkoutsForDays(
     userId: number,
     days: number[],

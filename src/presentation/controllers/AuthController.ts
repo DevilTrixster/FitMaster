@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../application/services/AuthService';
-import { Gender } from '../../domain/entities/User';
+import { Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 import {
   validateRequired,
   validateEmailFormat,
@@ -10,6 +10,10 @@ import {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  /**
+   * Регистрация нового пользователя.
+   * Принимает из тела запроса все поля, включая experienceLevel и fitnessGoal.
+   */
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     const {
       nickname,
@@ -21,9 +25,11 @@ export class AuthController {
       gender,
       height,
       weight,
+      experienceLevel,
+      fitnessGoal,
     } = req.body;
 
-    // Валидация – каждая функция бросит ValidationError при проблеме
+    // Валидация обязательных полей
     validateRequired(nickname, 'nickname');
     validateRequired(password, 'password');
     validateRequired(email, 'email');
@@ -47,6 +53,8 @@ export class AuthController {
       gender: gender as Gender,
       height: Number(height),
       weight: Number(weight),
+      experienceLevel: experienceLevel as ExperienceLevel,
+      fitnessGoal: fitnessGoal as FitnessGoal,
     });
 
     res.status(201).json({
@@ -62,20 +70,18 @@ export class AuthController {
     });
   }
 
+  // Авторизация пользователя: email + password → JWT.
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
-    // Проверяем, что body получен
     if (!req.body) {
       res.status(400).json({ error: 'Тело запроса пустое' });
       return;
     }
 
     const { email, password } = req.body;
-
     validateRequired(email, 'email');
     validateRequired(password, 'password');
 
     const result = await this.authService.login(email, password);
-
     res.status(200).json({
       message: 'Вход успешен',
       user: {

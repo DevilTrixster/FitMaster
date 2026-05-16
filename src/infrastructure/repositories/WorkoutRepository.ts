@@ -62,4 +62,5 @@ export class WorkoutRepository implements IWorkoutRepository {
   async deleteScheduledWorkoutsFrom(userId: number, fromDate: Date): Promise<void> { return this.writeRepo.deleteScheduledWorkoutsFrom(userId, fromDate);}
   async createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void> { return this.writeRepo.createUserWorkoutBatch(workouts); }
   async postponeWorkout(workoutId: number, newDate: Date): Promise<void> { return this.writeRepo.postponeWorkout(workoutId, newDate); }
+  async deleteGlobalAdaptations(userId: number): Promise<void> { return this.writeRepo.deleteGlobalAdaptations(userId); }
 }
