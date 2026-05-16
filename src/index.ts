@@ -34,7 +34,7 @@ import {
 } from './application/services/workout';
 import { config } from './config/env';
 import { errorHandler } from './presentation/middleware/errorHandler';
-import { InitialTargetsService} from './application/services/adaptation/IntelligentAdaptationService';
+import { IntelligentAdaptationService } from './application/services/adaptation/IntelligentAdaptationService';
 import { FatigueRecoveryService } from './application/services/adaptation/FatigueRecoveryService';
 import { FatigueRepository } from './infrastructure/repositories/FatigueRepository';
 import { PlateauDetectionService } from './application/services/adaptation/PlateauDetectionService';
@@ -78,12 +78,9 @@ async function bootstrap() {
     const fatigueRepository = new FatigueRepository(database.getPool());
 
     // ------------------ Базовые сервисы ------------------
-    // Сервис учёта утомления и восстановления (FatigueRecovery)
     const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository);
-    // Сервис обнаружения плато (застоя в прогрессе)
     const plateauService = new PlateauDetectionService(workoutRepository);
-    // Интеллектуальная адаптация нагрузки (увеличение/снижение веса/повторений)
-    const intelligentAdaptationService = new InitialTargetsService(
+    const intelligentAdaptationService = new IntelligentAdaptationService(
       workoutRepository,
       userRepository,
       fatigueService,
@@ -91,20 +88,15 @@ async function bootstrap() {
     );
 
     // ------------------ Сервисы управления тренировками ------------------
-    // Планирование тренировок (генерация расписания по дням недели)
     const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
-    // Обработка результатов тренировок (сохранение подходов, запуск адаптации)
     const workoutResultsService = new WorkoutResultsService(
       workoutRepository,
       userRepository,
       intelligentAdaptationService,
       fatigueService
     );
-    // Жизненный цикл тренировки (начало, пауза, возобновление, завершение)
     const workoutLifecycleService = new WorkoutLifecycleService(workoutRepository, workoutResultsService);
-    // Запросы данных о тренировках (история, предстоящие, упражнения)
     const workoutQueryService = new WorkoutQueryService(workoutRepository, workoutSchedulingService);
-    // Фасад, объединяющий все операции с тренировками
     const workoutService = new WorkoutService(
       workoutSchedulingService,
       workoutLifecycleService,
@@ -113,22 +105,17 @@ async function bootstrap() {
       workoutRepository
     );
 
-    // ------------------ Сервис начальных целей упражнений ------------------
-    // Устанавливает стартовые веса и повторения на основе уровня опыта пользователя
-    const initialTargetsService = new InitialTargetsService(workoutRepository, userRepository);
-
     // ------------------ Профиль и аутентификация ------------------
-    // Сервис профиля (получение/обновление данных, аватар, дни тренировок)
+    // Используем уже созданный intelligentAdaptationService (он содержит методы initializeTargets/reinitializeTargets)
     const profileService = new ProfileService(
       userRepository,
       workoutRepository,
       workoutSchedulingService,
-      initialTargetsService
+      intelligentAdaptationService
     );
     const profileController = new ProfileController(profileService);
 
-    // Сервис аутентификации (регистрация, логин, JWT)
-    const authService = new AuthService(userRepository, workoutService, initialTargetsService);
+    const authService = new AuthService(userRepository, workoutService, intelligentAdaptationService);
     const authController = new AuthController(authService);
 
     // ------------------ Прочие сервисы ------------------

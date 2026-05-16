@@ -4,24 +4,16 @@ import { ConflictError, UnauthorizedError } from '../../core/errors/ValidationEr
 import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { WorkoutService } from './WorkoutService';
-import { InitialTargetsService } from './adaptation/IntelligentAdaptationService';
+import { IntelligentAdaptationService } from './adaptation/IntelligentAdaptationService';
 
 export class AuthService {
   constructor(
     private userRepository: IUserRepository,
     private workoutService: WorkoutService,
-    private initialTargetsService: InitialTargetsService
+    private adaptationService: IntelligentAdaptationService   // изменено
   ) {}
 
-  /**
-   * Регистрация нового пользователя.
-   * - Проверяет уникальность email и nickname.
-   * - Хеширует пароль.
-   * - Создаёт пользователя в БД.
-   * - Генерирует JWT.
-   * - Создаёт базовую программу тренировок.
-   * - Инициализирует начальные цели упражнений на основе выбранного уровня.
-   */
+  // Регистрация нового пользователя
   async register(data: {
     nickname: string;
     password: string;
@@ -52,15 +44,15 @@ export class AuthService {
     const savedUser = await this.userRepository.createUser(user);
     const token = this.generateToken(savedUser.id!);
 
-    // Генерация базовой программы на 4 недели
+    // Генерация базовой программы
     await this.workoutService.generateBaseProgram(savedUser.id!);
-    // Установка начального веса/повторений по уровню
-    await this.initialTargetsService.initializeTargets(savedUser.id!);
+    // Установка начальных весов/повторений на основе уровня
+    await this.adaptationService.initializeTargets(savedUser.id!);
 
     return { user: savedUser, token };
   }
 
-  // Аутентификация пользователя по email и паролю.
+  // Аутентификация
   async login(email: string, password: string): Promise<{ user: User; token: string }> {
     const user = await this.userRepository.findByEmail(email);
     if (!user) throw new UnauthorizedError('Неверный email или пароль');
@@ -72,13 +64,11 @@ export class AuthService {
     return { user, token };
   }
 
-  // Генерация JWT токена (срок жизни 7 дней).
   private generateToken(userId: number): string {
     const secret = process.env.JWT_SECRET || 'fitmaster-secret-key';
     return jwt.sign({ userId }, secret, { expiresIn: '7d' });
   }
 
-  // Верификация JWT токена, возвращает userId.
   verifyToken(token: string): { userId: number } {
     const secret = process.env.JWT_SECRET || 'fitmaster-secret-key';
     return jwt.verify(token, secret) as { userId: number };

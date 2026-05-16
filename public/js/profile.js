@@ -3,6 +3,7 @@ if (!checkAuth()) throw new Error('Not authenticated');
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
 
+// Загрузка профиля (включая уровень и цель)
 async function loadProfile() {
   try {
     const user = await (await fetchWithAuth('/api/profile')).json();
@@ -13,8 +14,9 @@ async function loadProfile() {
     document.getElementById('weight').value = user.weight || '';
     document.getElementById('email').value = user.email || '';
     document.getElementById('preferredWorkoutTime').value = user.preferredWorkoutTime || '';
-    
-    // Аватар – если есть загруженный, иначе дефолтный
+    document.getElementById('experienceLevel').value = user.experienceLevel || 'novice';
+    document.getElementById('fitnessGoal').value = user.fitnessGoal || 'maintenance';
+
     const avatarSrc = user.avatarUrl 
       ? user.avatarUrl 
       : '/uploads/avatars/default-avatar.png';
@@ -24,6 +26,7 @@ async function loadProfile() {
   }
 }
 
+// Загрузка предпочтительных дней
 async function loadPreferredDays() {
   try {
     const res = await fetchWithAuth('/api/profile/preferred-days');
@@ -36,6 +39,7 @@ async function loadPreferredDays() {
   }
 }
 
+// Сохранение дней тренировок
 async function savePreferredDays() {
   const checkboxes = document.querySelectorAll('.days-checkboxes input:checked');
   console.log('🔍 Checked checkboxes:', checkboxes);
@@ -63,7 +67,6 @@ async function savePreferredDays() {
     const data = await response.json();
     console.log('✅ Server response:', data);
     showNotification('Дни тренировок сохранены! Расписание обновлено.', 'success');
-    // Принудительно обновляем календарь
     await loadCalendar(currentYear, currentMonth);
   } catch (err) {
     console.error('❌ Error saving days:', err);
@@ -71,6 +74,7 @@ async function savePreferredDays() {
   }
 }
 
+// Календарь
 async function loadCalendar(year, month) {
   try {
     const res = await fetchWithAuth(`/api/workouts/calendar?year=${year}&month=${month}`);
@@ -84,7 +88,7 @@ async function loadCalendar(year, month) {
 
 function renderCalendar(year, month, calendarData) {
   const firstDay = new Date(year, month - 1, 1);
-  const startWeekday = firstDay.getDay(); // 0=Вс, 1=Пн, ..., 6=Сб
+  const startWeekday = firstDay.getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
   const grid = document.getElementById('calendarGrid');
   grid.innerHTML = '';
@@ -97,7 +101,6 @@ function renderCalendar(year, month, calendarData) {
     grid.appendChild(header);
   });
 
-  // Смещение, чтобы понедельник был первым
   let offset = (startWeekday === 0 ? 6 : startWeekday - 1);
   for (let i = 0; i < offset; i++) {
     const empty = document.createElement('div');
@@ -124,7 +127,6 @@ function renderCalendar(year, month, calendarData) {
     grid.appendChild(cell);
   }
 
-  // Легенда (добавляем только один раз)
   let legend = document.querySelector('.calendar-legend');
   if (!legend) {
     legend = document.createElement('div');
@@ -143,6 +145,7 @@ function updateCalendar() {
   loadCalendar(currentYear, currentMonth);
 }
 
+// Аватар
 document.getElementById('uploadAvatarBtn').addEventListener('click', () => {
   document.getElementById('avatarInput').click();
 });
@@ -151,7 +154,6 @@ document.getElementById('avatarInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  // Проверка типа файла
   const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   if (!allowed.includes(file.type)) {
     alert('Разрешены только JPG, PNG, GIF, WEBP');
@@ -165,7 +167,6 @@ document.getElementById('avatarInput').addEventListener('change', async (e) => {
     const res = await fetchWithAuth('/api/profile/avatar', {
       method: 'POST',
       body: formData,
-      // Не указываем Content-Type – пусть браузер сам установит multipart
     });
 
     if (!res.ok) {
@@ -174,12 +175,9 @@ document.getElementById('avatarInput').addEventListener('change', async (e) => {
     }
 
     const { avatarUrl } = await res.json();
-    
-    // Обновляем картинку на странице
     const avatarImg = document.getElementById('avatarPreview');
     if (avatarImg) avatarImg.src = avatarUrl;
 
-    // Обновляем аватар в навигации (если есть)
     const navAvatar = document.querySelector('.nav-avatar-img');
     if (navAvatar) navAvatar.src = avatarUrl;
 
@@ -190,6 +188,7 @@ document.getElementById('avatarInput').addEventListener('change', async (e) => {
   }
 });
 
+// Переключение месяца
 document.getElementById('prevMonthBtn').addEventListener('click', () => {
   if (currentMonth === 1) {
     currentMonth = 12;
@@ -209,6 +208,7 @@ document.getElementById('nextMonthBtn').addEventListener('click', () => {
   updateCalendar();
 });
 
+// Сохранение профиля (включая уровень и цель)
 const form = document.getElementById('profileForm');
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -219,6 +219,8 @@ form.addEventListener('submit', async (e) => {
     height: document.getElementById('height').value,
     weight: document.getElementById('weight').value,
     preferredWorkoutTime: document.getElementById('preferredWorkoutTime').value,
+    experienceLevel: document.getElementById('experienceLevel').value,
+    fitnessGoal: document.getElementById('fitnessGoal').value
   };
   try {
     await fetchWithAuth('/api/profile', { method: 'PUT', body: JSON.stringify(formData) });

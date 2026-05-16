@@ -20,8 +20,10 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
     password: password,
     birthDate: formData.get('birthDate'),
     gender: formData.get('gender'),
-    height: formData.get('height'),
-    weight: formData.get('weight'),
+    height: Number(formData.get('height')),
+    weight: Number(formData.get('weight')),
+    experienceLevel: formData.get('experienceLevel'),   // новое
+    fitnessGoal: formData.get('fitnessGoal')            // новое
   };
 
   try {
@@ -41,7 +43,6 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
         window.location.href = '/dashboard';
       }, 1500);
     } else {
-      // Показываем сообщение от сервера
       showMessage(result.error || 'Ошибка регистрации', 'error');
       console.error('Ошибка регистрации:', result.error);
     }
