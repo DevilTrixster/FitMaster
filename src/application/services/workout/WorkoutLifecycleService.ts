@@ -31,17 +31,30 @@ export class WorkoutLifecycleService {
   }
 
   // Завершить тренировку, запустить адаптацию
-  async completeWorkout(
-    workoutId: number, userId: number, wellnessRating?: number, comments?: string
-  ): Promise<void> {
+  async completeWorkout(workoutId: number, userId: number, wellnessRating?: number, comments?: string): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
     if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
     if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
 
+    // Проверить, есть ли хотя бы один сохранённый подход
+    const exercises = userWorkout.workout.exercises;
+    let hasSets = false;
+    for (const ex of exercises) {
+      const weId = await this.workoutRepository.getWorkoutExerciseId(workoutId, ex.exercise.id!);
+      if (weId) {
+        const sets = await this.workoutRepository.getExerciseSets(weId);
+        if (sets.length > 0) {
+          hasSets = true;
+          break;
+        }
+      }
+    }
+    if (!hasSets) {
+      throw new ValidationError('Нельзя завершить тренировку без выполненных подходов');
+    }
+
     const rating = wellnessRating || 3;
-    await this.workoutRepository.updateUserWorkoutStatus(
-      workoutId, WorkoutStatus.Completed, rating, comments
-    );
+    await this.workoutRepository.updateUserWorkoutStatus(workoutId, WorkoutStatus.Completed, rating, comments);
     await this.resultsService.triggerAdaptation(userId, workoutId, rating);
   }
 

@@ -12,6 +12,21 @@ if (!workoutId) {
   window.location.href = '/dashboard';
 }
 
+function checkAllSetsCompleted() {
+  const incompleteSets = document.querySelectorAll('.set-row:not(.completed):not(.skipped)');
+  if (incompleteSets.length > 0) {
+    return confirm(`Осталось ${incompleteSets.length} незавершённых подходов. Завершить тренировку?`);
+  }
+  return true;
+}
+
+document.getElementById('finishBtn').onclick = () => {
+  if (!checkAllSetsCompleted()) return;
+  document.getElementById('completionSection').classList.remove('hidden');
+  document.getElementById('exercisesList').style.display = 'none';
+  document.getElementById('finishBtn').disabled = true;
+};
+
 // ========== 1. Загрузка лайков пользователя ==========
 async function loadUserLikes() {
   try {

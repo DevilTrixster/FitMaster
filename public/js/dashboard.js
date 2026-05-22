@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<div style="color: #e94560; text-align: center; padding: 2rem;">⚠️ ${error.message}</div>`;
   }
   loadRecoveryInsights();
+  loadRecommendations();
 });
 
 function renderWorkouts(workouts) {
@@ -126,6 +127,39 @@ function renderWorkouts(workouts) {
       }
     });
   });
+}
+
+async function loadRecommendations() {
+  try {
+    const response = await fetchWithAuth('/api/analytics/recommendations');
+    const data = await response.json();
+    
+    const hintEl = document.getElementById('adaptationHint');
+    if (!hintEl) return;
+    
+    let messages = [];
+    if (data.deloadActive) {
+      messages.push(`⚠️ Активна разгрузочная неделя! Интенсивность снижена до ${Math.round(data.deloadFactor * 100)}%.`);
+    }
+    if (data.recommendations && data.recommendations.length > 0) {
+      data.recommendations.forEach(rec => {
+        messages.push(`💡 Рекомендация: замените упражнение (причина: ${rec.reason})`);
+      });
+    }
+    if (data.nextTargets && data.nextTargets.length > 0) {
+      const sample = data.nextTargets[0];
+      messages.push(`🎯 Новые цели: для упражнения ${sample.exerciseId} вес ${sample.newWeight} кг, повторения ${sample.newReps}`);
+    }
+    
+    if (messages.length > 0) {
+      hintEl.innerHTML = messages.join('<br>');
+      hintEl.classList.remove('hidden');
+    } else {
+      hintEl.classList.add('hidden');
+    }
+  } catch (err) {
+    console.warn('Не удалось загрузить рекомендации:', err);
+  }
 }
 
 // Простейшая защита от XSS

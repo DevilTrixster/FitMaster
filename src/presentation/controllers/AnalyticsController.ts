@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { FatigueRecoveryService } from '../../application/services/adaptation/FatigueRecoveryService';
 import { WorkoutService } from '../../application/services/WorkoutService';
+import { RecommendationService } from '../../application/services/RecommendationService';
 
 export class AnalyticsController {
   constructor(
     private fatigueService: FatigueRecoveryService,
-    private workoutService: WorkoutService
+    private workoutService: WorkoutService,
+    private recommendationService: RecommendationService
   ) {}
 
   async getRecovery(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -32,5 +34,11 @@ export class AnalyticsController {
     // Пока контроллер будет использовать `this.workoutService.getAdaptations(userId, limit)`.
     const adaptations = await this.workoutService.getAdaptations(userId, limit);
     res.json(adaptations);
+  }
+
+  async getRecommendations(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const data = await this.recommendationService.getUserRecommendations(userId);
+    res.json(data);
   }
 }

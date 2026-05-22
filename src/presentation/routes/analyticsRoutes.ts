@@ -11,6 +11,7 @@ export function createAnalyticsRoutes(
 
   router.get('/recovery', controller.getRecovery.bind(controller));
   router.get('/adaptations', controller.getAdaptations.bind(controller));
+  router.get('/recommendations', controller.getRecommendations.bind(controller));
 
   return router;
 }

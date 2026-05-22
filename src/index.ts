@@ -44,6 +44,7 @@ import { ExerciseSubstitutionRepository } from './infrastructure/repositories/Ex
 import { DeloadRepository } from './infrastructure/repositories/DeloadRepository';
 import { ExerciseRecommendationRepository } from './infrastructure/repositories/ExerciseRecommendationRepository';
 import { DeloadManagementService } from './application/services/adaptation/DeloadManagementService';
+import { RecommendationService } from './application/services/RecommendationService';
 
 async function bootstrap() {
   const app = express();
@@ -133,13 +134,14 @@ async function bootstrap() {
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
     const progressService = new ProgressAnalyticsService(progressRepository);
     const progressController = new ProgressController(progressService);
+    const recommendationService = new RecommendationService(recommendationRepo, deloadRepo, workoutRepository);
 
     // Контроллеры
     const workoutController = new WorkoutController(workoutService, rescheduleService);
-    const analyticsController = new AnalyticsController(fatigueService, workoutService); // только 2 аргумента
+    const analyticsController = new AnalyticsController(fatigueService, workoutService, recommendationService);
 
-    // Middleware (только 1 аргумент)
-    const authMiddleware = createAuthMiddleware(authService);
+    // Middleware
+    const authMiddleware = createAuthMiddleware(authService, fatigueService);
 
     // WebSocket
     const socketHandler = new WorkoutSocketHandler(io, workoutService);
