@@ -175,7 +175,6 @@ export class UserRepository implements IUserRepository {
     const res = await this.pool.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
     if (res.rows.length === 0) return [1, 3, 5];
     const days = res.rows[0].preferred_days;
-    console.log(`📖 getPreferredDays for user ${userId}:`, days);
     return days || [1, 3, 5];
   }
 
@@ -197,5 +196,10 @@ export class UserRepository implements IUserRepository {
       fitnessGoal: row.fitness_goal as FitnessGoal,
       createdAt: row.created_at,
     });
+  }
+
+  async getAllUserIds(): Promise<number[]> {
+    const res = await this.pool.query('SELECT id FROM users');
+    return res.rows.map(row => row.id);
   }
 }

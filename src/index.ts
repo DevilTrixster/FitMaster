@@ -45,6 +45,7 @@ import { DeloadRepository } from './infrastructure/repositories/DeloadRepository
 import { ExerciseRecommendationRepository } from './infrastructure/repositories/ExerciseRecommendationRepository';
 import { DeloadManagementService } from './application/services/adaptation/DeloadManagementService';
 import { RecommendationService } from './application/services/RecommendationService';
+import { MetricsScheduler } from './infrastructure/scheduler/MetricsScheduler';
 
 async function bootstrap() {
   const app = express();
@@ -100,7 +101,11 @@ async function bootstrap() {
     );
 
     // Сервисы тренировок
-    const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
+    const workoutSchedulingService = new WorkoutSchedulingService(
+      workoutRepository,
+      userRepository,
+      recommendationRepo
+    );
     const workoutResultsService = new WorkoutResultsService(
       workoutRepository,
       userRepository,
@@ -135,6 +140,8 @@ async function bootstrap() {
     const progressService = new ProgressAnalyticsService(progressRepository);
     const progressController = new ProgressController(progressService);
     const recommendationService = new RecommendationService(recommendationRepo, deloadRepo, workoutRepository);
+    const metricsScheduler = new MetricsScheduler(fatigueService, userRepository);
+    metricsScheduler.start();
 
     // Контроллеры
     const workoutController = new WorkoutController(workoutService, rescheduleService);

@@ -17,4 +17,5 @@ export interface IUserRepository {
   updateAvatar(userId: number, avatarUrl: string): Promise<void>;
   updatePreferredDays(userId: number, days: number[]): Promise<void>;
   getPreferredDays(userId: number): Promise<number[]>;
+  getAllUserIds(): Promise<number[]>;
 }

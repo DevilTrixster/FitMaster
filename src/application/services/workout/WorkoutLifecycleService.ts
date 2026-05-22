@@ -36,21 +36,24 @@ export class WorkoutLifecycleService {
     if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
     if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
 
-    // Проверить, есть ли хотя бы один сохранённый подход
-    const exercises = userWorkout.workout.exercises;
-    let hasSets = false;
-    for (const ex of exercises) {
-      const weId = await this.workoutRepository.getWorkoutExerciseId(workoutId, ex.exercise.id!);
-      if (weId) {
-        const sets = await this.workoutRepository.getExerciseSets(weId);
-        if (sets.length > 0) {
-          hasSets = true;
-          break;
-        }
+    // === Новая валидация ===
+    let allSetsCompleted = true;
+    const missingSets: string[] = [];
+
+    for (const exercise of userWorkout.workout.exercises) {
+      const weId = await this.workoutRepository.getWorkoutExerciseId(workoutId, exercise.exercise.id!);
+      if (!weId) continue;
+      const savedSets = await this.workoutRepository.getExerciseSets(weId);
+      // Считаем, что подход выполнен, если у него есть хотя бы одна метрика (или тип не normal, но для простоты – проверяем metrics.length)
+      const completedCount = savedSets.filter(s => s.metrics.length > 0).length;
+      if (completedCount < exercise.sets) {
+        allSetsCompleted = false;
+        missingSets.push(`${exercise.exercise.name} (${completedCount}/${exercise.sets})`);
       }
     }
-    if (!hasSets) {
-      throw new ValidationError('Нельзя завершить тренировку без выполненных подходов');
+
+    if (!allSetsCompleted) {
+      throw new ValidationError(`Не все подходы выполнены: ${missingSets.join(', ')}`);
     }
 
     const rating = wellnessRating || 3;

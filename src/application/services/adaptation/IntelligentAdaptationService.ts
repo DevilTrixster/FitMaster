@@ -5,23 +5,42 @@ import { SetAnalysisData } from '../../dto/SetAnalysisData';
 import { FatigueRecoveryService } from './FatigueRecoveryService';
 import { PlateauDetectionService } from './PlateauDetectionService';
 import { ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
-import { ExerciseLikeService } from '../ExerciseLikeService'; // ДОБАВЛЕНО
+import { ExerciseLikeService } from '../ExerciseLikeService';
+import adaptationConfig from '../../../config/adaptation.config';
 
 export class IntelligentAdaptationService {
-  // Коэффициенты веса в зависимости от уровня
+  // Используем множители из конфига
   private weightMultipliers: Record<ExperienceLevel, number> = {
-    [ExperienceLevel.Beginner]: 0.4,
-    [ExperienceLevel.Novice]: 0.7,
-    [ExperienceLevel.Intermediate]: 1.0,
-    [ExperienceLevel.Advanced]: 1.2,
-    [ExperienceLevel.Master]: 1.5,
+    [ExperienceLevel.Beginner]: adaptationConfig.weightMultipliers.beginner,
+    [ExperienceLevel.Novice]: adaptationConfig.weightMultipliers.novice,
+    [ExperienceLevel.Intermediate]: adaptationConfig.weightMultipliers.intermediate,
+    [ExperienceLevel.Advanced]: adaptationConfig.weightMultipliers.advanced,
+    [ExperienceLevel.Master]: adaptationConfig.weightMultipliers.master,
   };
 
-  // Базовые повторения для упражнений с собственным весом
+  // Базовые повторения из конфига
   private bodyweightRepsBase: Record<string, Record<ExperienceLevel, number>> = {
-    'Отжимания': { beginner: 5, novice: 10, intermediate: 15, advanced: 20, master: 30 },
-    'Подтягивания': { beginner: 1, novice: 3, intermediate: 6, advanced: 10, master: 15 },
-    'Приседания (собственный вес)': { beginner: 10, novice: 15, intermediate: 20, advanced: 30, master: 40 },
+    'Отжимания': {
+      [ExperienceLevel.Beginner]: adaptationConfig.bodyweightRepsBase['Отжимания'].beginner,
+      [ExperienceLevel.Novice]: adaptationConfig.bodyweightRepsBase['Отжимания'].novice,
+      [ExperienceLevel.Intermediate]: adaptationConfig.bodyweightRepsBase['Отжимания'].intermediate,
+      [ExperienceLevel.Advanced]: adaptationConfig.bodyweightRepsBase['Отжимания'].advanced,
+      [ExperienceLevel.Master]: adaptationConfig.bodyweightRepsBase['Отжимания'].master,
+    },
+    'Подтягивания': {
+      [ExperienceLevel.Beginner]: adaptationConfig.bodyweightRepsBase['Подтягивания'].beginner,
+      [ExperienceLevel.Novice]: adaptationConfig.bodyweightRepsBase['Подтягивания'].novice,
+      [ExperienceLevel.Intermediate]: adaptationConfig.bodyweightRepsBase['Подтягивания'].intermediate,
+      [ExperienceLevel.Advanced]: adaptationConfig.bodyweightRepsBase['Подтягивания'].advanced,
+      [ExperienceLevel.Master]: adaptationConfig.bodyweightRepsBase['Подтягивания'].master,
+    },
+    'Приседания (собственный вес)': {
+      [ExperienceLevel.Beginner]: adaptationConfig.bodyweightRepsBase['Приседания (собственный вес)'].beginner,
+      [ExperienceLevel.Novice]: adaptationConfig.bodyweightRepsBase['Приседания (собственный вес)'].novice,
+      [ExperienceLevel.Intermediate]: adaptationConfig.bodyweightRepsBase['Приседания (собственный вес)'].intermediate,
+      [ExperienceLevel.Advanced]: adaptationConfig.bodyweightRepsBase['Приседания (собственный вес)'].advanced,
+      [ExperienceLevel.Master]: adaptationConfig.bodyweightRepsBase['Приседания (собственный вес)'].master,
+    },
   };
 
   constructor(
@@ -29,13 +48,14 @@ export class IntelligentAdaptationService {
     private userRepo: IUserRepository,
     private fatigueService: FatigueRecoveryService,
     private plateauService: PlateauDetectionService,
-    private likeService: ExerciseLikeService  // ДОБАВЛЕНО
+    private likeService: ExerciseLikeService
   ) {}
 
   async initializeTargets(userId: number): Promise<void> {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new Error('User not found');
     await this.workoutRepo.deleteGlobalAdaptations(userId);
+
     const splitPrograms = await this.workoutRepo.getSplitPrograms();
     const exerciseIds = new Set<number>();
     for (const program of splitPrograms) {
@@ -43,7 +63,19 @@ export class IntelligentAdaptationService {
         if (we.exercise.id) exerciseIds.add(we.exercise.id);
       }
     }
+    // Получаем дизлайки пользователя
+    const disliked = await this.likeService.getDislikedExercises(userId);
+
     for (const exerciseId of exerciseIds) {
+      // Если упражнение дизлайкнуто – создаём рекомендацию на замену
+      if (disliked.includes(exerciseId)) {
+        const substitution = await this.plateauService.suggestSubstitution(userId, exerciseId);
+        if (substitution) {
+          // Рекомендация уже создаётся внутри suggestSubstitution, ничего дополнительно не делаем
+          console.log(`Упражнение ${exerciseId} дизлайкнуто, предложена замена на ${substitution}`);
+      }
+      // Всё равно создаём адаптацию с начальными целями (на случай если замены нет)
+    }
       const templates = await this.workoutRepo.getExerciseMetricTemplates(exerciseId);
       const weightTemplate = templates.find(t => t.metricType === 'weight');
       const repsTemplate = templates.find(t => t.metricType === 'reps');
@@ -93,7 +125,7 @@ export class IntelligentAdaptationService {
     wellnessRating: number,
     goal: FitnessGoal = FitnessGoal.Maintenance
   ): Promise<WorkoutAdaptation | null> {
-    // ========== 1. ПРОВЕРКА НА ДИЗЛАЙК ==========
+    // Проверка на дизлайк
     const disliked = await this.likeService.getDislikedExercises(userId);
     if (disliked.includes(exerciseId)) {
       const suggested = await this.plateauService.suggestSubstitution(userId, exerciseId);
@@ -112,12 +144,12 @@ export class IntelligentAdaptationService {
       }
     }
 
-    // ========== 2. РАСЧЁТ МЕТРИК ВОССТАНОВЛЕНИЯ ==========
+    // Расчёт метрик восстановления
     const metrics = await this.fatigueService.calculateMetrics(userId);
     const muscleRecovery = metrics.muscleRecovery[muscleGroup] ?? 80;
 
     // Принудительная разгрузка при очень низком восстановлении
-    if (muscleRecovery < 50) {
+    if (muscleRecovery < adaptationConfig.forcedDeloadMuscleRecoveryThreshold) {
       return new WorkoutAdaptation({
         userId,
         exerciseId,
@@ -143,15 +175,15 @@ export class IntelligentAdaptationService {
     let adaptationType = AdaptationType.NoChange;
     let reason = '';
 
-    // ========== 3. АДАПТАЦИЯ В ЗАВИСИМОСТИ ОТ ЦЕЛИ ==========
+    // Адаптация в зависимости от цели
     switch (goal) {
       case FitnessGoal.Strength:
-        if (avgReps >= targetReps * 0.9 && trend > -5) {
-          newWeight = Math.round(targetWeight * 1.05);
+        if (avgReps >= targetReps * adaptationConfig.thresholdStrengthSuccess && trend > -5) {
+          newWeight = Math.round(targetWeight * adaptationConfig.weightIncreaseStrength);
           adaptationType = AdaptationType.IncreaseWeight;
           reason = 'Цель: сила. Увеличение веса.';
-        } else if (avgReps < targetReps * 0.7) {
-          newWeight = Math.round(targetWeight * 0.95);
+        } else if (avgReps < targetReps * adaptationConfig.thresholdStrengthFailure) {
+          newWeight = Math.round(targetWeight * adaptationConfig.weightDecreaseStrength);
           adaptationType = AdaptationType.DecreaseWeight;
           reason = 'Цель: сила. Снижение веса из-за недовыполнения.';
         }
@@ -159,29 +191,29 @@ export class IntelligentAdaptationService {
 
       case FitnessGoal.MuscleGain:
       case FitnessGoal.Aesthetics:
-        if (avgReps >= targetReps && targetReps < 12) {
-          newReps = Math.min(targetReps + 2, 12);
+        if (avgReps >= targetReps && targetReps < adaptationConfig.maxRepsHypertrophy) {
+          newReps = Math.min(targetReps + adaptationConfig.repsIncreaseHypertrophy, adaptationConfig.maxRepsHypertrophy);
           adaptationType = AdaptationType.IncreaseReps;
           reason = 'Цель: гипертрофия. Увеличение повторений.';
-        } else if (avgReps >= 12 && trend > 0) {
-          newWeight = Math.round(targetWeight * 1.025);
+        } else if (avgReps >= adaptationConfig.maxRepsHypertrophy && trend > 0) {
+          newWeight = Math.round(targetWeight * adaptationConfig.weightIncreaseHypertrophy);
           newReps = targetReps;
           adaptationType = AdaptationType.IncreaseWeight;
           reason = 'Цель: гипертрофия. Увеличение веса.';
-        } else if (avgReps < targetReps * 0.8) {
-          newWeight = Math.round(targetWeight * 0.9);
+        } else if (avgReps < targetReps * adaptationConfig.thresholdHypertrophyFailure) {
+          newWeight = Math.round(targetWeight * adaptationConfig.weightDecreaseHypertrophy);
           adaptationType = AdaptationType.DecreaseWeight;
           reason = 'Цель: гипертрофия. Снижение веса.';
         }
         break;
 
       case FitnessGoal.Endurance:
-        if (avgReps >= targetReps && targetReps < 20) {
-          newReps = Math.min(targetReps + 3, 20);
+        if (avgReps >= targetReps && targetReps < adaptationConfig.maxRepsEndurance) {
+          newReps = Math.min(targetReps + adaptationConfig.repsIncreaseEndurance, adaptationConfig.maxRepsEndurance);
           adaptationType = AdaptationType.IncreaseReps;
           reason = 'Цель: выносливость. Увеличение повторений.';
-        } else if (avgReps < targetReps * 0.7 && targetWeight > 0) {
-          newWeight = Math.round(targetWeight * 0.9);
+        } else if (avgReps < targetReps * adaptationConfig.thresholdEnduranceFailure && targetWeight > 0) {
+          newWeight = Math.round(targetWeight * adaptationConfig.weightDecreaseHypertrophy);
           adaptationType = AdaptationType.DecreaseWeight;
           reason = 'Цель: выносливость. Снижение веса.';
         }
@@ -189,11 +221,11 @@ export class IntelligentAdaptationService {
 
       default:
         if (avgReps >= targetReps && trend > 0) {
-          newWeight = Math.round(targetWeight * 1.025);
+          newWeight = Math.round(targetWeight * adaptationConfig.weightIncreaseHypertrophy);
           adaptationType = AdaptationType.IncreaseWeight;
           reason = 'Стабильный прогресс. Повышение веса.';
-        } else if (avgReps < targetReps * 0.8 && muscleRecovery < 70) {
-          newWeight = Math.round(targetWeight * 0.9);
+        } else if (avgReps < targetReps * adaptationConfig.thresholdHypertrophyFailure && muscleRecovery < 70) {
+          newWeight = Math.round(targetWeight * adaptationConfig.weightDecreaseHypertrophy);
           adaptationType = AdaptationType.DecreaseWeight;
           reason = 'Низкие повторения и восстановление. Снижение веса.';
         } else {
@@ -202,17 +234,15 @@ export class IntelligentAdaptationService {
         break;
     }
 
-    // ========== 4. ПРОВЕРКА ПЛАТО И ЗАМЕНА УПРАЖНЕНИЯ ==========
+    // Проверка плато и замена упражнения
     let suggestedExerciseId: number | undefined;
     const isPlateau = await this.plateauService.isPlateau(userId, exerciseId);
     if (isPlateau) {
       const substitution = await this.plateauService.suggestSubstitution(userId, exerciseId);
-      // Преобразуем null в undefined для совместимости с типом поля
       suggestedExerciseId = substitution ?? undefined;
       reason += ' Обнаружено плато. Рекомендуется смена упражнения.';
     }
 
-    // ========== 5. СОХРАНЕНИЕ АДАПТАЦИИ ==========
     if (adaptationType === AdaptationType.NoChange && !suggestedExerciseId && reason === 'Без изменений.') {
       return null;
     }
@@ -226,7 +256,7 @@ export class IntelligentAdaptationService {
       newReps,
       adaptationType,
       reason,
-      suggestedExerciseId, // ПЕРЕДАЁМ (undefined допустимо)
+      suggestedExerciseId,
     });
 
     await this.workoutRepo.saveAdaptation(adaptation, completedWorkoutId);

@@ -2,49 +2,44 @@ import { IFatigueRepository, MuscleRecoveryRecord } from '../../../domain/interf
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { FatigueRecoveryMetrics } from '../../../domain/interfaces/IFatigueRecovery';
 import { IDeloadRepository } from '../../../domain/interfaces/IDeloadRepository';
+import adaptationConfig from '../../../config/adaptation.config';
 
 export class FatigueRecoveryService {
   constructor(
     private workoutRepo: IWorkoutRepository,
     private fatigueRepo: IFatigueRepository,
-    private deloadRepo: IDeloadRepository 
+    private deloadRepo: IDeloadRepository
   ) {}
 
   async calculateMetrics(userId: number): Promise<FatigueRecoveryMetrics> {
     const now = new Date();
-    const acuteWindow = 7;
-    const chronicWindow = 28;
+    const acuteWindow = adaptationConfig.acuteWindowDays;
+    const chronicWindow = adaptationConfig.chronicWindowDays;
 
-    // 1. Реальные объёмы по дням
     const dailyVolumes = await this.workoutRepo.getDailyWorkoutVolumes(userId, chronicWindow);
-
-    // 2. ACWR (острое/хроническое соотношение)
     const acuteVolume = this.sumVolumesInWindow(dailyVolumes, acuteWindow, now);
     const chronicVolume = this.sumVolumesInWindow(dailyVolumes, chronicWindow, now);
     const acwr = chronicVolume > 0 ? acuteVolume / (chronicVolume / 4) : 1;
 
-    // 3. Fatigue Score
     const workouts = await this.workoutRepo.getWorkoutHistory(userId, 30, 0, 'completed');
     const lowWellnessCount = workouts.filter(w => w.wellnessRating && w.wellnessRating <= 3).length;
-    const fatigueScore = Math.min(100, Math.round(acwr * 50 + lowWellnessCount * 5));
+    const fatigueScore = Math.min(100, Math.round(acwr * adaptationConfig.fatigueAcwrWeight + lowWellnessCount * adaptationConfig.fatigueLowWellnessWeight));
 
-    // 4. Recovery Score (защита от отрицательных значений)
     const lastWorkout = workouts[0];
     const daysSinceLast = Math.max(0, lastWorkout
       ? Math.floor((now.getTime() - new Date(lastWorkout.scheduledDate).getTime()) / (1000 * 3600 * 24))
       : 7);
-    const recoveryBase = Math.min(100, daysSinceLast * 15);
+    const recoveryBase = Math.min(100, daysSinceLast * adaptationConfig.recoveryDaysFactor);
     const wellnessBonus = lastWorkout?.wellnessRating ? lastWorkout.wellnessRating * 10 : 0;
     const recoveryScore = Math.max(0, Math.min(100, recoveryBase + wellnessBonus));
 
-    // 5. Восстановление мышц из БД
     const muscleRecords = await this.fatigueRepo.getMuscleRecovery(userId);
     const muscleRecovery: Record<string, number> = {};
     for (const rec of muscleRecords) {
       const daysSinceTrained = rec.lastTrainedDate
         ? Math.max(0, Math.floor((now.getTime() - new Date(rec.lastTrainedDate).getTime()) / (1000 * 3600 * 24)))
         : 999;
-      const pct = Math.min(100, daysSinceTrained * 20);
+      const pct = Math.min(100, daysSinceTrained * adaptationConfig.muscleRecoveryDaysFactor);
       muscleRecovery[rec.muscleGroup] = pct;
     }
     const defaultGroups = ['chest', 'back', 'legs', 'shoulders', 'arms', 'core'];
@@ -52,10 +47,8 @@ export class FatigueRecoveryService {
       if (!(g in muscleRecovery)) muscleRecovery[g] = 100;
     }
 
-    // 6. Риск травмы
-    const injuryRisk = Math.min(100, Math.round(fatigueScore * 0.7 + (100 - recoveryScore) * 0.3));
+    const injuryRisk = Math.min(100, Math.round(fatigueScore * adaptationConfig.injuryRiskFatigueWeight + (100 - recoveryScore) * adaptationConfig.injuryRiskRecoveryWeight));
 
-    // 7. Тренд производительности (14 дней против предыдущих 14)
     const recentVolume = this.sumVolumesInWindow(dailyVolumes, 14, now);
     const previousVolumes = this.sumVolumesInWindow(dailyVolumes, 28, now);
     const previousVolume = previousVolumes - recentVolume;
@@ -112,7 +105,7 @@ export class FatigueRecoveryService {
 
   async shouldDeload(userId: number): Promise<boolean> {
     const metrics = await this.calculateMetrics(userId);
-    if (metrics.fatigueScore > 70 || metrics.recoveryScore < 30) {
+    if (metrics.fatigueScore > adaptationConfig.autoDeloadFatigueThreshold || metrics.recoveryScore < adaptationConfig.autoDeloadRecoveryThreshold) {
       const active = await this.deloadRepo.getActiveDeload(userId);
       if (!active) return true;
     }

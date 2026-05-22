@@ -23,34 +23,30 @@ export class PlateauDetectionService {
     );
   }
 
-  // Заглушка для будущей реализации автоматической разгрузочной недели
-  async shouldDeload(userId: number): Promise<boolean> {
-    return false;
+  async suggestSubstitution(userId: number, exerciseId: number): Promise<number | null> {
+    
+    // Проверяем, есть ли активная рекомендация для этого упражнения
+    const activeRecs = await this.recommendationRepo.getActiveRecommendations(userId);
+    const existing = activeRecs.find(r => r.exerciseId === exerciseId);
+    if (existing) return existing.suggestedExerciseId;
+
+    // Ищем замену из таблицы substitutions
+    const sub = await this.substitutionRepo.getSubstitution(exerciseId);
+    if (!sub) return null;
+
+    // Проверяем, не дизлайкнул ли пользователь предлагаемое упражнение
+    const disliked = await this.likeService.getDislikedExercises(userId);
+    if (disliked.includes(sub.substituteId)) return null;
+
+    // Сохраняем рекомендацию
+    await this.recommendationRepo.createRecommendation({
+      userId,
+      exerciseId,
+      suggestedExerciseId: sub.substituteId,
+      reason: 'plateau_detected',
+      isActive: true,
+      createdAt: new Date(),
+    });
+    return sub.substituteId;
   }
-
-    async suggestSubstitution(userId: number, exerciseId: number): Promise<number | null> {
-      // Проверяем, есть ли активная рекомендация для этого упражнения
-      const activeRecs = await this.recommendationRepo.getActiveRecommendations(userId);
-      const existing = activeRecs.find(r => r.exerciseId === exerciseId);
-      if (existing) return existing.suggestedExerciseId;
-
-      // Ищем замену из таблицы substitutions
-      const sub = await this.substitutionRepo.getSubstitution(exerciseId);
-      if (!sub) return null;
-
-      // Проверяем, не дизлайкнул ли пользователь предлагаемое упражнение
-      const disliked = await this.likeService.getDislikedExercises(userId);
-      if (disliked.includes(sub.substituteId)) return null;
-
-      // Сохраняем рекомендацию
-      await this.recommendationRepo.createRecommendation({
-        userId,
-        exerciseId,
-        suggestedExerciseId: sub.substituteId,
-        reason: 'plateau_detected',
-        isActive: true,
-        createdAt: new Date(),
-      });
-      return sub.substituteId;
-    }
 }

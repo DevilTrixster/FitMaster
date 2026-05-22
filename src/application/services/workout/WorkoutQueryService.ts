@@ -2,6 +2,7 @@ import { UserWorkout, WorkoutStatus, MetricTemplate } from '../../../domain/enti
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { WorkoutAdaptation } from '../../../domain/entities'
 import { WorkoutSchedulingService } from './WorkoutSchedulingService';
+import adaptationConfig from '../../../config/adaptation.config';
 
 export class WorkoutQueryService {
   constructor(
@@ -16,7 +17,7 @@ export class WorkoutQueryService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let upcomingWorkouts = await this.workoutRepository.getUserWorkouts(userId, 20);
+    let upcomingWorkouts = await this.workoutRepository.getUserWorkouts(userId, 20)
 
     // Авто-пропуск просроченных
     for (const workout of upcomingWorkouts) {
@@ -81,7 +82,7 @@ export class WorkoutQueryService {
     return this.workoutRepository.getLatestAdaptation(userId, exerciseId);
   }
 
-  async getAdaptations(userId: number, limit: number = 20) {
+  async getAdaptations(userId: number, limit: number = adaptationConfig.defaultAdaptationsLimit) {
     return this.workoutRepository.getAllUserAdaptations(userId, limit);
   }
 
