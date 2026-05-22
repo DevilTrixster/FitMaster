@@ -1,6 +1,6 @@
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
+import { UserWorkout, WorkoutStatus } from '../../../domain/entities';
 
 export class WorkoutSchedulingService {
   constructor(

@@ -40,8 +40,11 @@ import { FatigueRepository } from './infrastructure/repositories/FatigueReposito
 import { PlateauDetectionService } from './application/services/adaptation/PlateauDetectionService';
 import { createAnalyticsRoutes } from './presentation/routes/analyticsRoutes';
 import { AnalyticsController } from './presentation/controllers/AnalyticsController';
+import { ExerciseSubstitutionRepository } from './infrastructure/repositories/ExerciseSubstitutionRepository';
+import { DeloadRepository } from './infrastructure/repositories/DeloadRepository';
+import { ExerciseRecommendationRepository } from './infrastructure/repositories/ExerciseRecommendationRepository';
+import { DeloadManagementService } from './application/services/adaptation/DeloadManagementService';
 
-// Точка входа в приложение.
 async function bootstrap() {
   const app = express();
   const httpServer = createServer(app);
@@ -49,11 +52,7 @@ async function bootstrap() {
     cors: { origin: '*', methods: ['GET', 'POST'] },
   });
 
-  // ------------------ Middleware ------------------
-  // Разрешаем CORS для всех источников (для разработки)
   app.use(cors());
-
-  // Интеллектуальный парсинг тела запроса:
   app.use((req, res, next) => {
     const contentType = req.headers['content-type'] || '';
     if (contentType.startsWith('multipart/form-data')) {
@@ -62,38 +61,51 @@ async function bootstrap() {
     express.json({ limit: '5mb' })(req, res, next);
   });
   app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-
-  // Раздача статических файлов (HTML, CSS, JS клиентской части)
   app.use(express.static(path.join(__dirname, '../public')));
 
   try {
-    // ------------------ Подключение к БД ------------------
     const database = Database.getInstance();
     await database.connect();
 
-    // ------------------ Репозитории ------------------
+    // Репозитории
     const userRepository = new UserRepository(database.getPool());
     const workoutRepository = new WorkoutRepository(database.getPool());
     const progressRepository = new ProgressRepository(database.getPool());
     const fatigueRepository = new FatigueRepository(database.getPool());
+    const substitutionRepo = new ExerciseSubstitutionRepository(database.getPool());
+    const deloadRepo = new DeloadRepository(database.getPool());
+    const recommendationRepo = new ExerciseRecommendationRepository(database.getPool());
 
-    // ------------------ Базовые сервисы ------------------
-    const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository);
-    const plateauService = new PlateauDetectionService(workoutRepository);
+    // Лайки
+    const exerciseLikeRepository = new ExerciseLikeRepository(database.getPool());
+    const exerciseLikeService = new ExerciseLikeService(exerciseLikeRepository);
+    const likeController = new LikeController(exerciseLikeService);
+
+    // Сервисы адаптации
+    const fatigueService = new FatigueRecoveryService(workoutRepository, fatigueRepository, deloadRepo);
+    const deloadManagementService = new DeloadManagementService(deloadRepo, fatigueService);
+    const plateauService = new PlateauDetectionService(
+      workoutRepository,
+      substitutionRepo,
+      recommendationRepo,
+      exerciseLikeService
+    );
     const intelligentAdaptationService = new IntelligentAdaptationService(
       workoutRepository,
       userRepository,
       fatigueService,
-      plateauService
+      plateauService,
+      exerciseLikeService
     );
 
-    // ------------------ Сервисы управления тренировками ------------------
+    // Сервисы тренировок
     const workoutSchedulingService = new WorkoutSchedulingService(workoutRepository, userRepository);
     const workoutResultsService = new WorkoutResultsService(
       workoutRepository,
       userRepository,
       intelligentAdaptationService,
-      fatigueService
+      fatigueService,
+      deloadManagementService 
     );
     const workoutLifecycleService = new WorkoutLifecycleService(workoutRepository, workoutResultsService);
     const workoutQueryService = new WorkoutQueryService(workoutRepository, workoutSchedulingService);
@@ -102,11 +114,11 @@ async function bootstrap() {
       workoutLifecycleService,
       workoutQueryService,
       workoutResultsService,
-      workoutRepository
+      workoutRepository,
+      deloadRepo 
     );
 
-    // ------------------ Профиль и аутентификация ------------------
-    // Используем уже созданный intelligentAdaptationService (он содержит методы initializeTargets/reinitializeTargets)
+    // Профиль и аутентификация
     const profileService = new ProfileService(
       userRepository,
       workoutRepository,
@@ -114,34 +126,26 @@ async function bootstrap() {
       intelligentAdaptationService
     );
     const profileController = new ProfileController(profileService);
-
     const authService = new AuthService(userRepository, workoutService, intelligentAdaptationService);
     const authController = new AuthController(authService);
 
-    // ------------------ Прочие сервисы ------------------
-    // Перенос тренировок (reschedule/skip)
+    // Прочие сервисы
     const rescheduleService = new WorkoutRescheduleService(workoutRepository);
-    // Аналитика прогресса (графики, статистика по группам мышц)
     const progressService = new ProgressAnalyticsService(progressRepository);
     const progressController = new ProgressController(progressService);
 
-    // ------------------ Контроллеры ------------------
+    // Контроллеры
     const workoutController = new WorkoutController(workoutService, rescheduleService);
-    const analyticsController = new AnalyticsController(fatigueService, workoutService);
+    const analyticsController = new AnalyticsController(fatigueService, workoutService); // только 2 аргумента
 
-    // ------------------ Middleware авторизации ------------------
+    // Middleware (только 1 аргумент)
     const authMiddleware = createAuthMiddleware(authService);
 
-    // ------------------ Лайки упражнений ------------------
-    const exerciseLikeRepository = new ExerciseLikeRepository(database.getPool());
-    const exerciseLikeService = new ExerciseLikeService(exerciseLikeRepository);
-    const likeController = new LikeController(exerciseLikeService);
-
-    // ------------------ WebSocket (Socket.IO) ------------------
+    // WebSocket
     const socketHandler = new WorkoutSocketHandler(io, workoutService);
     socketHandler.initialize();
 
-    // ------------------ Маршруты API ------------------
+    // Маршруты
     app.use('/api/auth', createAuthRoutes(authController));
     app.use('/api/workouts', createWorkoutRoutes(workoutController, authMiddleware));
     app.use('/api/progress', createProgressRoutes(progressController, authMiddleware));
@@ -149,7 +153,7 @@ async function bootstrap() {
     app.use('/api/likes', createLikeRoutes(likeController, authMiddleware));
     app.use('/api/analytics', createAnalyticsRoutes(analyticsController, authMiddleware));
 
-    // ------------------ Отдача HTML-страниц ------------------
+    // HTML-страницы
     app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
     app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, '../public/dashboard.html')));
     app.get('/history', (req, res) => res.sendFile(path.join(__dirname, '../public/history.html')));
@@ -159,12 +163,10 @@ async function bootstrap() {
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
 
-    // Глобальный обработчик ошибок
     app.use(errorHandler);
 
     console.log('🚀 Сервер готов к работе');
 
-    // ------------------ Запуск HTTP сервера ------------------
     httpServer.listen(config.server.port, () => {
       console.log(`🌐 Сервер запущен на порту ${config.server.port}`);
       console.log(`📍 Главная: http://localhost:${config.server.port}/`);

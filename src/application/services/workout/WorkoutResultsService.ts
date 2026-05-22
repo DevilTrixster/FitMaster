@@ -1,20 +1,22 @@
-import { MetricType, ExerciseSet, SetMetric } from '../../../domain/entities/Workout';
+import { MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';
 import { FatigueRecoveryService } from '../adaptation/FatigueRecoveryService';
+import { DeloadManagementService } from '../adaptation/DeloadManagementService'; // добавить импорт
 import { UnauthorizedError, ValidationError } from '../../../core/errors/ValidationError';
 import { SetAnalysisData } from '../../dto/SetAnalysisData';
+import { FitnessGoal } from '../../../domain/entities/User';
 
 export class WorkoutResultsService {
   constructor(
     private workoutRepository: IWorkoutRepository,
     private userRepository: IUserRepository,
     private adaptationService: IntelligentAdaptationService,
-    private fatigueService: FatigueRecoveryService
+    private fatigueService: FatigueRecoveryService,
+    private deloadManagementService: DeloadManagementService   // добавить
   ) {}
 
-  // Сохраняет метрики выполненного подхода
   async saveSetMetrics(
     workoutId: number,
     userId: number,
@@ -47,7 +49,6 @@ export class WorkoutResultsService {
     await this.workoutRepository.saveExerciseSet(workoutExerciseId, exerciseSet);
   }
 
-  // Адаптирует нагрузку всех упражнений завершённой тренировки
   async triggerAdaptation(
     userId: number,
     completedWorkoutId: number,
@@ -55,6 +56,9 @@ export class WorkoutResultsService {
   ): Promise<void> {
     const userWorkout = await this.workoutRepository.getUserWorkoutById(completedWorkoutId);
     if (!userWorkout) return;
+
+    const user = await this.userRepository.findById(userId);
+    const fitnessGoal = user?.fitnessGoal || FitnessGoal.Maintenance;
 
     for (const exercise of userWorkout.workout.exercises) {
       if (!exercise.exercise.id) continue;
@@ -79,22 +83,26 @@ export class WorkoutResultsService {
         return { completed: true, skipped: false, reps, weight, targetReps, targetWeight };
       });
 
-      // Вызов интеллектуальной адаптации для конкретного упражнения
       await this.adaptationService.adaptExercise(
         userId,
         completedWorkoutId,
         exercise.exercise.id!,
         exercise.exercise.muscleGroup,
         analysisData,
-        wellnessRating
+        wellnessRating,
+        fitnessGoal
       );
     }
 
-    // Сохраняем метрики утомления и восстановления после завершения
     await this.fatigueService.saveDailyMetrics(userId);
+
+    // Проверка на необходимость разгрузочной недели
+    const deloadStarted = await this.deloadManagementService.checkAndStartDeload(userId);
+    if (deloadStarted) {
+      console.log(`Разгрузочная неделя начата для пользователя ${userId}`);
+    }
   }
 
-  // Рассчитывает рекомендуемый начальный вес для упражнения
   calculateRecommendedWeight(userWeight: number, muscleGroup: string): number {
     const percentages: Record<string, number> = {
       chest: 0.5, back: 0.6, legs: 0.75, shoulders: 0.3, core: 0, arms: 0.4,

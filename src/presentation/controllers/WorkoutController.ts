@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { WorkoutService } from '../../application/services/WorkoutService';
 import { WorkoutRescheduleService } from '../../application/services/WorkoutRescheduleService';
 import { ValidationError, NotFoundError } from '../../core/errors/ValidationError';
-import { WorkoutStatus } from '../../domain/entities/Workout';
+import { WorkoutStatus } from '../../domain/entities';
 
 export class WorkoutController {
   constructor(

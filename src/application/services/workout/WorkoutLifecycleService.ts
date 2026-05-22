@@ -1,5 +1,5 @@
 import { NotFoundError, UnauthorizedError, ValidationError, InternalServerError } from '../../../core/errors/ValidationError';
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
+import { UserWorkout, WorkoutStatus } from '../../../domain/entities';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { WorkoutResultsService } from './WorkoutResultsService';
 

@@ -1,19 +1,26 @@
 import { Pool } from 'pg';
-import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities/Workout';
+import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities';
 
 export class AdaptationRepository {
   constructor(private pool: Pool) {}
 
-  async saveAdaptation(adaptation: WorkoutAdaptation): Promise<void> {
+  async saveAdaptation(
+    adaptation: WorkoutAdaptation,
+    userWorkoutId?: number
+  ): Promise<void> {
     const query = `
       INSERT INTO workout_adaptations 
       (user_id, user_workout_id, exercise_id, previous_weight, new_weight, previous_reps, new_reps, adaptation_reason)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `;
     await this.pool.query(query, [
-      adaptation.userId, adaptation.id, adaptation.exerciseId,
-      adaptation.previousWeight, adaptation.newWeight,
-      adaptation.previousReps, adaptation.newReps,
+      adaptation.userId,
+      userWorkoutId || null,
+      adaptation.exerciseId,
+      adaptation.previousWeight,
+      adaptation.newWeight,
+      adaptation.previousReps,
+      adaptation.newReps,
       adaptation.reason,
     ]);
   }
@@ -27,6 +34,7 @@ export class AdaptationRepository {
       id: row.id,
       userId: row.user_id,
       exerciseId: row.exercise_id,
+      userWorkoutId: row.user_workout_id,
       previousWeight: row.previous_weight,
       newWeight: row.new_weight,
       previousReps: row.previous_reps,
@@ -51,6 +59,7 @@ export class AdaptationRepository {
       id: row.id,
       userId: row.user_id,
       exerciseId: row.exercise_id,
+      userWorkoutId: row.user_workout_id,
       previousWeight: row.previous_weight,
       newWeight: row.new_weight,
       previousReps: row.previous_reps,
@@ -69,6 +78,7 @@ export class AdaptationRepository {
       id: row.id,
       userId: row.user_id,
       exerciseId: row.exercise_id,
+      userWorkoutId: row.user_workout_id,
       previousWeight: row.previous_weight,
       newWeight: row.new_weight,
       previousReps: row.previous_reps,

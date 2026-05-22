@@ -11,7 +11,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
-    "baseUrl": ".",  // ← Добавьте эту строку
+    "baseUrl": ".", 
     "paths": {
       "@domain/*": ["src/domain/*"],
       "@application/*": ["src/application/*"],
@@ -20,6 +20,6 @@
       "@config/*": ["src/config/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "tsconfig.json"],
   "exclude": ["node_modules", "dist"]
 }

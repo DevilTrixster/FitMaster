@@ -1,6 +1,6 @@
-import { UserWorkout, WorkoutStatus, MetricTemplate } from '../../../domain/entities/Workout';
+import { UserWorkout, WorkoutStatus, MetricTemplate } from '../../../domain/entities';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
-import { WorkoutAdaptation } from '../../../domain/entities/Workout'
+import { WorkoutAdaptation } from '../../../domain/entities'
 import { WorkoutSchedulingService } from './WorkoutSchedulingService';
 
 export class WorkoutQueryService {

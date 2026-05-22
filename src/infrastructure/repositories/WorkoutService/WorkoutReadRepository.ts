@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { Workout, UserWorkout, WorkoutStatus, WorkoutExercise, Exercise } from '../../../domain/entities/Workout';
+import { Workout, UserWorkout, WorkoutStatus, WorkoutExercise, Exercise } from '../../../domain/entities';
 
 
 export class WorkoutReadRepository {

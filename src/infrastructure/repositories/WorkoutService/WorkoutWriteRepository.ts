@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities/Workout';
+import { UserWorkout, WorkoutStatus } from '../../../domain/entities'; 
 
 export class WorkoutWriteRepository {
   constructor(private pool: Pool) {}

@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { WorkoutService } from '../../application/services/WorkoutService';
-import { MetricType } from '../../domain/entities/Workout';
+import { MetricType } from '../../domain/entities';
 
 interface AuthSocket extends Socket {
   userId?: number;

@@ -1,16 +1,16 @@
-import { 
-  Workout, 
-  UserWorkout, 
-  Exercise, 
-  WorkoutExercise, 
-  WorkoutStatus, 
-  WorkoutAdaptation, 
+import {
+  Workout,
+  UserWorkout,
+  Exercise,
+  WorkoutExercise,
+  WorkoutStatus,
+  WorkoutAdaptation,
   AdaptationType,
   MetricTemplate,
   MetricType,
   ExerciseSet,
   SetMetric
-} from '../../domain/entities/Workout';
+} from '../../domain/entities';
 import { Pool } from 'pg';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { WorkoutReadRepository } from './WorkoutService/WorkoutReadRepository';
@@ -45,7 +45,7 @@ export class WorkoutRepository implements IWorkoutRepository {
   async getAllExercises(): Promise<Exercise[]> { return this.exerciseRepo.getAllExercises(); }
   async rescheduleWorkout(id: number, newDate: Date, reason?: string): Promise<void> { return this.writeRepo.rescheduleWorkout(id, newDate, reason); }
   async skipWorkout(id: number, reason?: string): Promise<void> { return this.writeRepo.skipWorkout(id, reason); }
-  async saveAdaptation(adaptation: WorkoutAdaptation): Promise<void> { return this.adaptationRepo.saveAdaptation(adaptation); }
+  async saveAdaptation(adaptation: WorkoutAdaptation, userWorkoutId?: number): Promise<void> { return this.adaptationRepo.saveAdaptation(adaptation, userWorkoutId); }
   async getUserAdaptations(userId: number, exerciseId: number, limit?: number): Promise<WorkoutAdaptation[]> { return this.adaptationRepo.getUserAdaptations(userId, exerciseId, limit); }
   async getLatestAdaptation(userId: number, exerciseId: number): Promise<WorkoutAdaptation | null> { return this.adaptationRepo.getLatestAdaptation(userId, exerciseId); }
   async getWorkoutHistory(userId: number, limit: number, offset: number, status?: string, dateFrom?: string, dateTo?: string): Promise<UserWorkout[]> { return this.readRepo.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo); }

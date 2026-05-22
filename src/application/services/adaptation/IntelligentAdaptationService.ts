@@ -1,10 +1,11 @@
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities/Workout';
+import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities';
 import { SetAnalysisData } from '../../dto/SetAnalysisData';
 import { FatigueRecoveryService } from './FatigueRecoveryService';
 import { PlateauDetectionService } from './PlateauDetectionService';
 import { ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
+import { ExerciseLikeService } from '../ExerciseLikeService'; // ДОБАВЛЕНО
 
 export class IntelligentAdaptationService {
   // Коэффициенты веса в зависимости от уровня
@@ -27,22 +28,14 @@ export class IntelligentAdaptationService {
     private workoutRepo: IWorkoutRepository,
     private userRepo: IUserRepository,
     private fatigueService: FatigueRecoveryService,
-    private plateauService: PlateauDetectionService
+    private plateauService: PlateauDetectionService,
+    private likeService: ExerciseLikeService  // ДОБАВЛЕНО
   ) {}
 
-  /**
-   * Инициализация начальных целей (вес/повторения) для всех упражнений пользователя
-   * на основе его уровня опыта.
-   * Удаляет старые глобальные адаптации и создаёт новые.
-   */
   async initializeTargets(userId: number): Promise<void> {
     const user = await this.userRepo.findById(userId);
     if (!user) throw new Error('User not found');
-
-    // 1. Удаляем все глобальные адаптации (без привязки к тренировке)
     await this.workoutRepo.deleteGlobalAdaptations(userId);
-
-    // 2. Получаем все упражнения из сплит-программ
     const splitPrograms = await this.workoutRepo.getSplitPrograms();
     const exerciseIds = new Set<number>();
     for (const program of splitPrograms) {
@@ -50,25 +43,18 @@ export class IntelligentAdaptationService {
         if (we.exercise.id) exerciseIds.add(we.exercise.id);
       }
     }
-
-    // 3. Для каждого упражнения вычисляем начальные вес/повторения
     for (const exerciseId of exerciseIds) {
       const templates = await this.workoutRepo.getExerciseMetricTemplates(exerciseId);
       const weightTemplate = templates.find(t => t.metricType === 'weight');
       const repsTemplate = templates.find(t => t.metricType === 'reps');
-
       let newWeight = weightTemplate?.defaultValue ?? 0;
       let newReps = repsTemplate?.defaultValue ?? 10;
-
-      // Корректировка веса по уровню
       const multiplier = this.weightMultipliers[user.experienceLevel] || 1.0;
       if (weightTemplate && weightTemplate.defaultValue) {
         newWeight = Math.round(weightTemplate.defaultValue * multiplier);
         if (weightTemplate.unit === 'kg' && newWeight < 5) newWeight = 5;
-        if (exerciseId === 5 && newWeight < 20) newWeight = 20; // жим лёжа – минимум 20 кг
+        if (exerciseId === 5 && newWeight < 20) newWeight = 20;
       }
-
-      // Корректировка повторений для упражнений с собственным весом
       const exercise = await this.workoutRepo.getExerciseById(exerciseId);
       if (exercise && exercise.equipmentType === 'bodyweight' && repsTemplate) {
         const rule = this.bodyweightRepsBase[exercise.name];
@@ -80,7 +66,6 @@ export class IntelligentAdaptationService {
       } else if (repsTemplate) {
         newReps = repsTemplate.defaultValue ?? 10;
       }
-
       const adaptation = new WorkoutAdaptation({
         userId,
         exerciseId,
@@ -95,17 +80,10 @@ export class IntelligentAdaptationService {
     }
   }
 
-  /**
-   * Переинициализация целей (например, после изменения уровня или цели).
-   */
   async reinitializeTargets(userId: number): Promise<void> {
     await this.initializeTargets(userId);
   }
 
-  /**
-   * Адаптация нагрузки после выполнения упражнения.
-   * @param goal - цель тренировок (сила, гипертрофия, выносливость и т.д.)
-   */
   async adaptExercise(
     userId: number,
     completedWorkoutId: number,
@@ -113,8 +91,28 @@ export class IntelligentAdaptationService {
     muscleGroup: string,
     results: SetAnalysisData[],
     wellnessRating: number,
-    goal: FitnessGoal = FitnessGoal.Maintenance   // добавлен параметр цели
+    goal: FitnessGoal = FitnessGoal.Maintenance
   ): Promise<WorkoutAdaptation | null> {
+    // ========== 1. ПРОВЕРКА НА ДИЗЛАЙК ==========
+    const disliked = await this.likeService.getDislikedExercises(userId);
+    if (disliked.includes(exerciseId)) {
+      const suggested = await this.plateauService.suggestSubstitution(userId, exerciseId);
+      if (suggested) {
+        return new WorkoutAdaptation({
+          userId,
+          exerciseId,
+          previousWeight: 0,
+          newWeight: 0,
+          previousReps: 0,
+          newReps: 0,
+          adaptationType: AdaptationType.Substitution,
+          reason: 'Пользователь отметил упражнение как нелюбимое. Предлагается замена.',
+          suggestedExerciseId: suggested,
+        });
+      }
+    }
+
+    // ========== 2. РАСЧЁТ МЕТРИК ВОССТАНОВЛЕНИЯ ==========
     const metrics = await this.fatigueService.calculateMetrics(userId);
     const muscleRecovery = metrics.muscleRecovery[muscleGroup] ?? 80;
 
@@ -145,7 +143,7 @@ export class IntelligentAdaptationService {
     let adaptationType = AdaptationType.NoChange;
     let reason = '';
 
-    // Логика адаптации с учётом цели
+    // ========== 3. АДАПТАЦИЯ В ЗАВИСИМОСТИ ОТ ЦЕЛИ ==========
     switch (goal) {
       case FitnessGoal.Strength:
         if (avgReps >= targetReps * 0.9 && trend > -5) {
@@ -190,7 +188,6 @@ export class IntelligentAdaptationService {
         break;
 
       default:
-        // Базовая логика (без учёта цели)
         if (avgReps >= targetReps && trend > 0) {
           newWeight = Math.round(targetWeight * 1.025);
           adaptationType = AdaptationType.IncreaseWeight;
@@ -205,13 +202,20 @@ export class IntelligentAdaptationService {
         break;
     }
 
-    // Проверка плато
+    // ========== 4. ПРОВЕРКА ПЛАТО И ЗАМЕНА УПРАЖНЕНИЯ ==========
+    let suggestedExerciseId: number | undefined;
     const isPlateau = await this.plateauService.isPlateau(userId, exerciseId);
     if (isPlateau) {
+      const substitution = await this.plateauService.suggestSubstitution(userId, exerciseId);
+      // Преобразуем null в undefined для совместимости с типом поля
+      suggestedExerciseId = substitution ?? undefined;
       reason += ' Обнаружено плато. Рекомендуется смена упражнения.';
     }
 
-    if (adaptationType === AdaptationType.NoChange && reason === 'Без изменений.') return null;
+    // ========== 5. СОХРАНЕНИЕ АДАПТАЦИИ ==========
+    if (adaptationType === AdaptationType.NoChange && !suggestedExerciseId && reason === 'Без изменений.') {
+      return null;
+    }
 
     const adaptation = new WorkoutAdaptation({
       userId,
@@ -222,9 +226,10 @@ export class IntelligentAdaptationService {
       newReps,
       adaptationType,
       reason,
+      suggestedExerciseId, // ПЕРЕДАЁМ (undefined допустимо)
     });
 
-    await this.workoutRepo.saveAdaptation(adaptation);
+    await this.workoutRepo.saveAdaptation(adaptation, completedWorkoutId);
     return adaptation;
   }
 }

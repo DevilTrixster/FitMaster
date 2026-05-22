@@ -1,11 +1,13 @@
 import { IFatigueRepository, MuscleRecoveryRecord } from '../../../domain/interfaces/IFatigueRepository';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { FatigueRecoveryMetrics } from '../../../domain/interfaces/IFatigueRecovery';
+import { IDeloadRepository } from '../../../domain/interfaces/IDeloadRepository';
 
 export class FatigueRecoveryService {
   constructor(
     private workoutRepo: IWorkoutRepository,
-    private fatigueRepo: IFatigueRepository
+    private fatigueRepo: IFatigueRepository,
+    private deloadRepo: IDeloadRepository 
   ) {}
 
   async calculateMetrics(userId: number): Promise<FatigueRecoveryMetrics> {
@@ -106,5 +108,14 @@ export class FatigueRecoveryService {
       })
     );
     await this.fatigueRepo.updateMuscleRecovery(muscleRecords);
+  }
+
+  async shouldDeload(userId: number): Promise<boolean> {
+    const metrics = await this.calculateMetrics(userId);
+    if (metrics.fatigueScore > 70 || metrics.recoveryScore < 30) {
+      const active = await this.deloadRepo.getActiveDeload(userId);
+      if (!active) return true;
+    }
+    return false;
   }
 }

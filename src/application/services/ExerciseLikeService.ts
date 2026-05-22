@@ -10,4 +10,13 @@ export class ExerciseLikeService {
   async getUserLikes(userId: number): Promise<Map<number, boolean>> {
     return this.likeRepo.getLikes(userId);
   }
+
+  async getDislikedExercises(userId: number): Promise<number[]> {
+    const likes = await this.likeRepo.getLikes(userId);
+    const disliked: number[] = [];
+    likes.forEach((liked, exerciseId) => {
+      if (!liked) disliked.push(exerciseId);
+    });
+    return disliked;
+  }
 }

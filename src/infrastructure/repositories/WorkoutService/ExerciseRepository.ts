@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { Exercise, MetricTemplate, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities/Workout';
+import { Exercise, MetricTemplate, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
 
 export class ExerciseRepository {
   constructor(private pool: Pool) {}
@@ -51,24 +51,55 @@ export class ExerciseRepository {
     return res.rows.length > 0 ? res.rows[0].id : null;
   }
 
+  // Upsert: обновляет существующий подход или создаёт новый
   async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      const setQuery = `
-        INSERT INTO exercise_sets (workout_exercise_id, set_number, set_type)
-        VALUES ($1, $2, $3) RETURNING id, created_at
-      `;
-      const setResult = await client.query(setQuery, [workoutExerciseId, exerciseSet.setNumber, exerciseSet.setType]);
-      const setId = setResult.rows[0].id;
+
+      // Проверяем, существует ли уже подход с таким номером
+      const existingSet = await client.query(
+        `SELECT id FROM exercise_sets 
+         WHERE workout_exercise_id = $1 AND set_number = $2`,
+        [workoutExerciseId, exerciseSet.setNumber]
+      );
+
+      let setId: number;
+      if (existingSet.rows.length > 0) {
+        // Обновляем существующий подход
+        setId = existingSet.rows[0].id;
+        await client.query(
+          `UPDATE exercise_sets SET set_type = $1 WHERE id = $2`,
+          [exerciseSet.setType, setId]
+        );
+        // Удаляем старые метрики
+        await client.query(`DELETE FROM set_metrics WHERE exercise_set_id = $1`, [setId]);
+      } else {
+        // Создаём новый подход
+        const insertSet = await client.query(
+          `INSERT INTO exercise_sets (workout_exercise_id, set_number, set_type)
+           VALUES ($1, $2, $3) RETURNING id`,
+          [workoutExerciseId, exerciseSet.setNumber, exerciseSet.setType]
+        );
+        setId = insertSet.rows[0].id;
+      }
+
+      // Вставляем новые метрики
       for (const metric of exerciseSet.metrics) {
         await client.query(
-          'INSERT INTO set_metrics (exercise_set_id, metric_type, value, unit) VALUES ($1, $2, $3, $4)',
+          `INSERT INTO set_metrics (exercise_set_id, metric_type, value, unit)
+           VALUES ($1, $2, $3, $4)`,
           [setId, metric.metricType, metric.value, metric.unit]
         );
       }
+
       await client.query('COMMIT');
-      return new ExerciseSet({ ...exerciseSet, id: setId, workoutExerciseId });
+
+      return new ExerciseSet({
+        ...exerciseSet,
+        id: setId,
+        workoutExerciseId,
+      });
     } catch (e) {
       await client.query('ROLLBACK');
       throw e;

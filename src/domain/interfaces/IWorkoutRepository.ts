@@ -1,12 +1,12 @@
-import { 
-  Workout, 
-  UserWorkout, 
-  Exercise, 
-  WorkoutAdaptation, 
+import {
+  Workout,
+  UserWorkout,
+  Exercise,
+  WorkoutAdaptation,
   MetricTemplate,
   ExerciseSet,
   SetMetric
-} from '../entities/Workout';
+} from '../entities';  
 
 export interface IWorkoutRepository {
   // Базовые программы
@@ -33,7 +33,7 @@ export interface IWorkoutRepository {
   skipWorkout(id: number, reason?: string): Promise<void>;
   
   // Адаптация
-  saveAdaptation(adaptation: WorkoutAdaptation): Promise<void>;
+  saveAdaptation(adaptation: WorkoutAdaptation, userWorkoutId?: number): Promise<void>;
   getUserAdaptations(userId: number, exerciseId: number, limit?: number): Promise<WorkoutAdaptation[]>;
 
   // Получение последней адаптации для пользователя и упражнения

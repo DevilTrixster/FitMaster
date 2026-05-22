@@ -1,0 +1,58 @@
+import { MigrationBuilder } from 'node-pg-migrate';
+
+export async function up(pgm: MigrationBuilder): Promise<void> {
+  // Таблица возможных замен упражнений
+  pgm.sql(`
+    CREATE TABLE exercise_substitutions (
+      id SERIAL PRIMARY KEY,
+      exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+      substitute_exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+      priority INTEGER DEFAULT 1,
+      reason VARCHAR(100) DEFAULT 'similar_muscle_group',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(exercise_id, substitute_exercise_id)
+    );
+  `);
+
+  // Таблица периодов разгрузки
+  pgm.sql(`
+    CREATE TABLE deload_periods (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      start_date DATE NOT NULL,
+      end_date DATE,
+      intensity_factor NUMERIC(3,2) DEFAULT 0.6,
+      reason VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  // Таблица рекомендаций по замене упражнений для пользователей
+  pgm.sql(`
+    CREATE TABLE exercise_recommendations (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+      suggested_exercise_id INTEGER NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+      reason VARCHAR(255) NOT NULL,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      applied_at TIMESTAMP
+    );
+  `);
+
+  // Индексы
+  pgm.sql(`
+    CREATE INDEX idx_deload_periods_user ON deload_periods(user_id);
+    CREATE INDEX idx_exercise_recommendations_user_active ON exercise_recommendations(user_id, is_active);
+    CREATE INDEX idx_exercise_substitutions_exercise ON exercise_substitutions(exercise_id);
+  `);
+}
+
+export async function down(pgm: MigrationBuilder): Promise<void> {
+  pgm.sql(`
+    DROP TABLE IF EXISTS exercise_recommendations CASCADE;
+    DROP TABLE IF EXISTS deload_periods CASCADE;
+    DROP TABLE IF EXISTS exercise_substitutions CASCADE;
+  `);
+}
