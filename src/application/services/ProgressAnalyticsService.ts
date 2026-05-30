@@ -18,4 +18,12 @@ export class ProgressAnalyticsService {
   async getRPEData(userId: number) {
     return await this.progressRepo.getRPEData(userId);
   }
+
+  async getExerciseRawSets(userId: number, exerciseId: number) {
+    return this.progressRepo.getExerciseRawSets(userId, exerciseId);
+  }
+
+  async getMuscleBalanceRadar(userId: number) {
+    return this.progressRepo.getMuscleBalanceRadar(userId);
+  }
 }

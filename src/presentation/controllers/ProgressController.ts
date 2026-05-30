@@ -30,4 +30,17 @@ export class ProgressController {
     const data = await this.progressService.getRPEData(userId);
     res.json(data);
   }
+
+  async getExerciseRawSets(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const exerciseId = parseInt(req.params.id as string);
+    const data = await this.progressService.getExerciseRawSets(userId, exerciseId);
+    res.json(data);
+  }
+
+  async getMuscleBalanceRadar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    const userId = (req as any).userId;
+    const data = await this.progressService.getMuscleBalanceRadar(userId);
+    res.json(data);
+  }
 }

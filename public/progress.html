@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/progress.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
 <body>
-  <!-- Навигация -->
   <nav class="navbar">
     <div class="nav-brand">Fit<span class="brand-accent">Master</span></div>
     <div class="nav-user">
@@ -20,7 +20,6 @@
     </div>
   </nav>
 
-  <!-- Заголовок страницы -->
   <div class="progress-hero">
     <div class="hero-glow"></div>
     <h1 class="progress-title">📊 Ваш прогресс</h1>
@@ -28,43 +27,31 @@
   </div>
 
   <div class="container">
-    
-    <!-- Карточки общей статистики -->
+    <!-- Карточки статистики -->
     <div class="stats-row">
       <div class="stat-card glass">
-        <div class="stat-icon-wrapper">
-          <span class="stat-icon">🏋️</span>
-        </div>
+        <div class="stat-icon-wrapper"><span class="stat-icon">🏋️</span></div>
         <div class="stat-content">
           <span class="stat-value" id="totalWorkouts">0</span>
           <span class="stat-label">Всего тренировок</span>
         </div>
       </div>
-
       <div class="stat-card glass">
-        <div class="stat-icon-wrapper">
-          <span class="stat-icon">😊</span>
-        </div>
+        <div class="stat-icon-wrapper"><span class="stat-icon">😊</span></div>
         <div class="stat-content">
           <span class="stat-value" id="avgWellness">0</span>
           <span class="stat-label">Среднее самочувствие</span>
         </div>
       </div>
-
       <div class="stat-card glass">
-        <div class="stat-icon-wrapper">
-          <span class="stat-icon">📈</span>
-        </div>
+        <div class="stat-icon-wrapper"><span class="stat-icon">📈</span></div>
         <div class="stat-content">
           <span class="stat-value" id="totalVolume">0</span>
           <span class="stat-label">Общий объём (тонн)</span>
         </div>
       </div>
-
       <div class="stat-card glass">
-        <div class="stat-icon-wrapper">
-          <span class="stat-icon">🔥</span>
-        </div>
+        <div class="stat-icon-wrapper"><span class="stat-icon">🔥</span></div>
         <div class="stat-content">
           <span class="stat-value" id="currentStreak">0</span>
           <span class="stat-label">Дней подряд</span>
@@ -72,84 +59,82 @@
       </div>
     </div>
 
-    <!-- Контейнер ошибок -->
     <div id="errorContainer"></div>
 
-    <!-- Секция детальной статистики -->
+    <!-- Детальная статистика -->
     <div class="section-title">
-      <h2>📈 Детальная статистика</h2>
+      <h2>📈 Детальная статистика по упражнению</h2>
       <div class="section-line"></div>
     </div>
 
-    <!-- Выбор упражнения -->
+    <!-- Поле выбора упражнения с поиском (кастомный комбобокс) -->
     <div class="exercise-selector-wrapper">
-      <label for="exerciseSelect">Выберите упражнение:</label>
-      <div class="custom-select-wrapper">
-        <select id="exerciseSelect">
-          <option value="">Загрузка...</option>
-        </select>
-        <div class="custom-select-arrow"></div>
+      <label for="exerciseSearch">Упражнение:</label>
+      <div class="custom-combobox">
+        <input type="text" id="exerciseSearch" placeholder="Начните вводить или выберите из списка" autocomplete="off">
+        <button type="button" class="combobox-toggle">▼</button>
+        <ul class="combobox-dropdown" id="exerciseDropdown"></ul>
       </div>
     </div>
 
-    <!-- Графики упражнения (2 в ряд) -->
+    <!-- Графики упражнения (с переключателями внутри) -->
     <div class="charts-row">
-      <!-- График 1: Динамика веса -->
       <div class="chart-card glass">
         <div class="chart-card-header">
           <span class="chart-icon">📉</span>
-          <h3>Динамика рабочего веса</h3>
-          <span class="chart-badge">По тренировкам</span>
+          <h3 id="weightChartTitle">Динамика рабочего веса</h3>
+          <div class="mode-switch" id="weightModeSwitch">
+            <button class="mode-btn active" data-mode="weight">Динамика веса</button>
+            <button class="mode-btn" data-mode="heatmap">Тепловая карта</button>
+          </div>
         </div>
-        <p class="chart-description">Изменение среднего веса в упражнении</p>
         <div class="chart-container">
           <canvas id="weightChart"></canvas>
         </div>
       </div>
 
-    <!-- График 2: Гистограмма повторений -->
-    <div class="chart-card glass">
-      <div class="chart-card-header">
-        <span class="chart-icon">📊</span>
-        <h3>Гистограмма повторений</h3>
-        <span class="chart-badge">Распределение</span>
-      </div>
-      <p class="chart-description">В каких диапазонах вы работаете чаще всего</p>
-      <div class="chart-container">
-        <canvas id="repRangeChart"></canvas>
-      </div>
-    </div>
-
-    <!-- График 3: RPE vs План (на всю ширину) -->
-    <div class="chart-card glass wide-chart">
-      <div class="chart-card-header">
-        <span class="chart-icon">🎯</span>
-        <h3>RPE vs План</h3>
-        <span class="chart-badge">Воспринимаемая нагрузка</span>
-      </div>
-      <p class="chart-description">Сравнение плановой и фактической сложности тренировок (шкала 1-10)</p>
-      <div class="chart-container chart-container-wide">
-        <canvas id="rpeChart"></canvas>
-      </div>
-    </div>
-
-    <!-- График 4: Распределение нагрузки по мышцам (на всю ширину) -->
-    <div class="chart-card glass wide-chart">
-      <div class="chart-card-header">
-        <span class="chart-icon">💪</span>
-        <h3>Распределение нагрузки по мышечным группам</h3>
-        <div class="chart-filters">
-          <button class="filter-btn active" data-period="all">Всё время</button>
-          <button class="filter-btn" data-period="month">Месяц</button>
-          <button class="filter-btn" data-period="week">Неделя</button>
+      <div class="chart-card glass">
+        <div class="chart-card-header">
+          <span class="chart-icon">📊</span>
+          <h3 id="repsVolumeTitle">Средние повторения</h3>
+          <div class="mode-switch" id="repsVolumeModeSwitch">
+            <button class="mode-btn active" data-mode="reps">Средние повторения</button>
+            <button class="mode-btn" data-mode="volume">Объём нагрузки</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="repsVolumeChart"></canvas>
         </div>
       </div>
-      <p class="chart-description">Общий тренировочный объём (тоннаж) по целевым мышцам</p>
-      <div class="chart-container chart-container-wide">
-        <canvas id="muscleDistributionChart"></canvas>
-      </div>
     </div>
 
+    <!-- Общая аналитика -->
+    <div class="general-charts">
+      <div class="section-title">
+        <h2>📊 Общая аналитика</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card glass">
+          <div class="chart-card-header">
+            <span class="chart-icon">🔄</span>
+            <h3>Баланс мышечных групп</h3>
+          </div>
+          <div class="chart-container">
+            <canvas id="muscleDistributionChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card glass">
+          <div class="chart-card-header">
+            <span class="chart-icon">😌</span>
+            <h3>Самочувствие (RPE)</h3>
+          </div>
+          <div class="chart-container">
+            <canvas id="rpeLineChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="/js/common.js"></script>

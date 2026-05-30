@@ -12,6 +12,8 @@ export function createProgressRoutes(
   router.get('/exercise/:id', progressController.getExerciseProgress.bind(progressController));
   router.get('/muscle-groups', progressController.getMuscleGroupStats.bind(progressController));
   router.get('/rpe', progressController.getRPEData.bind(progressController));
+  router.get('/exercise/:id/raw-sets', progressController.getExerciseRawSets.bind(progressController));
+  router.get('/muscle-balance-radar', progressController.getMuscleBalanceRadar.bind(progressController));
 
   return router;
 }

@@ -1,3 +1,5 @@
+/* progress.css - Полностью обновлён под новую структуру */
+
 /* --- Hero секция --- */
 .progress-hero {
   text-align: center;
@@ -5,7 +7,6 @@
   position: relative;
   overflow: hidden;
 }
-
 .hero-glow {
   position: absolute;
   top: -50%;
@@ -18,7 +19,6 @@
   pointer-events: none;
   z-index: -1;
 }
-
 .progress-title {
   font-size: 2.5rem;
   font-weight: 800;
@@ -26,7 +26,6 @@
   margin-bottom: 0.5rem;
   text-shadow: 0 2px 20px rgba(233, 69, 96, 0.3);
 }
-
 .progress-subtitle {
   color: rgba(255, 255, 255, 0.6);
   font-size: 1.1rem;
@@ -48,7 +47,6 @@
   gap: 1.5rem;
   margin-bottom: 3rem;
 }
-
 .stat-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -61,7 +59,6 @@
   position: relative;
   overflow: hidden;
 }
-
 .stat-card::before {
   content: '';
   position: absolute;
@@ -73,18 +70,15 @@
   opacity: 0;
   transition: opacity 0.3s ease;
 }
-
 .stat-card:hover::before {
   opacity: 1;
 }
-
 .stat-card:hover {
   transform: translateY(-5px);
   background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
   border-color: rgba(233, 69, 96, 0.3);
 }
-
 .stat-icon-wrapper {
   width: 60px;
   height: 60px;
@@ -96,19 +90,16 @@
   font-size: 1.8rem;
   flex-shrink: 0;
 }
-
 .stat-content {
   display: flex;
   flex-direction: column;
 }
-
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
   color: #ffffff;
   line-height: 1.2;
 }
-
 .stat-label {
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.85rem;
@@ -117,18 +108,16 @@
   margin-top: 0.25rem;
 }
 
-/* --- Секция заголовков --- */
+/* --- Заголовки секций --- */
 .section-title {
   margin-bottom: 2rem;
 }
-
 .section-title h2 {
   color: #ffffff;
   font-size: 1.8rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
 }
-
 .section-line {
   height: 3px;
   width: 80px;
@@ -136,7 +125,7 @@
   border-radius: 2px;
 }
 
-/* --- Выбор упражнения --- */
+/* --- Выбор упражнения (input + datalist) --- */
 .exercise-selector-wrapper {
   margin-bottom: 2rem;
   display: flex;
@@ -144,104 +133,43 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
-
 .exercise-selector-wrapper label {
   color: rgba(255, 255, 255, 0.7);
   font-weight: 600;
   font-size: 1rem;
   white-space: nowrap;
 }
-
-.custom-select-wrapper {
-  position: relative;
+.custom-input-wrapper {
   flex: 1;
   min-width: 300px;
 }
-
-.custom-select-wrapper select {
+.custom-input-wrapper input {
   width: 100%;
-  padding: 1rem 3rem 1rem 1.25rem;
+  padding: 1rem 1.25rem;
   background: rgba(255, 255, 255, 0.08);
   border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   color: #ffffff;
   font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   transition: all 0.3s ease;
 }
-
-.custom-select-wrapper select:hover {
-  border-color: rgba(233, 69, 96, 0.5);
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.custom-select-wrapper select:focus {
+.custom-input-wrapper input:focus {
   border-color: var(--accent);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.15);
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+}
+.custom-input-wrapper input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
-/* Кастомная стрелка */
-.custom-select-arrow {
-  position: absolute;
-  right: 1.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 8px solid var(--accent);
-  pointer-events: none;
-  transition: transform 0.3s ease;
-}
-
-.custom-select-wrapper:hover .custom-select-arrow {
-  transform: translateY(-40%);
-}
-
-/* Тёмные option для WebKit браузеров */
-.custom-select-wrapper select option {
-  background: #1a1a2e;
-  color: #ffffff;
-  padding: 12px;
-  font-size: 0.95rem;
-}
-
-.custom-select-wrapper select option:checked,
-.custom-select-wrapper select option:hover {
-  background: var(--accent);
-  color: #ffffff;
-}
-
-/* Скроллбар для select */
-.custom-select-wrapper select::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-select-wrapper select::-webkit-scrollbar-track {
-  background: #1a1a2e;
-  border-radius: 3px;
-}
-
-.custom-select-wrapper select::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 3px;
-}
-
-/* --- Карточки графиков --- */
+/* --- Карточки графиков (общие) --- */
 .charts-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
-
 .chart-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -251,7 +179,6 @@
   position: relative;
   overflow: hidden;
 }
-
 .chart-card::after {
   content: '';
   position: absolute;
@@ -262,24 +189,20 @@
   background: linear-gradient(180deg, var(--accent), transparent);
   border-radius: 2px;
 }
-
 .chart-card:hover {
   background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
-
 .chart-card-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
-
 .chart-icon {
   font-size: 1.3rem;
 }
-
 .chart-card-header h3 {
   color: #ffffff;
   font-size: 1.1rem;
@@ -287,73 +210,138 @@
   margin: 0;
   flex: 1;
 }
-
-.chart-badge {
-  background: rgba(233, 69, 96, 0.2);
-  color: #ff8fa3;
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-/* Фильтры периода */
-.chart-filters {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-
-.filter-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-}
-
-.filter-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #ffffff;
-}
-
-.chart-description {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.chart-container {
-  position: relative;
-  height: 300px;
-  width: 100%;
-}
-
-.chart-container-wide {
-  height: 400px;
+/* --- Кастомный комбобокс (выбор упражнения) --- */
+.exercise-selector-wrapper {
+  margin-bottom: 2rem;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.exercise-selector-wrapper label {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+.custom-combobox {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  align-items: center;
+}
+#exerciseSearch {
+  flex: 1;
+  padding: 1rem 2.5rem 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+#exerciseSearch:focus {
+  border-color: var(--accent);
+  outline: none;
+  background: rgba(255, 255, 255, 0.12);
+}
+.combobox-toggle {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+.combobox-toggle:hover {
+  background: rgba(255,255,255,0.1);
+}
+.combobox-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #1e1e2a;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  backdrop-filter: blur(10px);
+}
+.combobox-dropdown li {
+  padding: 0.8rem 1.25rem;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.combobox-dropdown li:last-child {
+  border-bottom: none;
+}
+.combobox-dropdown li:hover,
+.combobox-dropdown li.selected {
+  background: rgba(233,69,96,0.3);
+}
+.combobox-dropdown.show {
+  display: block;
+}
+/* Переключатели режимов внутри карточки */
+.mode-switch {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.2rem;
+  border-radius: 40px;
+}
+.mode-btn {
+  background: transparent;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 30px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mode-btn.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(233, 69, 96, 0.5);
+}
+.mode-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Широкая карточка (на всю ширину) */
-.wide-chart {
-  grid-column: 1 / -1;
-  text-align: center;
-  margin-bottom: 1.5rem;
+/* Контейнер графиков */
+.chart-container {
+  position: relative;
+  height: 320px;
+  width: 100%;
+}
+/* Для общей аналитики (круговая диаграмма и RPE линия) */
+.general-charts .chart-container {
+  height: 350px;
 }
 
-/* --- Ошибки --- */
+/* --- Тепловая карта (canvas, не Chart.js) --- */
+.heatmap-canvas {
+  width: 100%;
+  height: 100%;
+  background: #1a1a2e;
+  border-radius: 12px;
+}
+
+/* --- Сообщение об ошибке --- */
 .error-message {
   background: rgba(233, 69, 96, 0.15);
   border: 1px solid rgba(233, 69, 96, 0.3);
@@ -363,7 +351,7 @@
   margin-bottom: 2rem;
   text-align: center;
   font-weight: 500;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px);
 }
 
 /* --- Анимации --- */
@@ -377,99 +365,80 @@
     transform: translateY(0);
   }
 }
-
 .stat-card,
 .chart-card {
   animation: fadeInUp 0.5s ease-out backwards;
 }
-
 .stat-card:nth-child(1) { animation-delay: 0.1s; }
 .stat-card:nth-child(2) { animation-delay: 0.2s; }
 .stat-card:nth-child(3) { animation-delay: 0.3s; }
 .stat-card:nth-child(4) { animation-delay: 0.4s; }
 
-.chart-card:nth-child(1) { animation-delay: 0.5s; }
-.chart-card:nth-child(2) { animation-delay: 0.6s; }
-
-.wide-chart { animation-delay: 0.7s; }
-
-/* --- Адаптивность --- */
+/* --- Адаптивность для планшетов и телефонов --- */
 @media (max-width: 1024px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
 @media (max-width: 768px) {
   .progress-title {
     font-size: 1.8rem;
   }
-  
   .progress-subtitle {
     font-size: 0.95rem;
   }
-  
   .container {
     padding: 0 1rem 2rem;
   }
-  
   .stats-row {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
   .charts-row {
     grid-template-columns: 1fr;
   }
-  
   .exercise-selector-wrapper {
     flex-direction: column;
     align-items: stretch;
   }
-  
-  .custom-select-wrapper {
+  .custom-input-wrapper {
     min-width: 100%;
   }
-  
-  .chart-container {
-    height: 250px;
+  .chart-card-header {
+    flex-direction: column;
+    align-items: stretch;
   }
-  
-  .chart-container-wide {
+  .mode-switch {
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  .chart-container {
+    height: 260px;
+  }
+  .general-charts .chart-container {
     height: 300px;
   }
-  
-  .chart-badge {
-    display: none;
-  }
-  
-  .chart-filters {
-    width: 100%;
-    justify-content: center;
-    margin-top: 1rem;
-  }
 }
-
 @media (max-width: 480px) {
   .progress-hero {
     padding: 2rem 1rem 1.5rem;
   }
-  
   .progress-title {
     font-size: 1.5rem;
   }
-  
   .stat-card {
     padding: 1.25rem;
   }
-  
   .stat-icon-wrapper {
     width: 50px;
     height: 50px;
     font-size: 1.5rem;
   }
-  
   .stat-value {
     font-size: 1.5rem;
+  }
+  .mode-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.7rem;
   }
 }

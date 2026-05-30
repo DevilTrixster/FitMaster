@@ -117,7 +117,6 @@ export class WorkoutWriteRepository {
     await this.pool.query(query, [newDate.toISOString().split('T')[0], workoutId]);
   }
 
-  
   async deleteGlobalAdaptations(userId: number): Promise<void> {
     await this.pool.query('DELETE FROM workout_adaptations WHERE user_id = $1 AND user_workout_id IS NULL', [userId]);
   }
