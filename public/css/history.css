@@ -1,151 +1,181 @@
-/* Контейнер списка истории */
+/* history.css – полный редизайн с раскрывающимися карточками */
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* Панель фильтров */
+.filters-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1.2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 130px;
+}
+.filter-group label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.filter-group select,
+.filter-group input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: #fff;
+}
+.filter-group select:focus,
+.filter-group input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+#applyFiltersBtn, #resetFiltersBtn {
+  padding: 0.5rem 1.2rem;
+  margin-top: 1.3rem;
+}
+
+/* Список тренировок */
 .history-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  margin-top: 1rem;
 }
 
-/* Карточка тренировки в истории */
-.workout-history-item {
+/* Карточка тренировки */
+.workout-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-left: 4px solid var(--accent);
-  border-radius: 12px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(5px);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.2s;
 }
-
-.workout-history-item:hover {
+.workout-card:hover {
   background: var(--card-bg-hover);
-  transform: translateX(5px);
-  box-shadow: var(--shadow);
 }
-
-/* Завершённая тренировка - зелёная полоска */
-.workout-history-item.completed {
-  border-left-color: #4ecca3;
-}
-
-/* Пропущенная тренировка - оранжевая полоска */
-.workout-history-item.skipped {
-  border-left-color: #ffa500;
-  opacity: 0.7;
-}
-
-/* Заголовок тренировки */
-.history-header {
+.workout-header {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.history-header h3 {
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  margin: 0;
-  font-weight: 600;
-}
-
-/* Мета-информация (дата, время) */
-.history-meta {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
   flex-wrap: wrap;
-}
-
-.history-meta span {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
 }
-
-/* Самочувствие */
-.history-wellness {
+.workout-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+.workout-date {
   color: var(--text-secondary);
   font-size: 0.9rem;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  margin-top: 0.75rem;
 }
-
-/* Комментарии */
-.history-comments {
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  font-style: italic;
-  padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  margin-top: 0.75rem;
-  border-left: 2px solid var(--accent);
-}
-
-/* Статус тренировки */
-.history-status {
-  padding: 0.4rem 1rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  background: rgba(233, 69, 96, 0.2);
-  color: #ff8fa3;
-  white-space: nowrap;
-}
-
-.workout-history-item.completed .history-status {
+.workout-badge {
   background: rgba(78, 204, 163, 0.2);
   color: #4ecca3;
+  padding: 0.2rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+}
+.expand-icon {
+  font-size: 1.2rem;
+  transition: transform 0.2s;
+}
+.workout-card.expanded .expand-icon {
+  transform: rotate(180deg);
 }
 
-.workout-history-item.skipped .history-status {
-  background: rgba(255, 165, 0, 0.2);
-  color: #ffa500;
+/* Детали (скрытый блок) */
+.workout-details {
+  display: none;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.2);
+}
+.workout-card.expanded .workout-details {
+  display: block;
 }
 
-/* Пустое состояние */
-.history-empty {
-  text-align: center;
-  padding: 3rem;
+/* Упражнения внутри деталей */
+.details-exercise {
+  margin-bottom: 1.5rem;
+}
+.details-exercise h4 {
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+.sets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.sets-table th,
+.sets-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sets-table th {
   color: var(--text-secondary);
-  font-size: 1.1rem;
+  font-weight: 500;
+}
+.sets-table td {
+  color: var(--text-primary);
+}
+.metrics-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.metric-item {
+  background: rgba(255,255,255,0.1);
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+}
+.workout-comments {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  font-style: italic;
+  color: var(--text-secondary);
 }
 
-/* Адаптивность для мобильных */
+.load-more-container {
+  text-align: center;
+  margin-top: 2rem;
+}
+#loadMoreBtn {
+  padding: 0.7rem 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 768px) {
-  .history-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .history-meta {
-    gap: 1rem;
-  }
-  
-  .workout-history-item {
-    padding: 1.25rem;
-  }
-}
-
-/* Анимация появления */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.workout-history-item {
-  animation: fadeIn 0.3s ease-out;
+  .container { padding: 1rem; }
+  .filters-panel { flex-direction: column; align-items: stretch; }
+  .filter-group { min-width: auto; }
+  .workout-header { flex-direction: column; align-items: flex-start; }
 }

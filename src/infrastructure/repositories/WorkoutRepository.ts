@@ -63,4 +63,33 @@ export class WorkoutRepository implements IWorkoutRepository {
   async createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void> { return this.writeRepo.createUserWorkoutBatch(workouts); }
   async postponeWorkout(workoutId: number, newDate: Date): Promise<void> { return this.writeRepo.postponeWorkout(workoutId, newDate); }
   async deleteGlobalAdaptations(userId: number): Promise<void> { return this.writeRepo.deleteGlobalAdaptations(userId); }
+  async getCompletedWorkoutsHistory(
+  userId: number,
+  limit: number,
+  offset: number,
+  sortBy?: string,
+  sortOrder?: 'ASC' | 'DESC',
+  dateFrom?: string,
+  dateTo?: string,
+  exerciseId?: number,
+  muscleGroup?: string
+): Promise<UserWorkout[]> {
+  return this.readRepo.getCompletedWorkoutsHistory(
+    userId, limit, offset, sortBy, sortOrder, dateFrom, dateTo, exerciseId, muscleGroup
+  );
+}
+
+async countCompletedWorkouts(
+  userId: number,
+  dateFrom?: string,
+  dateTo?: string,
+  exerciseId?: number,
+  muscleGroup?: string
+): Promise<number> {
+  return this.readRepo.countCompletedWorkouts(userId, dateFrom, dateTo, exerciseId, muscleGroup);
+}
+
+async getWorkoutDetails(workoutId: number, userId: number): Promise<any> {
+  return this.readRepo.getWorkoutDetails(workoutId, userId);
+}
 }

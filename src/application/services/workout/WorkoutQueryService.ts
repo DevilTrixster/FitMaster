@@ -89,4 +89,34 @@ export class WorkoutQueryService {
   async getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]> {
     return this.workoutRepository.getWorkoutsInRange(userId, startDate, endDate);
   }
+
+  async getCompletedWorkoutsHistory(
+    userId: number,
+    limit: number,
+    offset: number,
+    sortBy?: string,
+    sortOrder?: 'ASC' | 'DESC',
+    dateFrom?: string,
+    dateTo?: string,
+    exerciseId?: number,
+    muscleGroup?: string
+  ): Promise<UserWorkout[]> {
+    return this.workoutRepository.getCompletedWorkoutsHistory(
+      userId, limit, offset, sortBy, sortOrder, dateFrom, dateTo, exerciseId, muscleGroup
+    );
+  }
+
+  async countCompletedWorkouts(
+    userId: number,
+    dateFrom?: string,
+    dateTo?: string,
+    exerciseId?: number,
+    muscleGroup?: string
+  ): Promise<number> {
+    return this.workoutRepository.countCompletedWorkouts(userId, dateFrom, dateTo, exerciseId, muscleGroup);
+  }
+
+  async getWorkoutDetails(workoutId: number, userId: number): Promise<any> {
+    return this.workoutRepository.getWorkoutDetails(workoutId, userId);
+  }
 }

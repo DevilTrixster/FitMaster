@@ -12,7 +12,8 @@ export function createWorkoutRoutes(
 
   router.get('/dashboard', workoutController.getDashboard.bind(workoutController));
   router.get('/current', workoutController.getCurrentWorkout.bind(workoutController));
-  router.get('/history', workoutController.getWorkoutHistory.bind(workoutController));
+  router.get('/history', workoutController.getHistory.bind(workoutController));
+  router.get('/:id/details', workoutController.getWorkoutDetails.bind(workoutController));
   router.post('/start', workoutController.startWorkout.bind(workoutController));
   router.post('/complete', workoutController.completeWorkout.bind(workoutController));
   router.post('/pause', workoutController.pauseWorkout.bind(workoutController));

@@ -41,13 +41,35 @@ export interface IWorkoutRepository {
   
   // История с фильтрами (обновлённая сигнатура)
   getWorkoutHistory(
-    userId: number, 
-    limit: number, 
+    userId: number,
+    limit: number,
     offset: number,
     status?: string,
     dateFrom?: string,
     dateTo?: string
   ): Promise<UserWorkout[]>;
+
+  getCompletedWorkoutsHistory(
+    userId: number,
+    limit: number,
+    offset: number,
+    sortBy?: string,
+    sortOrder?: 'ASC' | 'DESC',
+    dateFrom?: string,
+    dateTo?: string,
+    exerciseId?: number,
+    muscleGroup?: string
+  ): Promise<UserWorkout[]>;
+
+  countCompletedWorkouts(
+    userId: number,
+    dateFrom?: string,
+    dateTo?: string,
+    exerciseId?: number,
+    muscleGroup?: string
+  ): Promise<number>;
+
+  getWorkoutDetails(workoutId: number, userId: number): Promise<any>;
 
   // Получение списка базовых программ для сплита (Грудь, Спина, Ноги)
   getSplitPrograms(): Promise<Workout[]>;

@@ -4,7 +4,7 @@ import { WorkoutLifecycleService } from './workout/WorkoutLifecycleService';
 import { WorkoutQueryService } from './workout/WorkoutQueryService';
 import { WorkoutResultsService } from './workout/WorkoutResultsService';
 import { IWorkoutRepository } from '@domain/interfaces/IWorkoutRepository';
-import { IDeloadRepository } from '../../domain/interfaces/IDeloadRepository'; // добавить
+import { IDeloadRepository } from '../../domain/interfaces/IDeloadRepository';
 
 export class WorkoutService {
   constructor(
@@ -13,7 +13,7 @@ export class WorkoutService {
     private queryService: WorkoutQueryService,
     private resultsService: WorkoutResultsService,
     private workoutRepository: IWorkoutRepository,
-    private deloadRepo: IDeloadRepository   // добавить
+    private deloadRepo: IDeloadRepository  
   ) {}
 
   async saveSetMetrics(
@@ -84,6 +84,36 @@ export class WorkoutService {
     status?: string, dateFrom?: string, dateTo?: string
   ): Promise<UserWorkout[]> {
     return this.queryService.getWorkoutHistory(userId, limit, offset, status, dateFrom, dateTo);
+  }
+
+  async getCompletedWorkoutsHistory(
+    userId: number,
+    limit: number,
+    offset: number,
+    sortBy?: string,
+    sortOrder?: 'ASC' | 'DESC',
+    dateFrom?: string,
+    dateTo?: string,
+    exerciseId?: number,
+    muscleGroup?: string
+  ): Promise<UserWorkout[]> {
+    return this.queryService.getCompletedWorkoutsHistory(
+      userId, limit, offset, sortBy, sortOrder, dateFrom, dateTo, exerciseId, muscleGroup
+    );
+  }
+
+  async countCompletedWorkouts(
+    userId: number,
+    dateFrom?: string,
+    dateTo?: string,
+    exerciseId?: number,
+    muscleGroup?: string
+  ): Promise<number> {
+    return this.queryService.countCompletedWorkouts(userId, dateFrom, dateTo, exerciseId, muscleGroup);
+  }
+
+  async getWorkoutDetails(workoutId: number, userId: number): Promise<any> {
+    return this.queryService.getWorkoutDetails(workoutId, userId);
   }
 
   async getAllExercises() {
