@@ -304,7 +304,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       -- 82: повторение
       (82, 'reps', true, 10, 'count'),
       -- 83: дистанция
-      (83, 'distance', true, 1.5, 'm'),
+      (83, 'distance', true, 1.5, 'metr'),
       -- 84: повторение
       (84, 'reps', true, 8, 'count'),
       -- 85: повторение

@@ -172,8 +172,6 @@ async function bootstrap() {
     app.get('/progress', (req, res) => res.sendFile(path.join(__dirname, '../public/progress.html')));
     app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
 
-    app.use(errorHandler);
-
     console.log('🚀 Сервер готов к работе');
 
     httpServer.listen(config.server.port, () => {
