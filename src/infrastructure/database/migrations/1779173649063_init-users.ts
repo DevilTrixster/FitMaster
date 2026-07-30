@@ -52,18 +52,50 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         );
     EXCEPTION WHEN duplicate_object THEN null;
     END $$;
+
+    DO $$ BEGIN
+        CREATE TYPE level AS ENUM (
+            'beginner', 'novice', 'intermediate', 'advanced', 'master'
+        );
+    EXCEPTION WHEN duplicate_object THEN null;
+    END $$;
+
+    DO $$ BEGIN
+        CREATE TYPE goal AS ENUM (
+            'weight_loss', 'muscle_gain', 'strength', 'maintenance', 'endurance', 'aesthetics', 'recomposition', 'mobility', 'rehabilitation', 'sports', 'event', 'stress_relief', 'energy', 'competition', 'posture', 'healthy_aging'
+        );
+    EXCEPTION WHEN duplicate_object THEN null;
+    END $$;
+
+    DO $$ BEGIN
+        CREATE TYPE substitution_reason AS ENUM (
+            'similar_muscle_group',
+            'same_equipment',
+            'no_knees',
+            'rehab',
+            'shoulder',
+            'beginner',
+            'advanced'
+        );
+    EXCEPTION WHEN duplicate_object THEN null;
+    END $$;
   `);
 
   // Строка для работы citext и функция для проверки массива на дни недели
-  pgm.sql (`
+  pgm.sql(`
     CREATE EXTENSION IF NOT EXISTS citext;
     CREATE OR REPLACE FUNCTION check_days_array(arr integer[])
-    RETURNS boolean AS $$
-    BEGIN
-        RETURN (SELECT bool_and(value BETWEEN 1 AND 7) FROM unnest(arr) AS value);
-    END;
-    $$ LANGUAGE plpgsql IMMUTABLE;
-`)
+    RETURNS boolean
+    LANGUAGE sql
+    IMMUTABLE
+    AS $$
+    SELECT COALESCE(
+        bool_and(v BETWEEN 1 AND 7),
+        TRUE
+    )
+    FROM unnest(arr) t(v);
+    $$;
+    `);
 
   // Создание таблиц
   pgm.sql(`
@@ -82,8 +114,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         preferred_workout_time TIME DEFAULT '17:00:00',
         avatar_url TEXT,
         preferred_days INTEGER[] DEFAULT ARRAY[1,3,5] CHECK (check_days_array(preferred_days)),
-        experience_level VARCHAR(20) DEFAULT 'novice', 
-        fitness_goal VARCHAR(50) DEFAULT 'maintenance',
+        experience_level level DEFAULT 'novice', 
+        fitness_goal goal DEFAULT 'maintenance',
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
     );
