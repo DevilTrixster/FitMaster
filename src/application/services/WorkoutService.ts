@@ -13,7 +13,7 @@ export class WorkoutService {
     private queryService: WorkoutQueryService,
     private resultsService: WorkoutResultsService,
     private workoutRepository: IWorkoutRepository,
-    private deloadRepo: IDeloadRepository  
+    private deloadRepository: IDeloadRepository  
   ) {}
 
   async saveSetMetrics(
@@ -39,7 +39,7 @@ export class WorkoutService {
     let weight = adaptation.newWeight;
 
     // Применяем фактор разгрузки, если активна
-    const deload = await this.deloadRepo.getActiveDeload(userId);
+    const deload = await this.deloadRepository.getActiveDeload(userId);
     if (deload) {
       reps = Math.max(1, Math.floor(reps * deload.intensityFactor));
       weight = Math.max(0, Math.floor(weight * deload.intensityFactor));

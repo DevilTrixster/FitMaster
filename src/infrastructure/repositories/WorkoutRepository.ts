@@ -11,12 +11,12 @@ import {
   ExerciseSet,
   SetMetric
 } from '../../domain/entities';
-import { Pool } from 'pg';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
 import { WorkoutReadRepository } from './WorkoutService/WorkoutReadRepository';
 import { WorkoutWriteRepository } from './WorkoutService/WorkoutWriteRepository';
 import { ExerciseRepository } from './WorkoutService/ExerciseRepository';
 import { AdaptationRepository } from './WorkoutService/AdaptationRepository';
+import { Database } from '../../injection/database';
 
 export class WorkoutRepository implements IWorkoutRepository {
   private readRepo: WorkoutReadRepository;
@@ -24,11 +24,11 @@ export class WorkoutRepository implements IWorkoutRepository {
   private exerciseRepo: ExerciseRepository;
   private adaptationRepo: AdaptationRepository;
 
-  constructor(private pool: Pool) {
-    this.readRepo = new WorkoutReadRepository(pool);
-    this.writeRepo = new WorkoutWriteRepository(pool);
-    this.exerciseRepo = new ExerciseRepository(pool);
-    this.adaptationRepo = new AdaptationRepository(pool);
+  constructor(private database: Database) {
+    this.readRepo = new WorkoutReadRepository(database);
+    this.writeRepo = new WorkoutWriteRepository(database);
+    this.exerciseRepo = new ExerciseRepository(database);
+    this.adaptationRepo = new AdaptationRepository(database);
   }
 
   // Делегирование всем методам

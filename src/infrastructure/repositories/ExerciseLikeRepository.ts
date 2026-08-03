@@ -1,8 +1,8 @@
-import { Pool } from 'pg';
+import { Database } from '../../injection/database';
 import { IExerciseLikeRepository } from '../../domain/interfaces/IExerciseLikeRepository';
 
 export class ExerciseLikeRepository implements IExerciseLikeRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async setLike(userId: number, exerciseId: number, liked: boolean): Promise<void> {
     const query = `
@@ -11,7 +11,7 @@ export class ExerciseLikeRepository implements IExerciseLikeRepository {
       ON CONFLICT (user_id, exercise_id)
       DO UPDATE SET liked = EXCLUDED.liked, updated_at = EXCLUDED.updated_at
     `;
-    await this.pool.query(query, [userId, exerciseId, liked]);
+    await this.database.query(query, [userId, exerciseId, liked]);
   }
 
   async getLikes(userId: number, exerciseIds?: number[]): Promise<Map<number, boolean>> {
@@ -21,7 +21,7 @@ export class ExerciseLikeRepository implements IExerciseLikeRepository {
       query += ` AND exercise_id = ANY($2)`;
       params.push(exerciseIds);
     }
-    const res = await this.pool.query(query, params);
+    const res = await this.database.query(query, params);
     const map = new Map<number, boolean>();
     res.rows.forEach(row => map.set(row.exercise_id, row.liked));
     return map;

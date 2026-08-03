@@ -1,8 +1,8 @@
-import { Pool } from 'pg';
+import { Database } from '../../../injection/database';
 import { UserWorkout, WorkoutStatus } from '../../../domain/entities'; 
 
 export class WorkoutWriteRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async createUserWorkout(userWorkout: UserWorkout): Promise<UserWorkout> {
     const query = `
@@ -17,7 +17,7 @@ export class WorkoutWriteRepository {
       userWorkout.scheduledTime || '10:00',
       userWorkout.status,
     ];
-    const result = await this.pool.query(query, values);
+    const result = await this.database.query(query, values);
     return new UserWorkout({
       ...userWorkout,
       id: result.rows[0].id,
@@ -32,33 +32,33 @@ export class WorkoutWriteRepository {
       WHERE id = $5
     `;
     const completedAt = status === 'completed' ? new Date() : null;
-    await this.pool.query(query, [status, wellnessRating || null, comments || null, completedAt, id]);
+    await this.database.query(query, [status, wellnessRating || null, comments || null, completedAt, id]);
   }
 
   async startUserWorkout(id: number): Promise<void> {
-    await this.pool.query('UPDATE user_workouts SET status = $1 WHERE id = $2', ['in_progress', id]);
+    await this.database.query('UPDATE user_workouts SET status = $1 WHERE id = $2', ['in_progress', id]);
   }
 
   async pauseUserWorkout(id: number, lastExerciseIndex: number): Promise<void> {
-    await this.pool.query(
+    await this.database.query(
       'UPDATE user_workouts SET paused_at = CURRENT_TIMESTAMP, last_exercise_index = $1 WHERE id = $2',
       [lastExerciseIndex, id]
     );
   }
 
   async resumeUserWorkout(id: number): Promise<void> {
-    await this.pool.query('UPDATE user_workouts SET paused_at = NULL WHERE id = $1', [id]);
+    await this.database.query('UPDATE user_workouts SET paused_at = NULL WHERE id = $1', [id]);
   }
 
   async rescheduleWorkout(id: number, newDate: Date, reason?: string): Promise<void> {
-    await this.pool.query(
+    await this.database.query(
       `UPDATE user_workouts SET status = 'rescheduled', rescheduled_to = $1, reschedule_reason = $2 WHERE id = $3`,
       [newDate.toISOString().split('T')[0], reason || null, id]
     );
   }
 
   async skipWorkout(id: number, reason?: string): Promise<void> {
-    await this.pool.query(
+    await this.database.query(
       `UPDATE user_workouts SET status = 'skipped', reschedule_reason = $1 WHERE id = $2`,
       [reason || null, id]
     );
@@ -70,7 +70,7 @@ export class WorkoutWriteRepository {
       SET scheduled_time = $1::time, updated_at = CURRENT_TIMESTAMP
       WHERE user_id = $2 AND status = 'scheduled' AND scheduled_date >= CURRENT_DATE
     `;
-    await this.pool.query(query, [newTime, userId]);
+    await this.database.query(query, [newTime, userId]);
   }
 
   async deleteScheduledWorkoutsFrom(userId: number, fromDate: Date): Promise<void> {
@@ -78,12 +78,12 @@ export class WorkoutWriteRepository {
     DELETE FROM user_workouts
     WHERE user_id = $1 AND status = 'scheduled' AND scheduled_date >= $2
   `;
-  await this.pool.query(query, [userId, fromDate]);
+  await this.database.query(query, [userId, fromDate]);
   }
 
   async createUserWorkoutBatch(workouts: UserWorkout[]): Promise<void> {
     if (workouts.length === 0) return;
-    const client = await this.pool.connect();
+    const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
       for (const w of workouts) {
@@ -114,10 +114,10 @@ export class WorkoutWriteRepository {
       SET scheduled_date = $1, updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
     `;
-    await this.pool.query(query, [newDate.toISOString().split('T')[0], workoutId]);
+    await this.database.query(query, [newDate.toISOString().split('T')[0], workoutId]);
   }
 
   async deleteGlobalAdaptations(userId: number): Promise<void> {
-    await this.pool.query('DELETE FROM workout_adaptations WHERE user_id = $1 AND user_workout_id IS NULL', [userId]);
+    await this.database.query('DELETE FROM workout_adaptations WHERE user_id = $1 AND user_workout_id IS NULL', [userId]);
   }
 }

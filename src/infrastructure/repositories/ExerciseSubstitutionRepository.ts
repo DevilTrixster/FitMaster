@@ -1,11 +1,11 @@
-import { Pool } from 'pg';
+import { Database } from '../../injection/database';
 import { IExerciseSubstitutionRepository } from '../../domain/interfaces/IExerciseSubstitutionRepository';
 
 export class ExerciseSubstitutionRepository implements IExerciseSubstitutionRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async getSubstitution(exerciseId: number): Promise<{ substituteId: number; priority: number } | null> {
-    const res = await this.pool.query(
+    const res = await this.database.query(
       `SELECT substitute_exercise_id, priority FROM exercise_substitutions
        WHERE exercise_id = $1 ORDER BY priority LIMIT 1`,
       [exerciseId]

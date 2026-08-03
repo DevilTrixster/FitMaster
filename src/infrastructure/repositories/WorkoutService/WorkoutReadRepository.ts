@@ -1,17 +1,17 @@
-import { Pool } from 'pg';
+import { Database } from '../../../injection/database';
 import { Workout, UserWorkout, WorkoutStatus, WorkoutExercise, Exercise } from '../../../domain/entities';
 import { ExerciseRepository } from './ExerciseRepository';
 
 export class WorkoutReadRepository {
   private exerciseRepo: ExerciseRepository;
 
-  constructor(private pool: Pool) {
-    this.exerciseRepo = new ExerciseRepository(pool);
+  constructor(private database: Database) {
+    this.exerciseRepo = new ExerciseRepository(database);
   }
 
   async getWorkoutById(id: number): Promise<Workout | null> {
     const workoutQuery = 'SELECT * FROM workouts WHERE id = $1';
-    const workoutResult = await this.pool.query(workoutQuery, [id]);
+    const workoutResult = await this.database.query(workoutQuery, [id]);
     if (workoutResult.rows.length === 0) return null;
 
     const exercisesQuery = `
@@ -21,7 +21,7 @@ export class WorkoutReadRepository {
       WHERE we.workout_id = $1
       ORDER BY we.order_index
     `;
-    const exercisesResult = await this.pool.query(exercisesQuery, [id]);
+    const exercisesResult = await this.database.query(exercisesQuery, [id]);
 
     const exercises = exercisesResult.rows.map((row: any) => {
       const exercise = new Exercise({
@@ -57,7 +57,7 @@ export class WorkoutReadRepository {
       ORDER BY uw.scheduled_date ASC, uw.scheduled_time ASC 
       LIMIT $2
     `;
-    const result = await this.pool.query(query, [userId, limit]);
+    const result = await this.database.query(query, [userId, limit]);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 
@@ -68,7 +68,7 @@ export class WorkoutReadRepository {
       JOIN workouts w ON uw.workout_id = w.id
       WHERE uw.id = $1
     `;
-    const result = await this.pool.query(query, [id]);
+    const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUserWorkout(result.rows[0]);
   }
@@ -105,7 +105,7 @@ export class WorkoutReadRepository {
     query += ` ORDER BY uw.scheduled_date DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const result = await this.pool.query(query, params);
+    const result = await this.database.query(query, params);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 
@@ -163,7 +163,7 @@ export class WorkoutReadRepository {
     query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const result = await this.pool.query(query, params);
+    const result = await this.database.query(query, params);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 
@@ -210,7 +210,7 @@ export class WorkoutReadRepository {
       paramIndex++;
     }
 
-    const result = await this.pool.query(query, params);
+    const result = await this.database.query(query, params);
     return parseInt(result.rows[0].count, 10);
   }
 
@@ -263,7 +263,7 @@ export class WorkoutReadRepository {
 
   async getSplitPrograms(): Promise<Workout[]> {
     const query = `SELECT * FROM workouts WHERE id IN (1, 2, 3) ORDER BY id ASC`;
-    const result = await this.pool.query(query);
+    const result = await this.database.query(query);
     const workouts: Workout[] = [];
     for (const row of result.rows) {
       const workout = await this.getWorkoutById(row.id);
@@ -281,7 +281,7 @@ export class WorkoutReadRepository {
       ORDER BY uw.scheduled_date ASC
       LIMIT 1
     `;
-    const result = await this.pool.query(query, [userId]);
+    const result = await this.database.query(query, [userId]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUserWorkout(result.rows[0]);
   }
@@ -301,7 +301,7 @@ export class WorkoutReadRepository {
       GROUP BY uw.scheduled_date
       ORDER BY uw.scheduled_date DESC
     `;
-    const result = await this.pool.query(query, [userId, days]);
+    const result = await this.database.query(query, [userId, days]);
     return result.rows.map((row: any) => ({
       date: row.date,
       volume: parseFloat(row.volume),
@@ -316,7 +316,7 @@ export class WorkoutReadRepository {
       WHERE uw.user_id = $1 AND uw.scheduled_date BETWEEN $2 AND $3
       ORDER BY uw.scheduled_date ASC
     `;
-    const result = await this.pool.query(query, [userId, startDate, endDate]);
+    const result = await this.database.query(query, [userId, startDate, endDate]);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 

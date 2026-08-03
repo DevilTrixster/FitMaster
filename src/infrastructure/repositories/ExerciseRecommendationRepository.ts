@@ -1,11 +1,11 @@
-import { Pool } from 'pg';
+import { Database } from '../../injection/database';
 import { IExerciseRecommendationRepository, IExerciseRecommendation } from '../../domain/interfaces/IExerciseRecommendationRepository';
 
 export class ExerciseRecommendationRepository implements IExerciseRecommendationRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async createRecommendation(recommendation: IExerciseRecommendation): Promise<void> {
-    await this.pool.query(
+    await this.database.query(
       `INSERT INTO exercise_recommendations (user_id, exercise_id, suggested_exercise_id, reason)
        VALUES ($1, $2, $3, $4)`,
       [recommendation.userId, recommendation.exerciseId, recommendation.suggestedExerciseId, recommendation.reason]
@@ -13,7 +13,7 @@ export class ExerciseRecommendationRepository implements IExerciseRecommendation
   }
 
   async getActiveRecommendations(userId: number): Promise<IExerciseRecommendation[]> {
-    const res = await this.pool.query(
+    const res = await this.database.query(
       `SELECT * FROM exercise_recommendations WHERE user_id = $1 AND is_active = TRUE ORDER BY created_at DESC`,
       [userId]
     );
@@ -30,7 +30,7 @@ export class ExerciseRecommendationRepository implements IExerciseRecommendation
   }
 
   async markApplied(id: number): Promise<void> {
-    await this.pool.query(
+    await this.database.query(
       `UPDATE exercise_recommendations SET is_active = FALSE, applied_at = CURRENT_TIMESTAMP WHERE id = $1`,
       [id]
     );

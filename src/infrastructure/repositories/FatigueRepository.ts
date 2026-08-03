@@ -1,8 +1,8 @@
-import { Pool } from 'pg';
+import { Database } from '../../injection/database';
 import { IFatigueRepository, DailyMetrics, MuscleRecoveryRecord } from '../../domain/interfaces/IFatigueRepository';
 
 export class FatigueRepository implements IFatigueRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async saveDailyMetrics(metrics: DailyMetrics): Promise<void> {
     const query = `
@@ -16,7 +16,7 @@ export class FatigueRepository implements IFatigueRepository {
         injury_risk = EXCLUDED.injury_risk,
         raw_data = EXCLUDED.raw_data
     `;
-    await this.pool.query(query, [
+    await this.database.query(query, [
       metrics.userId,
       metrics.date,
       metrics.fatigueScore,
@@ -28,7 +28,7 @@ export class FatigueRepository implements IFatigueRepository {
   }
 
   async updateMuscleRecovery(records: MuscleRecoveryRecord[]): Promise<void> {
-    const client = await this.pool.connect();
+    const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
       for (const record of records) {
@@ -58,7 +58,7 @@ export class FatigueRepository implements IFatigueRepository {
 
   async getMuscleRecovery(userId: number): Promise<MuscleRecoveryRecord[]> {
     const query = 'SELECT * FROM muscle_recovery WHERE user_id = $1';
-    const result = await this.pool.query(query, [userId]);
+    const result = await this.database.query(query, [userId]);
     return result.rows.map((row: any) => ({
       userId: row.user_id,
       muscleGroup: row.muscle_group,

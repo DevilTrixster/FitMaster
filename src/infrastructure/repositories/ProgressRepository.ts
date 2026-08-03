@@ -1,9 +1,9 @@
-import { Pool } from 'pg';
+import { Database } from '../../injection/database';
 import { IProgressRepository } from '../../domain/interfaces/IProgressRepository';
 import { ExerciseProgressDTO, MuscleGroupStatsDTO } from '../../application/dto/ProgressStatsDTO';
 
 export class ProgressRepository implements IProgressRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async getExerciseProgress(userId: number, exerciseId: number, limit: number = 30): Promise<ExerciseProgressDTO | null> {
     const query = `
@@ -37,7 +37,7 @@ export class ProgressRepository implements IProgressRepository {
       LIMIT $3
     `;
 
-    const result = await this.pool.query(query, [userId, exerciseId, limit]);
+    const result = await this.database.query(query, [userId, exerciseId, limit]);
     if (result.rows.length === 0) return null;
 
     const firstRow = result.rows[0];
@@ -83,7 +83,7 @@ export class ProgressRepository implements IProgressRepository {
       ORDER BY total_volume DESC
     `;
 
-    const result = await this.pool.query(query, [userId]);
+    const result = await this.database.query(query, [userId]);
     return result.rows.map((row: any) => ({
       muscleGroup: row.muscle_group,
       totalWorkouts: parseInt(row.total_workouts),
@@ -105,7 +105,7 @@ export class ProgressRepository implements IProgressRepository {
       ORDER BY uw.scheduled_date DESC
       LIMIT 30
     `;
-    const result = await this.pool.query(query, [userId]);
+    const result = await this.database.query(query, [userId]);
     return result.rows;
   }
 
@@ -126,7 +126,7 @@ export class ProgressRepository implements IProgressRepository {
         AND sm2.value IS NOT NULL
       ORDER BY uw.scheduled_date ASC, es.set_number ASC
     `;
-    const result = await this.pool.query(query, [userId, exerciseId]);
+    const result = await this.database.query(query, [userId, exerciseId]);
     return result.rows.map(row => ({
       weight: parseFloat(row.weight),
       reps: parseInt(row.reps)
@@ -209,7 +209,7 @@ export class ProgressRepository implements IProgressRepository {
       GROUP BY muscle_group
     `;
 
-    const result = await this.pool.query(query, [userId]);
+    const result = await this.database.query(query, [userId]);
 
     const categoryVolumes: Record<string, number> = {
       'Грудь': 0,

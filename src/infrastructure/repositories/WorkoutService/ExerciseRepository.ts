@@ -1,11 +1,12 @@
-import { Pool } from 'pg';
+
 import { Exercise, MetricTemplate, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
+import { Database } from '../../../injection/database';
 
 export class ExerciseRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async getAllExercises(): Promise<Exercise[]> {
-    const result = await this.pool.query('SELECT * FROM exercises ORDER BY muscle_group, name');
+    const result = await this.database.query('SELECT * FROM exercises ORDER BY muscle_group, name');
     return result.rows.map((row: any) => new Exercise({
       id: row.id,
       name: row.name,
@@ -16,7 +17,7 @@ export class ExerciseRepository {
   }
 
   async getExerciseById(id: number): Promise<Exercise | null> {
-    const result = await this.pool.query('SELECT * FROM exercises WHERE id = $1', [id]);
+    const result = await this.database.query('SELECT * FROM exercises WHERE id = $1', [id]);
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
     return new Exercise({
@@ -29,7 +30,7 @@ export class ExerciseRepository {
   }
 
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
-    const result = await this.pool.query(
+    const result = await this.database.query(
       'SELECT metric_type, required, default_value, unit FROM exercise_metric_templates WHERE exercise_id = $1',
       [exerciseId]
     );
@@ -42,7 +43,7 @@ export class ExerciseRepository {
   }
 
   async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> {
-    const res = await this.pool.query(
+    const res = await this.database.query(
       `SELECT we.id FROM workout_exercises we
        JOIN user_workouts uw ON we.workout_id = uw.workout_id
        WHERE uw.id = $1 AND we.exercise_id = $2`,
@@ -53,7 +54,7 @@ export class ExerciseRepository {
 
   // Upsert: обновляет существующий подход или создаёт новый
   async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> {
-    const client = await this.pool.connect();
+    const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
 
@@ -117,7 +118,7 @@ export class ExerciseRepository {
       WHERE es.workout_exercise_id = $1
       ORDER BY es.set_number, sm.metric_type
     `;
-    const result = await this.pool.query(query, [workoutExerciseId]);
+    const result = await this.database.query(query, [workoutExerciseId]);
     const setsMap = new Map<number, ExerciseSet>();
     result.rows.forEach(row => {
       if (!setsMap.has(row.set_id)) {

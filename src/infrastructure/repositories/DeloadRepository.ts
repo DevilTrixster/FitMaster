@@ -1,11 +1,11 @@
-import { Pool } from 'pg';
 import { IDeloadRepository, IDeloadPeriod } from '../../domain/interfaces/IDeloadRepository';
+import { Database } from '../../injection/database';
 
 export class DeloadRepository implements IDeloadRepository {
-  constructor(private pool: Pool) {}
+  constructor(private database: Database) {}
 
   async getActiveDeload(userId: number): Promise<IDeloadPeriod | null> {
-    const res = await this.pool.query(
+    const res = await this.database.query(
       `SELECT * FROM deload_periods WHERE user_id = $1 AND end_date IS NULL ORDER BY start_date DESC LIMIT 1`,
       [userId]
     );
@@ -23,7 +23,7 @@ export class DeloadRepository implements IDeloadRepository {
 
   async startDeload(userId: number, reason: string, intensityFactor: number = 0.6): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
-    await this.pool.query(
+    await this.database.query(
       `INSERT INTO deload_periods (user_id, start_date, intensity_factor, reason) VALUES ($1, $2, $3, $4)`,
       [userId, today, intensityFactor, reason]
     );
@@ -31,7 +31,7 @@ export class DeloadRepository implements IDeloadRepository {
 
   async endDeload(userId: number): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
-    await this.pool.query(
+    await this.database.query(
       `UPDATE deload_periods SET end_date = $1 WHERE user_id = $2 AND end_date IS NULL`,
       [today, userId]
     );

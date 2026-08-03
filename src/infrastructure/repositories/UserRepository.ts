@@ -1,10 +1,11 @@
-import { Pool } from 'pg';
+
 import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
+import { Database } from '../../injection/database';
+import { injectable, inject } from 'tsyringe';
 
 export class UserRepository implements IUserRepository {
-  constructor(private pool: Pool) {}
-
+  constructor(private database: Database) {}
 
   // Создаёт нового пользователя в БД.
   async createUser(user: User): Promise<User> {
@@ -32,7 +33,7 @@ export class UserRepository implements IUserRepository {
       user.fitnessGoal,
     ];
 
-    const result = await this.pool.query(query, values);
+    const result = await this.database.query(query, values);
     return new User({
       ...user,
       id: result.rows[0].id,
@@ -43,7 +44,7 @@ export class UserRepository implements IUserRepository {
   // Поиск пользователя по email.
   async findByEmail(email: string): Promise<User | null> {
     const query = 'SELECT * FROM users WHERE email = $1';
-    const result = await this.pool.query(query, [email]);
+    const result = await this.database.query(query, [email]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
@@ -51,7 +52,7 @@ export class UserRepository implements IUserRepository {
   // Поиск пользователя по никнейму.
   async findByNickname(nickname: string): Promise<User | null> {
     const query = 'SELECT * FROM users WHERE nickname = $1';
-    const result = await this.pool.query(query, [nickname]);
+    const result = await this.database.query(query, [nickname]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
@@ -59,7 +60,7 @@ export class UserRepository implements IUserRepository {
   // Поиск пользователя по ID.
   async findById(id: number): Promise<User | null> {
     const query = 'SELECT * FROM users WHERE id = $1';
-    const result = await this.pool.query(query, [id]);
+    const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
@@ -88,7 +89,7 @@ export class UserRepository implements IUserRepository {
       user.fitnessGoal,
       user.id,
     ];
-    await this.pool.query(query, values);
+    await this.database.query(query, values);
   }
 
   // Частичное обновление полей пользователя.
@@ -149,13 +150,13 @@ export class UserRepository implements IUserRepository {
     updates.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(userId);
     const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
-    await this.pool.query(query, values);
+    await this.database.query(query, values);
   }
 
   // Обновляет URL аватара пользователя.
   async updateAvatar(userId: number, avatarUrl: string): Promise<void> {
     const query = `UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
-    const result = await this.pool.query(query, [avatarUrl, userId]);
+    const result = await this.database.query(query, [avatarUrl, userId]);
     if (result.rowCount === 0) {
       throw new Error('Пользователь не найден');
     }
@@ -165,14 +166,14 @@ export class UserRepository implements IUserRepository {
   async updatePreferredDays(userId: number, days: number[]): Promise<void> {
     console.log(`💾 Updating preferred_days for user ${userId} to:`, days);
     const query = `UPDATE users SET preferred_days = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
-    await this.pool.query(query, [days, userId]);
-    const check = await this.pool.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
+    await this.database.query(query, [days, userId]);
+    const check = await this.database.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
     console.log(`✅ After update, DB contains:`, check.rows[0]?.preferred_days);
   }
 
   // Возвращает предпочтительные дни тренировок пользователя.
   async getPreferredDays(userId: number): Promise<number[]> {
-    const res = await this.pool.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
+    const res = await this.database.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
     if (res.rows.length === 0) return [1, 3, 5];
     const days = res.rows[0].preferred_days;
     return days || [1, 3, 5];
@@ -199,7 +200,7 @@ export class UserRepository implements IUserRepository {
   }
 
   async getAllUserIds(): Promise<number[]> {
-    const res = await this.pool.query('SELECT id FROM users');
+    const res = await this.database.query('SELECT id FROM users');
     return res.rows.map(row => row.id);
   }
 }
