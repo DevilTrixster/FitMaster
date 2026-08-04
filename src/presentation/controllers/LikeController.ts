@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ExerciseLikeService } from '../../application/services/ExerciseLikeService';
+import { ExerciseLikeService } from '../../application/services/exercise/ExerciseLikeService';
 import { ValidationError } from '../../core/errors/ValidationError';
 
 export class LikeController {

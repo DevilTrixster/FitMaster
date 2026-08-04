@@ -1,5 +1,5 @@
-import { IProgressRepository } from '../../domain/interfaces/IProgressRepository';
-import { ExerciseProgressDTO, MuscleGroupStatsDTO } from '../dto/ProgressStatsDTO';
+import { IProgressRepository } from '../../../domain/interfaces/IProgressRepository';
+import { ExerciseProgressDTO, MuscleGroupStatsDTO } from '../../dto/ProgressStatsDTO';
 
 export class ProgressAnalyticsService {
   constructor(private progressRepo: IProgressRepository) {}

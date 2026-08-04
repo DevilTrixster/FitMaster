@@ -1,19 +1,19 @@
-import { UserWorkout, MetricType, MetricTemplate } from '../../domain/entities';
-import { WorkoutSchedulingService } from './workout/WorkoutSchedulingService';
-import { WorkoutLifecycleService } from './workout/WorkoutLifecycleService';
-import { WorkoutQueryService } from './workout/WorkoutQueryService';
-import { WorkoutResultsService } from './workout/WorkoutResultsService';
-import { IWorkoutRepository } from '@domain/interfaces/IWorkoutRepository';
-import { IDeloadRepository } from '../../domain/interfaces/IDeloadRepository';
+import { UserWorkout, MetricType, MetricTemplate } from '../../../domain/entities';
+import { WorkoutSchedulingService } from './commands/WorkoutSchedulingService';
+import { WorkoutLifecycleService } from './commands/WorkoutLifecycleService';
+import { WorkoutResultsService } from './commands/WorkoutResultsService';
+import { WorkoutRescheduleService } from './commands/WorkoutRescheduleService'
+import { WorkoutQueryService } from './queries/WorkoutQueryService';
+import { WorkoutTargetQueryService } from './queries/WorkoutTargetQueryService'
 
-export class WorkoutService {
+export class WorkoutFacade {
   constructor(
     private schedulingService: WorkoutSchedulingService,
     private lifecycleService: WorkoutLifecycleService,
     private queryService: WorkoutQueryService,
     private resultsService: WorkoutResultsService,
-    private workoutRepository: IWorkoutRepository,
-    private deloadRepository: IDeloadRepository  
+    private readonly rescheduleService: WorkoutRescheduleService,
+    private readonly targetQueryService: WorkoutTargetQueryService
   ) {}
 
   async saveSetMetrics(
@@ -28,23 +28,13 @@ export class WorkoutService {
     return this.schedulingService.generateBaseProgram(userId);
   }
 
+
   async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
     return this.queryService.getExerciseMetricTemplates(exerciseId);
   }
 
-  async getExerciseTargets(userId: number, exerciseId: number): Promise<{ reps: number; weight: number } | null> {
-    const adaptation = await this.queryService.getLatestAdaptation(userId, exerciseId);
-    if (!adaptation) return null;
-    let reps = adaptation.newReps;
-    let weight = adaptation.newWeight;
-
-    // Применяем фактор разгрузки, если активна
-    const deload = await this.deloadRepository.getActiveDeload(userId);
-    if (deload) {
-      reps = Math.max(1, Math.floor(reps * deload.intensityFactor));
-      weight = Math.max(0, Math.floor(weight * deload.intensityFactor));
-    }
-    return { reps, weight };
+  async getExerciseTargets(userId: number, exerciseId: number) {
+        return this.targetQueryService.getExerciseTargets(userId, exerciseId);
   }
 
   async generateAdditionalWorkouts(userId: number, count: number): Promise<void> {
@@ -68,11 +58,11 @@ export class WorkoutService {
   }
 
   async getActiveWorkout(userId: number): Promise<UserWorkout | null> {
-    return this.lifecycleService.getActiveWorkout(userId);
+    return this.queryService.getActiveWorkout(userId);
   }
 
   async getCurrentWorkout(userId: number): Promise<UserWorkout | null> {
-    return this.lifecycleService.getCurrentWorkout(userId);
+    return this.queryService.getCurrentWorkout(userId);
   }
 
   async getUpcomingWorkouts(userId: number, limit: number = 5): Promise<UserWorkout[]> {
@@ -132,15 +122,15 @@ export class WorkoutService {
     return this.queryService.getWorkoutsInRange(userId, startDate, endDate);
   }
 
-  async getUserWorkoutById(workoutId: number): Promise<UserWorkout | null> {
-    return this.workoutRepository.getUserWorkoutById(workoutId);
+  async getUserWorkoutById(workoutId: number, userId: number): Promise<UserWorkout | null> {
+    return this.rescheduleService.getUserWorkoutById(workoutId, userId);
   }
 
-  async rescheduleWorkout(workoutId: number, newDate: Date, reason?: string): Promise<void> {
-    return this.workoutRepository.rescheduleWorkout(workoutId, newDate, reason);
+  async rescheduleWorkout(workoutId: number, userId: number, newDate: Date, reason?: string): Promise<void> {
+    return this.rescheduleService.rescheduleWorkout(userId, workoutId, { newDate, reason });
   }
 
-  async postponeWorkout(workoutId: number, newDate: Date): Promise<void> {
-    return this.workoutRepository.postponeWorkout(workoutId, newDate);
+  async postponeWorkout(workoutId: number, userId: number, newDate: Date): Promise<void> {
+    return this.rescheduleService.postponeWorkout(userId, workoutId, newDate);
   }
 }

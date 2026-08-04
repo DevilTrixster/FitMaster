@@ -1,12 +1,12 @@
-import { MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
-import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
-import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';
-import { FatigueRecoveryService } from '../adaptation/FatigueRecoveryService';
-import { DeloadManagementService } from '../adaptation/DeloadManagementService'; // добавить импорт
-import { UnauthorizedError, ValidationError } from '../../../core/errors/ValidationError';
-import { SetAnalysisData } from '../../dto/SetAnalysisData';
-import { FitnessGoal } from '../../../domain/entities/User';
+import { MetricType, ExerciseSet, SetMetric } from '../../../../domain/entities';
+import { FitnessGoal } from '../../../../domain/entities/User';
+import { IWorkoutRepository } from '../../../../domain/interfaces/IWorkoutRepository';
+import { IUserRepository } from '../../../../domain/interfaces/IUserRepository';
+import { IntelligentAdaptationService } from '../../adaptation/IntelligentAdaptationService';
+import { FatigueRecoveryService } from '../../adaptation/FatigueRecoveryService';
+import { DeloadManagementService } from '../../adaptation/DeloadManagementService';
+import { UnauthorizedError, ValidationError } from '../../../../core/errors/ValidationError';
+import { SetAnalysisData } from '../../../dto/SetAnalysisData';
 
 export class WorkoutResultsService {
   constructor(

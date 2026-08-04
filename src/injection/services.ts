@@ -1,19 +1,10 @@
+import { DeloadManagementService, FatigueRecoveryService, IntelligentAdaptationService, PlateauDetectionService, 
+    AuthService, ExerciseLikeService, ProfileService, ProgressAnalyticsService, RecommendationService,
+    WorkoutFacade, WorkoutLifecycleService, WorkoutRescheduleService, WorkoutResultsService, WorkoutSchedulingService, WorkoutQueryService, WorkoutTargetQueryService } from "../application/services/index"
 import { repositories } from "./repositories";
-import { WorkoutService } from "../application/services/WorkoutService";
-import { ExerciseLikeService } from "../application/services/ExerciseLikeService";
-import { FatigueRecoveryService } from "../application/services/adaptation/FatigueRecoveryService";
-import { DeloadManagementService } from "../application/services/adaptation/DeloadManagementService";
-import { PlateauDetectionService } from "../application/services/adaptation/PlateauDetectionService";
-import { IntelligentAdaptationService } from "../application/services/adaptation/IntelligentAdaptationService";
-import { WorkoutLifecycleService, WorkoutQueryService, WorkoutResultsService, WorkoutSchedulingService } from "../application/services/workout";
-import { ProfileService } from "../application/services/ProfileService";
-import { AuthService } from "../application/services/AuthService";
-import { RecommendationService } from "../application/services/RecommendationService";
-import { ProgressAnalyticsService } from "../application/services/ProgressAnalyticsService";
-import { WorkoutRescheduleService } from "../application/services/WorkoutRescheduleService";
 import { MetricsScheduler } from "../infrastructure/scheduler/MetricsScheduler";
 
-// Вызов всех сервисов зависящих от репозиториев и друг друга
+// Вызов всех сервисов, зависящих от репозиториев и друг друга
 
 // Лайки
 export const exerciseLikeService = new ExerciseLikeService(repositories.exerciseLikeRepository);
@@ -62,13 +53,22 @@ export const workoutQueryService = new WorkoutQueryService(
     repositories.workoutRepository, 
     workoutSchedulingService);
 
-export const workoutService = new WorkoutService(
+export const rescheduleService = new WorkoutRescheduleService(
+    repositories.workoutRepository);
+
+export const targetQueryService = new WorkoutTargetQueryService(
+    workoutQueryService,
+    repositories.deloadRepository
+);
+
+export const workoutService = new WorkoutFacade(
     workoutSchedulingService,
     workoutLifecycleService,
     workoutQueryService,
     workoutResultsService,
-    repositories.workoutRepository,
-    repositories.deloadRepository);
+    rescheduleService,
+    targetQueryService
+);
 
 // Профиль и аутентификация 
 export const profileService = new ProfileService(
@@ -91,9 +91,6 @@ export const recommendationService = new RecommendationService(
     repositories.deloadRepository, 
     repositories.workoutRepository);
 
-// Перенос
-export const rescheduleService = new WorkoutRescheduleService(
-    repositories.workoutRepository);
 // Планировщик 
 export const metricsScheduler = new MetricsScheduler(
     fatigueService, 
@@ -116,5 +113,6 @@ export const services = {
     progressService,
     recommendationService,
     rescheduleService,
+    targetQueryService,
     metricsScheduler,
 };

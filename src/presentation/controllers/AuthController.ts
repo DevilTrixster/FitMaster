@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthService } from '../../application/services/AuthService';
+import { AuthService } from '../../application/services/auth/AuthService';
 import { Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 import {
   validateRequired,

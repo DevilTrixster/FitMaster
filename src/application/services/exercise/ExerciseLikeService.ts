@@ -1,4 +1,4 @@
-import { IExerciseLikeRepository } from '../../domain/interfaces/IExerciseLikeRepository';
+import { IExerciseLikeRepository } from '../../../domain/interfaces/IExerciseLikeRepository';
 
 export class ExerciseLikeService {
   constructor(private likeRepo: IExerciseLikeRepository) {}

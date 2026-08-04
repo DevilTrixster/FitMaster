@@ -1,6 +1,6 @@
-import { NotFoundError, UnauthorizedError, ValidationError, InternalServerError } from '../../../core/errors/ValidationError';
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities';
-import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
+import { NotFoundError, UnauthorizedError, ValidationError, InternalServerError } from '../../../../core/errors/ValidationError';
+import { UserWorkout, WorkoutStatus } from '../../../../domain/entities';
+import { IWorkoutRepository } from '../../../../domain/interfaces/IWorkoutRepository';
 import { WorkoutResultsService } from './WorkoutResultsService';
 
 export class WorkoutLifecycleService {
@@ -28,6 +28,23 @@ export class WorkoutLifecycleService {
     const updated = await this.workoutRepository.getUserWorkoutById(workoutId);
     if (!updated) throw new InternalServerError('Ошибка обновления тренировки');
     return updated;
+  }
+
+  // Поставить тренировку на паузу
+  async pauseWorkout(workoutId: number, userId: number, lastExerciseIndex: number): Promise<void> {
+    const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
+    if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
+    if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
+    if (userWorkout.status !== WorkoutStatus.InProgress) throw new ValidationError('Неверный статус для паузы');
+    await this.workoutRepository.pauseUserWorkout(workoutId, lastExerciseIndex);
+  }
+
+  // Возобновить тренировку
+  async resumeWorkout(workoutId: number, userId: number): Promise<void> {
+    const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
+    if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
+    if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
+    await this.workoutRepository.resumeUserWorkout(workoutId);
   }
 
   // Завершить тренировку, запустить адаптацию
@@ -59,45 +76,5 @@ export class WorkoutLifecycleService {
     const rating = wellnessRating || 3;
     await this.workoutRepository.updateUserWorkoutStatus(workoutId, WorkoutStatus.Completed, rating, comments);
     await this.resultsService.triggerAdaptation(userId, workoutId, rating);
-  }
-
-  // Поставить тренировку на паузу
-  async pauseWorkout(workoutId: number, userId: number, lastExerciseIndex: number): Promise<void> {
-    const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
-    if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
-    if (userWorkout.status !== WorkoutStatus.InProgress) throw new ValidationError('Неверный статус для паузы');
-    await this.workoutRepository.pauseUserWorkout(workoutId, lastExerciseIndex);
-  }
-
-  // Возобновить тренировку
-  async resumeWorkout(workoutId: number, userId: number): Promise<void> {
-    const userWorkout = await this.workoutRepository.getUserWorkoutById(workoutId);
-    if (!userWorkout) throw new NotFoundError('Тренировка не найдена');
-    if (userWorkout.userId !== userId) throw new UnauthorizedError('Доступ запрещён');
-    await this.workoutRepository.resumeUserWorkout(workoutId);
-  }
-
-  // Получить активную тренировку пользователя
-  async getActiveWorkout(userId: number): Promise<UserWorkout | null> {
-    return this.workoutRepository.getUserActiveWorkout(userId);
-  }
-
-  // Получить текущую тренировку (активную или запланированную) с упражнениями
-  async getCurrentWorkout(userId: number): Promise<UserWorkout | null> {
-    const upcoming = await this.workoutRepository.getUserWorkouts(userId, 10);
-    const workout = upcoming.find(
-      w => w.status === WorkoutStatus.Scheduled || w.status === WorkoutStatus.InProgress
-    );
-    if (!workout) return null;
-
-    const fullWorkout = await this.workoutRepository.getUserWorkoutById(workout.id!);
-    if (!fullWorkout) return null;
-
-    const workoutWithExercises = await this.workoutRepository.getWorkoutById(fullWorkout.workout.id!);
-    if (workoutWithExercises) {
-      (fullWorkout as any).workout.exercises = workoutWithExercises.exercises;
-    }
-    return fullWorkout;
   }
 }

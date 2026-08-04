@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ProgressAnalyticsService } from '../../application/services/ProgressAnalyticsService';
+import { ProgressAnalyticsService } from '../../application/services/analytics/ProgressAnalyticsService';
 
 export class ProgressController {
   constructor(private progressService: ProgressAnalyticsService) {}

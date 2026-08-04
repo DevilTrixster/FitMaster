@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import { WorkoutService } from '../../application/services/WorkoutService';
-import { WorkoutRescheduleService } from '../../application/services/WorkoutRescheduleService';
+import { WorkoutFacade } from '../../application/services/workout/WorkoutFacade';
+import { WorkoutRescheduleService } from '../../application/services/workout/commands/WorkoutRescheduleService';
 import { ValidationError, NotFoundError } from '../../core/errors/ValidationError';
 import { WorkoutStatus } from '../../domain/entities';
 
 export class WorkoutController {
   constructor(
-    private workoutService: WorkoutService,
+    private workoutService: WorkoutFacade,
     private rescheduleService: WorkoutRescheduleService
   ) {}
 
@@ -32,8 +32,8 @@ export class WorkoutController {
         muscleGroup: ex.exercise.muscleGroup,
         metricTemplates: templates,
         // Если адаптация есть — берём из неё, иначе из шаблона
-        targetReps: targets?.reps ?? templates.find(t => t.metricType === 'reps')?.defaultValue,
-        targetWeight: targets?.weight ?? templates.find(t => t.metricType === 'weight')?.defaultValue,
+        targetReps: targets?.targetReps ?? templates.find(t => t.metricType === 'reps')?.defaultValue,
+        targetWeight: targets?.targetWeight ?? templates.find(t => t.metricType === 'weight')?.defaultValue,
       };
     })
   );
@@ -133,7 +133,7 @@ export class WorkoutController {
     const workoutId = parseInt(req.params.id as string);
     const dto = req.body;
 
-    await this.rescheduleService.reschedule(userId, workoutId, dto);
+    await this.rescheduleService.rescheduleWorkout(userId, workoutId, dto);
     res.status(200).json({
       message: 'Тренировка успешно перенесена',
       data: { newDate: dto.newDate },
@@ -145,7 +145,7 @@ export class WorkoutController {
     const workoutId = parseInt(req.params.id as string);
     const { reason } = req.body;
 
-    await this.rescheduleService.skip(userId, workoutId, reason);
+    await this.rescheduleService.postponeWorkout(userId, workoutId, reason);
     res.status(200).json({ message: 'Тренировка пропущена' });
   }
 
@@ -236,7 +236,7 @@ export class WorkoutController {
     const workoutId = parseInt(req.params.id as string, 10);
     if (isNaN(workoutId)) throw new ValidationError('Invalid workout id');
 
-    const workout = await this.workoutService.getUserWorkoutById(workoutId);
+    const workout = await this.workoutService.getUserWorkoutById(workoutId, userId);
     if (!workout || workout.userId !== userId) throw new NotFoundError('Тренировка не найдена');
     if (workout.status !== WorkoutStatus.Scheduled) throw new ValidationError('Можно перенести только запланированную тренировку');
 
@@ -251,7 +251,7 @@ export class WorkoutController {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    await this.workoutService.postponeWorkout(workoutId, tomorrow);
+    await this.workoutService.postponeWorkout(workoutId, userId, tomorrow);
 
     res.json({ message: 'Тренировка перенесена на завтра' });
   }

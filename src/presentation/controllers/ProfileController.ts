@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ProfileService } from '../../application/services/ProfileService';
+import { ProfileService } from '../../application/services/profile/ProfileService';
 import { validateTimeFormat } from '../../core/utils/validators';
 import { UnauthorizedError, ValidationError } from '../../core/errors/ValidationError';
 import { ExperienceLevel, FitnessGoal } from '../../domain/entities/User';

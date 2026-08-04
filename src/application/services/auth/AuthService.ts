@@ -1,15 +1,15 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { ConflictError, UnauthorizedError } from '../../core/errors/ValidationError';
-import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
-import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { WorkoutService } from './WorkoutService';
-import { IntelligentAdaptationService } from './adaptation/IntelligentAdaptationService';
+import { ConflictError, UnauthorizedError } from '../../../core/errors/ValidationError';
+import { User, Gender, ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
+import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { WorkoutFacade } from '../workout/WorkoutFacade';
+import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';
 
 export class AuthService {
   constructor(
     private userRepository: IUserRepository,
-    private workoutService: WorkoutService,
+    private workoutService: WorkoutFacade,
     private adaptationService: IntelligentAdaptationService   // изменено
   ) {}
 

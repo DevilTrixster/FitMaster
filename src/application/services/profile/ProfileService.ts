@@ -1,9 +1,9 @@
-import { User, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
-import { IUserRepository } from '../../domain/interfaces/IUserRepository';
-import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
-import { NotFoundError } from '../../core/errors/ValidationError';
-import { WorkoutSchedulingService } from './workout/WorkoutSchedulingService';
-import { IntelligentAdaptationService } from './adaptation/IntelligentAdaptationService';
+import { User, ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
+import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
+import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
+import { NotFoundError } from '../../../core/errors/ValidationError';
+import { WorkoutSchedulingService } from '../workout/commands/WorkoutSchedulingService';
+import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';
 
 export class ProfileService {
   constructor(

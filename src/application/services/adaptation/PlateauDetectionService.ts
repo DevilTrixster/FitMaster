@@ -1,7 +1,7 @@
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { IExerciseSubstitutionRepository } from '../../../domain/interfaces/IExerciseSubstitutionRepository';
 import { IExerciseRecommendationRepository } from '../../../domain/interfaces/IExerciseRecommendationRepository';
-import { ExerciseLikeService } from '../ExerciseLikeService';
+import { ExerciseLikeService } from '../exercise/ExerciseLikeService';
 import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities';
 
 export class PlateauDetectionService {

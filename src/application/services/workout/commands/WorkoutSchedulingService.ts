@@ -1,9 +1,9 @@
-import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
-import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
-import { UserWorkout, WorkoutStatus, Workout, WorkoutExercise } from '../../../domain/entities';
-import { IExerciseRecommendationRepository } from '../../../domain/interfaces/IExerciseRecommendationRepository';
-import adaptationConfig from '../../../config/adaptation.config';
-import { FitnessGoal, ExperienceLevel } from '../../../domain/entities/User';
+import adaptationConfig from '../../../../config/adaptation.config';
+import { IWorkoutRepository } from '../../../../domain/interfaces/IWorkoutRepository';
+import { IUserRepository } from '../../../../domain/interfaces/IUserRepository';
+import { IExerciseRecommendationRepository } from '../../../../domain/interfaces/IExerciseRecommendationRepository';
+import { UserWorkout, WorkoutStatus, Workout, WorkoutExercise } from '../../../../domain/entities';
+import { FitnessGoal, ExperienceLevel } from '../../../../domain/entities/User';
 
 export class WorkoutSchedulingService {
   constructor(
@@ -28,10 +28,21 @@ export class WorkoutSchedulingService {
     return workouts;
   }
 
-  /**
-   * Рассчитывает время отдыха между подходами в секундах
-   * на основе цели тренировок и уровня опыта пользователя.
-   */
+  async generateAdditionalWorkouts(userId: number, count: number = 5): Promise<void> {
+    const preferredDays = await this.userRepository.getPreferredDays(userId);
+    if (!preferredDays.length) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const existing = await this.workoutRepository.getUserWorkouts(userId, count);
+    const upcoming = existing.filter(w => w.status === WorkoutStatus.Scheduled && new Date(w.scheduledDate) >= today);
+    if (upcoming.length >= count) return;
+
+    const workouts = await this.generateWorkoutsForDays(userId, preferredDays, 4);
+    await this.workoutRepository.createUserWorkoutBatch(workouts);
+  }
+
+  // Рассчитывает время отдыха между подходами в секундах на основе цели тренировок и уровня опыта пользователя.
   private calculateRestSeconds(goal: FitnessGoal, experienceLevel: ExperienceLevel): number {
     let baseRest: number;
     switch (goal) {
@@ -55,10 +66,7 @@ export class WorkoutSchedulingService {
     return baseRest;
   }
 
-  /**
-   * Применяет активные рекомендации по замене упражнений
-   * и пересчитывает время отдыха.
-   */
+  // Применяет активные рекомендации по замене упражнений и пересчитывает время отдыха.
   private async applySubstitutions(
     userId: number,
     exercises: WorkoutExercise[],
@@ -103,20 +111,6 @@ export class WorkoutSchedulingService {
     if (workouts.length) {
       await this.workoutRepository.createUserWorkoutBatch(workouts);
     }
-  }
-
-  async generateAdditionalWorkouts(userId: number, count: number = 5): Promise<void> {
-    const preferredDays = await this.userRepository.getPreferredDays(userId);
-    if (!preferredDays.length) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const existing = await this.workoutRepository.getUserWorkouts(userId, count);
-    const upcoming = existing.filter(w => w.status === WorkoutStatus.Scheduled && new Date(w.scheduledDate) >= today);
-    if (upcoming.length >= count) return;
-
-    const workouts = await this.generateWorkoutsForDays(userId, preferredDays, 4);
-    await this.workoutRepository.createUserWorkoutBatch(workouts);
   }
 
   private async generateWorkoutsForDays(

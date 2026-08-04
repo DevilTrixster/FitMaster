@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { FatigueRecoveryService } from '../../application/services/adaptation/FatigueRecoveryService';
-import { WorkoutService } from '../../application/services/WorkoutService';
-import { RecommendationService } from '../../application/services/RecommendationService';
+import { WorkoutFacade } from '../../application/services/workout/WorkoutFacade';
+import { RecommendationService } from '../../application/services/recommendation/RecommendationService';
 
 export class AnalyticsController {
   constructor(
     private fatigueService: FatigueRecoveryService,
-    private workoutService: WorkoutService,
+    private workoutService: WorkoutFacade,
     private recommendationService: RecommendationService
   ) {}
 

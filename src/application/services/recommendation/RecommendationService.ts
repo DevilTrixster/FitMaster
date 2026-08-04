@@ -1,6 +1,6 @@
-import { IExerciseRecommendationRepository } from '../../domain/interfaces/IExerciseRecommendationRepository';
-import { IDeloadRepository } from '../../domain/interfaces/IDeloadRepository';
-import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
+import { IExerciseRecommendationRepository } from '../../../domain/interfaces/IExerciseRecommendationRepository';
+import { IDeloadRepository } from '../../../domain/interfaces/IDeloadRepository';
+import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 
 export class RecommendationService {
   constructor(

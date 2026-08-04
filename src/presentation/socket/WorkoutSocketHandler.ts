@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { WorkoutService } from '../../application/services/WorkoutService';
+import { WorkoutFacade } from '../../application/services/workout/WorkoutFacade';
 import { MetricType } from '../../domain/entities';
 
 interface AuthSocket extends Socket {
@@ -9,7 +9,7 @@ interface AuthSocket extends Socket {
 export class WorkoutSocketHandler {
   constructor(
     private io: Server,
-    private workoutService: WorkoutService
+    private workoutService: WorkoutFacade
   ) {}
 
   public initialize(): void {
