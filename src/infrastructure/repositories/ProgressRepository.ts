@@ -24,7 +24,10 @@ export class ProgressRepository implements IProgressRepository {
       )
       SELECT
         e.name AS exercise_name,
-        e.muscle_group,
+        (SELECT mg.name FROM exercise_muscles em
+         JOIN muscle_groups mg ON mg.id = em.muscle_group_id
+         WHERE em.exercise_id = e.id
+         ORDER BY em.priority DESC LIMIT 1) AS muscle_group,
         e.id AS exercise_id,
         sd.scheduled_date AS date,
         COALESCE(AVG(sd.weight), 0) AS avg_weight,
@@ -32,7 +35,7 @@ export class ProgressRepository implements IProgressRepository {
         COALESCE(MAX(sd.reps), 0) AS max_reps
       FROM set_data sd
       JOIN exercises e ON e.id = $2
-      GROUP BY e.name, e.muscle_group, e.id, sd.scheduled_date
+      GROUP BY e.name, e.id, sd.scheduled_date
       ORDER BY sd.scheduled_date ASC
       LIMIT $3
     `;
@@ -60,7 +63,10 @@ export class ProgressRepository implements IProgressRepository {
         SELECT
           uw.id AS workout_id,
           uw.wellness_rating,
-          e.muscle_group,
+          (SELECT mg.name FROM exercise_muscles em
+           JOIN muscle_groups mg ON mg.id = em.muscle_group_id
+           WHERE em.exercise_id = e.id
+           ORDER BY em.priority DESC LIMIT 1) AS muscle_group,
           es.id AS set_id,
           MAX(CASE WHEN sm.metric_type = 'reps' THEN sm.value END) AS reps,
           MAX(CASE WHEN sm.metric_type = 'weight' THEN sm.value END) AS weight
@@ -71,7 +77,7 @@ export class ProgressRepository implements IProgressRepository {
         JOIN set_metrics sm ON sm.exercise_set_id = es.id
         WHERE uw.user_id = $1
           AND uw.status = 'completed'
-        GROUP BY uw.id, uw.wellness_rating, e.muscle_group, es.id
+        GROUP BY uw.id, uw.wellness_rating, e.id, es.id
       )
       SELECT
         muscle_group,
@@ -134,65 +140,54 @@ export class ProgressRepository implements IProgressRepository {
   }
 
   async getMuscleBalanceRadar(userId: number): Promise<{ muscle: string; volume: number }[]> {
-    // Уникальное соответствие: оригинальное название -> целевая категория
     const categoryMap: Record<string, string> = {
-    // Грудь
-    'chest': 'Грудь',
-    'Грудные': 'Грудь',
-    'Грудные, трицепс, передняя дельта': 'Грудь',
-    'Верх грудных': 'Грудь',
-    'Нижняя часть груди': 'Грудь',
-
-    // Плечи
-    'shoulders': 'Плечи',
-    'Дельтовидные (все пучки)': 'Плечи',
-    'Дельтовидные (все пучки), трицепс': 'Плечи', // ← уникальный ключ
-    'Средняя дельта': 'Плечи',
-    'Задняя дельта': 'Плечи',
-    'Дельты': 'Плечи',
-
-    // Трапеции – только в Спине
-    'Трапециевидные': 'Спина',
-    'Трапеции': 'Спина',
-    'Широчайшие, трапеции': 'Спина',        // ← добавлено
-
-    // Руки
-    'arms': 'Руки',
-    'Бицепс': 'Руки',
-    'Трицепс': 'Руки',
-    'Плечевая мышца': 'Руки',
-
-    // Спина
-    'back': 'Спина',
-    'Широчайшие': 'Спина',
-    'Широчайшие мышцы спины': 'Спина',
-    'Разгибатели спины': 'Спина',
-    'Поясничный отдел': 'Спина',
-    'Разгибатели спины, ягодичные, бицепс бедра': 'Спина', // ← уникальный ключ
-    'Широчайшие, бицепс': 'Спина',
-
-    // Ноги
-    'legs': 'Ноги',
-    'Квадрицепсы, ягодичные': 'Ноги',
-    'Квадрицепсы': 'Ноги',
-    'Ягодичные': 'Ноги',
-    'Бицепс бедра': 'Ноги',
-    'Икры': 'Ноги',
-    'Икроножные мышцы': 'Ноги',
-    'Внутренняя часть бедра': 'Ноги',
-
-    // Пресс
-    'core': 'Пресс',
-    'Пресс': 'Пресс',
-    'Косые мышцы живота': 'Пресс',
-    'Прямая мышца живота': 'Пресс',
-    'Кор': 'Пресс'
-  };
+      'chest': 'Грудь',
+      'Грудные': 'Грудь',
+      'Грудные, трицепс, передняя дельта': 'Грудь',
+      'Верх грудных': 'Грудь',
+      'Нижняя часть груди': 'Грудь',
+      'shoulders': 'Плечи',
+      'Дельтовидные (все пучки)': 'Плечи',
+      'Дельтовидные (все пучки), трицепс': 'Плечи',
+      'Средняя дельта': 'Плечи',
+      'Задняя дельта': 'Плечи',
+      'Дельты': 'Плечи',
+      'Трапециевидные': 'Спина',
+      'Трапеции': 'Спина',
+      'Широчайшие, трапеции': 'Спина',
+      'arms': 'Руки',
+      'Бицепс': 'Руки',
+      'Трицепс': 'Руки',
+      'Плечевая мышца': 'Руки',
+      'back': 'Спина',
+      'Широчайшие': 'Спина',
+      'Широчайшие мышцы спины': 'Спина',
+      'Разгибатели спины': 'Спина',
+      'Поясничный отдел': 'Спина',
+      'Разгибатели спины, ягодичные, бицепс бедра': 'Спина',
+      'Широчайшие, бицепс': 'Спина',
+      'legs': 'Ноги',
+      'Квадрицепсы, ягодичные': 'Ноги',
+      'Квадрицепсы': 'Ноги',
+      'Ягодичные': 'Ноги',
+      'Бицепс бедра': 'Ноги',
+      'Икры': 'Ноги',
+      'Икроножные мышцы': 'Ноги',
+      'Внутренняя часть бедра': 'Ноги',
+      'core': 'Пресс',
+      'Пресс': 'Пресс',
+      'Косые мышцы живота': 'Пресс',
+      'Прямая мышца живота': 'Пресс',
+      'Кор': 'Пресс'
+    };
 
     const query = `
       WITH set_data AS (
-        SELECT 
-          e.muscle_group,
+        SELECT
+          (SELECT mg.name FROM exercise_muscles em
+           JOIN muscle_groups mg ON mg.id = em.muscle_group_id
+           WHERE em.exercise_id = e.id
+           ORDER BY em.priority DESC LIMIT 1) AS muscle_group,
           SUM(COALESCE(sm2.value, 0) * COALESCE(sm.value, 0)) AS volume
         FROM user_workouts uw
         JOIN workout_exercises we ON we.workout_id = uw.workout_id
@@ -202,7 +197,7 @@ export class ProgressRepository implements IProgressRepository {
         LEFT JOIN set_metrics sm2 ON sm2.exercise_set_id = es.id AND sm2.metric_type = 'weight'
         WHERE uw.user_id = $1
           AND uw.status = 'completed'
-        GROUP BY e.muscle_group
+        GROUP BY e.id
       )
       SELECT muscle_group, SUM(volume) AS total_volume
       FROM set_data
@@ -226,7 +221,7 @@ export class ProgressRepository implements IProgressRepository {
       if (category && categoryVolumes.hasOwnProperty(category)) {
         categoryVolumes[category] += parseFloat(row.total_volume);
       } else {
-        console.warn(`Неизвестная группа мышц: ${originalGroup}`);
+        console.warn(`Неизвестная группа мышц: ${originalGroup} [ProgressRepository.ts]`);
       }
     }
 

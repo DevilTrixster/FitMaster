@@ -1,98 +1,119 @@
-
 import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { Database } from '../../injection/database';
-import { injectable, inject } from 'tsyringe';
 
 export class UserRepository implements IUserRepository {
   constructor(private database: Database) {}
 
-  // Создаёт нового пользователя в БД.
+  // Создаёт нового пользователя (транзакционно: users + profile + settings + preferences)
   async createUser(user: User): Promise<User> {
-    const query = `
-      INSERT INTO users (
-        nickname, password, email, first_name, last_name, birth_date,
-        gender, height, weight, preferred_workout_time,
-        experience_level, fitness_goal
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      RETURNING id, created_at;
-    `;
-    const values = [
-      user.nickname,
-      user.password,
-      user.email,
-      user.firstName,
-      user.lastName,
-      user.birthDate,
-      user.gender,
-      user.height,
-      user.weight,
-      user.preferredWorkoutTime || null,
-      user.experienceLevel,
-      user.fitnessGoal,
-    ];
+    const client = await this.database.getPool().connect();
+    try {
+      await client.query('BEGIN');
 
-    const result = await this.database.query(query, values);
-    return new User({
-      ...user,
-      id: result.rows[0].id,
-      createdAt: result.rows[0].created_at,
-    });
+      // 1. Пользователь (базовая запись)
+      const userRes = await client.query(
+        `INSERT INTO users (nickname, password, email)
+         VALUES ($1, $2, $3)
+         RETURNING id, created_at`,
+        [user.nickname, user.password, user.email]
+      );
+      const userId = userRes.rows[0].id;
+      const createdAt = userRes.rows[0].created_at;
+
+      // 2. Профиль
+      await client.query(
+        `INSERT INTO user_profiles (user_id, first_name, last_name, birth_date, gender, height, weight, avatar_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [userId, user.firstName, user.lastName, user.birthDate, user.gender,
+         user.height, user.weight, null]
+      );
+
+      // 3. Настройки
+      await client.query(
+        `INSERT INTO user_settings (user_id, preferred_workout_time, preferred_days)
+         VALUES ($1, $2, $3)`,
+        [userId, user.preferredWorkoutTime || '17:00:00', user.preferredWorkoutTime ? [] : []]
+      );
+
+      // 4. Предпочтения (уровень и цель)
+      await client.query(
+        `INSERT INTO user_preferences (user_id, experience_level, fitness_goal)
+         VALUES ($1, $2, $3)`,
+        [userId, user.experienceLevel, user.fitnessGoal]
+      );
+
+      await client.query('COMMIT');
+
+      return new User({
+        ...user,
+        id: userId,
+        createdAt,
+      });
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 
-  // Поиск пользователя по email.
+  // Поиск по email (с джойном всех трёх таблиц)
   async findByEmail(email: string): Promise<User | null> {
-    const query = 'SELECT * FROM users WHERE email = $1';
+    const query = `
+      SELECT u.*,
+             up.first_name, up.last_name, up.birth_date, up.gender,
+             up.height, up.weight, up.avatar_url,
+             us.preferred_workout_time, us.preferred_days,
+             pref.experience_level, pref.fitness_goal
+      FROM users u
+      LEFT JOIN user_profiles up ON up.user_id = u.id
+      LEFT JOIN user_settings us ON us.user_id = u.id
+      LEFT JOIN user_preferences pref ON pref.user_id = u.id
+      WHERE u.email = $1
+    `;
     const result = await this.database.query(query, [email]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
 
-  // Поиск пользователя по никнейму.
   async findByNickname(nickname: string): Promise<User | null> {
-    const query = 'SELECT * FROM users WHERE nickname = $1';
+    const query = `
+      SELECT u.*,
+             up.first_name, up.last_name, up.birth_date, up.gender,
+             up.height, up.weight, up.avatar_url,
+             us.preferred_workout_time, us.preferred_days,
+             pref.experience_level, pref.fitness_goal
+      FROM users u
+      LEFT JOIN user_profiles up ON up.user_id = u.id
+      LEFT JOIN user_settings us ON us.user_id = u.id
+      LEFT JOIN user_preferences pref ON pref.user_id = u.id
+      WHERE u.nickname = $1
+    `;
     const result = await this.database.query(query, [nickname]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
 
-  // Поиск пользователя по ID.
   async findById(id: number): Promise<User | null> {
-    const query = 'SELECT * FROM users WHERE id = $1';
+    const query = `
+      SELECT u.*,
+             up.first_name, up.last_name, up.birth_date, up.gender,
+             up.height, up.weight, up.avatar_url,
+             us.preferred_workout_time, us.preferred_days,
+             pref.experience_level, pref.fitness_goal
+      FROM users u
+      LEFT JOIN user_profiles up ON up.user_id = u.id
+      LEFT JOIN user_settings us ON us.user_id = u.id
+      LEFT JOIN user_preferences pref ON pref.user_id = u.id
+      WHERE u.id = $1
+    `;
     const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
 
-  // Обновляет полный объект пользователя (устаревший метод, рекомендуется updateUserFields).
-  async updateUser(user: User): Promise<void> {
-    const query = `
-      UPDATE users SET
-        nickname = $1,
-        first_name = $2,
-        last_name = $3,
-        height = $4,
-        weight = $5,
-        experience_level = $6,
-        fitness_goal = $7,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $8
-    `;
-    const values = [
-      user.nickname,
-      user.firstName,
-      user.lastName,
-      user.height,
-      user.weight,
-      user.experienceLevel,
-      user.fitnessGoal,
-      user.id,
-    ];
-    await this.database.query(query, values);
-  }
-
-  // Частичное обновление полей пользователя.
+  // Частичное обновление полей (nickname – в users, остальные – по соответствующим таблицам)
   async updateUserFields(
     userId: number,
     fields: {
@@ -105,81 +126,94 @@ export class UserRepository implements IUserRepository {
       fitnessGoal?: FitnessGoal;
     }
   ): Promise<void> {
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    const client = await this.database.getPool().connect();
+    try {
+      await client.query('BEGIN');
 
-    if (fields.nickname !== undefined) {
-      updates.push(`nickname = $${paramIndex}`);
-      values.push(fields.nickname);
-      paramIndex++;
-    }
-    if (fields.firstName !== undefined) {
-      updates.push(`first_name = $${paramIndex}`);
-      values.push(fields.firstName);
-      paramIndex++;
-    }
-    if (fields.lastName !== undefined) {
-      updates.push(`last_name = $${paramIndex}`);
-      values.push(fields.lastName);
-      paramIndex++;
-    }
-    if (fields.height !== undefined) {
-      updates.push(`height = $${paramIndex}`);
-      values.push(fields.height);
-      paramIndex++;
-    }
-    if (fields.weight !== undefined) {
-      updates.push(`weight = $${paramIndex}`);
-      values.push(fields.weight);
-      paramIndex++;
-    }
-    if (fields.experienceLevel !== undefined) {
-      updates.push(`experience_level = $${paramIndex}`);
-      values.push(fields.experienceLevel);
-      paramIndex++;
-    }
-    if (fields.fitnessGoal !== undefined) {
-      updates.push(`fitness_goal = $${paramIndex}`);
-      values.push(fields.fitnessGoal);
-      paramIndex++;
-    }
+      if (fields.nickname !== undefined) {
+        await client.query(
+          `UPDATE users SET nickname = $1 WHERE id = $2`,
+          [fields.nickname, userId]
+        );
+      }
 
-    if (updates.length === 0) return;
+      const profileUpdates: string[] = [];
+      const profileValues: any[] = [];
+      if (fields.firstName !== undefined) {
+        profileUpdates.push(`first_name = $${profileValues.length + 1}`);
+        profileValues.push(fields.firstName);
+      }
+      if (fields.lastName !== undefined) {
+        profileUpdates.push(`last_name = $${profileValues.length + 1}`);
+        profileValues.push(fields.lastName);
+      }
+      if (fields.height !== undefined) {
+        profileUpdates.push(`height = $${profileValues.length + 1}`);
+        profileValues.push(fields.height);
+      }
+      if (fields.weight !== undefined) {
+        profileUpdates.push(`weight = $${profileValues.length + 1}`);
+        profileValues.push(fields.weight);
+      }
+      if (profileUpdates.length > 0) {
+        profileValues.push(userId);
+        await client.query(
+          `UPDATE user_profiles SET ${profileUpdates.join(', ')} WHERE user_id = $${profileValues.length}`,
+          profileValues
+        );
+      }
 
-    updates.push(`updated_at = CURRENT_TIMESTAMP`);
-    values.push(userId);
-    const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
-    await this.database.query(query, values);
+      if (fields.experienceLevel !== undefined || fields.fitnessGoal !== undefined) {
+        const prefUpdates: string[] = [];
+        const prefValues: any[] = [];
+        if (fields.experienceLevel !== undefined) {
+          prefUpdates.push(`experience_level = $${prefValues.length + 1}`);
+          prefValues.push(fields.experienceLevel);
+        }
+        if (fields.fitnessGoal !== undefined) {
+          prefUpdates.push(`fitness_goal = $${prefValues.length + 1}`);
+          prefValues.push(fields.fitnessGoal);
+        }
+        prefValues.push(userId);
+        await client.query(
+          `UPDATE user_preferences SET ${prefUpdates.join(', ')} WHERE user_id = $${prefValues.length}`,
+          prefValues
+        );
+      }
+
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
   }
 
-  // Обновляет URL аватара пользователя.
   async updateAvatar(userId: number, avatarUrl: string): Promise<void> {
-    const query = `UPDATE users SET avatar_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
+    // avatar_url теперь в user_profiles
+    const query = `UPDATE user_profiles SET avatar_url = $1 WHERE user_id = $2`;
     const result = await this.database.query(query, [avatarUrl, userId]);
     if (result.rowCount === 0) {
       throw new Error('Пользователь не найден');
     }
   }
 
-  // Сохраняет предпочтительные дни недели для тренировок.
   async updatePreferredDays(userId: number, days: number[]): Promise<void> {
-    console.log(`💾 Updating preferred_days for user ${userId} to:`, days);
-    const query = `UPDATE users SET preferred_days = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`;
+    console.log(`💾 Обновить preferred_days для пользователя ${userId} на:`, days, '[UserRepository.ts]');
+    const query = `UPDATE user_settings SET preferred_days = $1 WHERE user_id = $2`;
     await this.database.query(query, [days, userId]);
-    const check = await this.database.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
-    console.log(`✅ After update, DB contains:`, check.rows[0]?.preferred_days);
+    const check = await this.database.query(`SELECT preferred_days FROM user_settings WHERE user_id = $1`, [userId]);
+    console.log(`✅ После обновления, DB содержит:`, check.rows[0]?.preferred_days, '[UserRepository.ts]');
   }
 
-  // Возвращает предпочтительные дни тренировок пользователя.
   async getPreferredDays(userId: number): Promise<number[]> {
-    const res = await this.database.query(`SELECT preferred_days FROM users WHERE id = $1`, [userId]);
+    const res = await this.database.query(`SELECT preferred_days FROM user_settings WHERE user_id = $1`, [userId]);
     if (res.rows.length === 0) return [1, 3, 5];
     const days = res.rows[0].preferred_days;
     return days || [1, 3, 5];
   }
 
-  // Преобразует строку результата SQL-запроса в объект User.
   private mapRowToUser(row: any): User {
     return new User({
       id: row.id,

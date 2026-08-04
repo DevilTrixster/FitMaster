@@ -15,7 +15,12 @@ export class WorkoutReadRepository {
     if (workoutResult.rows.length === 0) return null;
 
     const exercisesQuery = `
-      SELECT e.*, we.sets, we.rest_seconds, we.order_index
+      SELECT e.*,
+             (SELECT mg.name FROM exercise_muscles em
+              JOIN muscle_groups mg ON mg.id = em.muscle_group_id
+              WHERE em.exercise_id = e.id
+              ORDER BY em.priority DESC LIMIT 1) AS muscle_group,
+             we.sets, we.rest_seconds, we.order_index
       FROM workout_exercises we
       JOIN exercises e ON we.exercise_id = e.id
       WHERE we.workout_id = $1

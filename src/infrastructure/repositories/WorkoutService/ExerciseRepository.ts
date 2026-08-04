@@ -1,4 +1,3 @@
-
 import { Exercise, MetricTemplate, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
 import { Database } from '../../../injection/database';
 
@@ -6,7 +5,16 @@ export class ExerciseRepository {
   constructor(private database: Database) {}
 
   async getAllExercises(): Promise<Exercise[]> {
-    const result = await this.database.query('SELECT * FROM exercises ORDER BY muscle_group, name');
+    const query = `
+      SELECT e.*,
+             (SELECT mg.name FROM exercise_muscles em
+              JOIN muscle_groups mg ON mg.id = em.muscle_group_id
+              WHERE em.exercise_id = e.id
+              ORDER BY em.priority DESC LIMIT 1) AS muscle_group
+      FROM exercises e
+      ORDER BY muscle_group, e.name
+    `;
+    const result = await this.database.query(query);
     return result.rows.map((row: any) => new Exercise({
       id: row.id,
       name: row.name,
@@ -17,7 +25,16 @@ export class ExerciseRepository {
   }
 
   async getExerciseById(id: number): Promise<Exercise | null> {
-    const result = await this.database.query('SELECT * FROM exercises WHERE id = $1', [id]);
+    const query = `
+      SELECT e.*,
+             (SELECT mg.name FROM exercise_muscles em
+              JOIN muscle_groups mg ON mg.id = em.muscle_group_id
+              WHERE em.exercise_id = e.id
+              ORDER BY em.priority DESC LIMIT 1) AS muscle_group
+      FROM exercises e
+      WHERE e.id = $1
+    `;
+    const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
     return new Exercise({
