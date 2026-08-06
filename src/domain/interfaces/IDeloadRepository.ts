@@ -1,3 +1,4 @@
+// Интерфейс разгрузки
 export interface IDeloadPeriod {
   id?: number;
   userId: number;
@@ -7,6 +8,7 @@ export interface IDeloadPeriod {
   reason?: string;
 }
 
+// Репозиторий разгрузки
 export interface IDeloadRepository {
   getActiveDeload(userId: number): Promise<IDeloadPeriod | null>;
   startDeload(userId: number, reason: string, intensityFactor?: number): Promise<void>;

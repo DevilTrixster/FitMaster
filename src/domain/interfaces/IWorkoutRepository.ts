@@ -1,12 +1,4 @@
-import {
-  Workout,
-  UserWorkout,
-  Exercise,
-  WorkoutAdaptation,
-  MetricTemplate,
-  ExerciseSet,
-  SetMetric
-} from '../entities';  
+import { Workout, UserWorkout, Exercise, WorkoutAdaptation, MetricTemplate, ExerciseSet, SetMetric } from '../entities';  
 
 export interface IWorkoutRepository {
   // Базовые программы
@@ -49,6 +41,7 @@ export interface IWorkoutRepository {
     dateTo?: string
   ): Promise<UserWorkout[]>;
 
+  // Получение истории тренировок
   getCompletedWorkoutsHistory(
     userId: number,
     limit: number,
@@ -61,6 +54,7 @@ export interface IWorkoutRepository {
     muscleGroup?: string
   ): Promise<UserWorkout[]>;
 
+  // Количество завершения тренировок
   countCompletedWorkouts(
     userId: number,
     dateFrom?: string,

@@ -1,4 +1,5 @@
 import { Database } from '../../injection/database';
+import { bquery } from './bquery';
 import { IFatigueRepository, DailyMetrics, MuscleRecoveryRecord } from '../../domain/interfaces/IFatigueRepository';
 
 export class FatigueRepository implements IFatigueRepository {
@@ -14,19 +15,9 @@ export class FatigueRepository implements IFatigueRepository {
 
   constructor(private database: Database) {}
 
+  // Сохранение ежедневных показателей
   async saveDailyMetrics(metrics: DailyMetrics): Promise<void> {
-    const query = `
-      INSERT INTO fatigue_recovery (user_id, date, fatigue_score, recovery_score, performance_trend, adaptation_rate, injury_risk, raw_data)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      ON CONFLICT (user_id, date)
-      DO UPDATE SET
-        fatigue_score = EXCLUDED.fatigue_score,
-        recovery_score = EXCLUDED.recovery_score,
-        performance_trend = EXCLUDED.performance_trend,
-        adaptation_rate = EXCLUDED.adaptation_rate,
-        injury_risk = EXCLUDED.injury_risk,
-        raw_data = EXCLUDED.raw_data
-    `;
+    const query = bquery.q_saveDailyMetrics;
     await this.database.query(query, [
       metrics.userId,
       metrics.date,
@@ -54,20 +45,14 @@ export class FatigueRepository implements IFatigueRepository {
     return res.rows[0].id;
   }
 
+  // Обновить мышечное восстановление
   async updateMuscleRecovery(records: MuscleRecoveryRecord[]): Promise<void> {
     const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
       for (const record of records) {
         const muscleGroupId = await this.getMuscleGroupId(record.muscleGroup);
-        const query = `
-          INSERT INTO muscle_recovery (user_id, muscle_group_id, last_trained_date, recovery_percentage)
-          VALUES ($1, $2, $3, $4)
-          ON CONFLICT (user_id, muscle_group_id)
-          DO UPDATE SET
-            last_trained_date = EXCLUDED.last_trained_date,
-            recovery_percentage = EXCLUDED.recovery_percentage
-        `;
+        const query = bquery.q_updateMuscleRecovery;
         await client.query(query, [
           record.userId,
           muscleGroupId,
@@ -84,13 +69,9 @@ export class FatigueRepository implements IFatigueRepository {
     }
   }
 
+  // Получение мышечного восстановления
   async getMuscleRecovery(userId: number): Promise<MuscleRecoveryRecord[]> {
-    const query = `
-      SELECT mr.user_id, mg.name AS muscle_group, mr.last_trained_date, mr.recovery_percentage
-      FROM muscle_recovery mr
-      JOIN muscle_groups mg ON mg.id = mr.muscle_group_id
-      WHERE mr.user_id = $1
-    `;
+    const query = bquery.q_getMuscleRecovery;
     const result = await this.database.query(query, [userId]);
     return result.rows.map((row: any) => ({
       userId: row.user_id,

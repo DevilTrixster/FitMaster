@@ -1,19 +1,13 @@
 import { Exercise, MetricTemplate, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
 import { Database } from '../../../injection/database';
+import { bquery } from '../bquery';
 
 export class ExerciseRepository {
   constructor(private database: Database) {}
 
+  // Получить все упражнения
   async getAllExercises(): Promise<Exercise[]> {
-    const query = `
-      SELECT e.*,
-             (SELECT mg.name FROM exercise_muscles em
-              JOIN muscle_groups mg ON mg.id = em.muscle_group_id
-              WHERE em.exercise_id = e.id
-              ORDER BY em.priority DESC LIMIT 1) AS muscle_group
-      FROM exercises e
-      ORDER BY muscle_group, e.name
-    `;
+    const query = bquery.q_getAllExercises;
     const result = await this.database.query(query);
     return result.rows.map((row: any) => new Exercise({
       id: row.id,
@@ -24,16 +18,9 @@ export class ExerciseRepository {
     }));
   }
 
+  // Получить упражнения по ид
   async getExerciseById(id: number): Promise<Exercise | null> {
-    const query = `
-      SELECT e.*,
-             (SELECT mg.name FROM exercise_muscles em
-              JOIN muscle_groups mg ON mg.id = em.muscle_group_id
-              WHERE em.exercise_id = e.id
-              ORDER BY em.priority DESC LIMIT 1) AS muscle_group
-      FROM exercises e
-      WHERE e.id = $1
-    `;
+    const query = bquery.q_getExerciseById;
     const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     const row = result.rows[0];
@@ -126,15 +113,9 @@ export class ExerciseRepository {
     }
   }
 
+  // Получить сет упражнений
   async getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> {
-    const query = `
-      SELECT es.id as set_id, es.set_number, es.set_type,
-             sm.id as metric_id, sm.metric_type, sm.value, sm.unit
-      FROM exercise_sets es
-      LEFT JOIN set_metrics sm ON sm.exercise_set_id = es.id
-      WHERE es.workout_exercise_id = $1
-      ORDER BY es.set_number, sm.metric_type
-    `;
+    const query = bquery.q_getExerciseSets;
     const result = await this.database.query(query, [workoutExerciseId]);
     const setsMap = new Map<number, ExerciseSet>();
     result.rows.forEach(row => {

@@ -1,4 +1,5 @@
 import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
+import { bquery } from './bquery';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { Database } from '../../injection/database';
 
@@ -60,54 +61,23 @@ export class UserRepository implements IUserRepository {
 
   // Поиск по email (с джойном всех трёх таблиц)
   async findByEmail(email: string): Promise<User | null> {
-    const query = `
-      SELECT u.*,
-             up.first_name, up.last_name, up.birth_date, up.gender,
-             up.height, up.weight, up.avatar_url,
-             us.preferred_workout_time, us.preferred_days,
-             pref.experience_level, pref.fitness_goal
-      FROM users u
-      LEFT JOIN user_profiles up ON up.user_id = u.id
-      LEFT JOIN user_settings us ON us.user_id = u.id
-      LEFT JOIN user_preferences pref ON pref.user_id = u.id
-      WHERE u.email = $1
-    `;
+    const query = bquery.q_findByEmail;
     const result = await this.database.query(query, [email]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
 
+  // Найти по никнейму 
   async findByNickname(nickname: string): Promise<User | null> {
-    const query = `
-      SELECT u.*,
-             up.first_name, up.last_name, up.birth_date, up.gender,
-             up.height, up.weight, up.avatar_url,
-             us.preferred_workout_time, us.preferred_days,
-             pref.experience_level, pref.fitness_goal
-      FROM users u
-      LEFT JOIN user_profiles up ON up.user_id = u.id
-      LEFT JOIN user_settings us ON us.user_id = u.id
-      LEFT JOIN user_preferences pref ON pref.user_id = u.id
-      WHERE u.nickname = $1
-    `;
+    const query = bquery.q_findByNickname;
     const result = await this.database.query(query, [nickname]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);
   }
 
+  // Найти по ид
   async findById(id: number): Promise<User | null> {
-    const query = `
-      SELECT u.*,
-             up.first_name, up.last_name, up.birth_date, up.gender,
-             up.height, up.weight, up.avatar_url,
-             us.preferred_workout_time, us.preferred_days,
-             pref.experience_level, pref.fitness_goal
-      FROM users u
-      LEFT JOIN user_profiles up ON up.user_id = u.id
-      LEFT JOIN user_settings us ON us.user_id = u.id
-      LEFT JOIN user_preferences pref ON pref.user_id = u.id
-      WHERE u.id = $1
-    `;
+    const query = bquery.q_findById;
     const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUser(result.rows[0]);

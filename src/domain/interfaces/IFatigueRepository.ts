@@ -1,3 +1,4 @@
+// Интерфейс метрик для состояния
 export interface DailyMetrics {
   userId: number;
   date: string; // YYYY-MM-DD
@@ -9,6 +10,7 @@ export interface DailyMetrics {
   rawData?: Record<string, any>;
 }
 
+// Интерфейс восстановления
 export interface MuscleRecoveryRecord {
   userId: number;
   muscleGroup: string;
@@ -16,6 +18,7 @@ export interface MuscleRecoveryRecord {
   recoveryPercentage: number;
 }
 
+// Репозиторий усталости
 export interface IFatigueRepository {
   saveDailyMetrics(metrics: DailyMetrics): Promise<void>;
   updateMuscleRecovery(records: MuscleRecoveryRecord[]): Promise<void>;

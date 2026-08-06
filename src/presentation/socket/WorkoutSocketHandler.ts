@@ -14,7 +14,7 @@ export class WorkoutSocketHandler {
 
   public initialize(): void {
     this.io.on('connection', (socket: AuthSocket) => {
-      console.log('🔌 Клиент подключился:', socket.id);
+      console.log('🔌 Клиент подключился:', socket.id, '[WorkoutSocketHandler]');
 
       // Аутентификация пользователя
       socket.on('authenticate', (data: { token: string; userId: number }) => {
@@ -87,7 +87,7 @@ export class WorkoutSocketHandler {
 
       // Отключение
       socket.on('disconnect', () => {
-        console.log('🔌 Клиент отключился:', socket.id);
+        console.log('🔌 Клиент отключился:', socket.id, '[WorkoutSocketHandler]');
       });
     });
   }

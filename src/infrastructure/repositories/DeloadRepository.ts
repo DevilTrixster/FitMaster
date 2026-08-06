@@ -4,6 +4,7 @@ import { Database } from '../../injection/database';
 export class DeloadRepository implements IDeloadRepository {
   constructor(private database: Database) {}
 
+  // Активация Разгрузки
   async getActiveDeload(userId: number): Promise<IDeloadPeriod | null> {
     const res = await this.database.query(
       `SELECT * FROM deload_periods WHERE user_id = $1 AND end_date IS NULL ORDER BY start_date DESC LIMIT 1`,
@@ -21,6 +22,7 @@ export class DeloadRepository implements IDeloadRepository {
     };
   }
 
+  // Начало разгрузки
   async startDeload(userId: number, reason: string, intensityFactor: number = 0.6): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     await this.database.query(
@@ -29,6 +31,7 @@ export class DeloadRepository implements IDeloadRepository {
     );
   }
 
+  // Окончание разгрузки
   async endDeload(userId: number): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     await this.database.query(

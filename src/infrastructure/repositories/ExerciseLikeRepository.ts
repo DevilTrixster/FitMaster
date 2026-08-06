@@ -1,19 +1,17 @@
 import { Database } from '../../injection/database';
+import { bquery } from './bquery';
 import { IExerciseLikeRepository } from '../../domain/interfaces/IExerciseLikeRepository';
 
 export class ExerciseLikeRepository implements IExerciseLikeRepository {
   constructor(private database: Database) {}
 
+  // Поставить лайк
   async setLike(userId: number, exerciseId: number, liked: boolean): Promise<void> {
-    const query = `
-      INSERT INTO exercise_likes (user_id, exercise_id, liked, updated_at)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-      ON CONFLICT (user_id, exercise_id)
-      DO UPDATE SET liked = EXCLUDED.liked, updated_at = EXCLUDED.updated_at
-    `;
+    const query = bquery.q_SetLike;
     await this.database.query(query, [userId, exerciseId, liked]);
   }
 
+  // Получить лайк
   async getLikes(userId: number, exerciseIds?: number[]): Promise<Map<number, boolean>> {
     let query = `SELECT exercise_id, liked FROM exercise_likes WHERE user_id = $1`;
     const params: any[] = [userId];

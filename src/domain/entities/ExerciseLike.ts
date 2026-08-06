@@ -1,3 +1,4 @@
+// Лайки
 export class ExerciseLike {
   constructor(
     public readonly userId: number,

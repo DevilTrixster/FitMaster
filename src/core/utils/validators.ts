@@ -49,3 +49,13 @@ export function validateRescheduleDate(newDate: string, currentDate: Date) {
     throw new ValidationError('Нельзя перенести тренировку на прошедшую дату');
   }
 }
+
+// Единый вызов всех валидаторов
+export const allvalidators = {
+  validateRequired,
+  validateEmailFormat,
+  validatePasswordStrength,
+  validateDateInFuture,
+  validateTimeFormat,
+  validateRescheduleDate
+};

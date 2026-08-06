@@ -34,11 +34,7 @@ export class ProfileController {
     });
   }
 
-  /**
-   * Обновление профиля.
-   * Принимает nickname, firstName, lastName, height, weight,
-   * preferredWorkoutTime, experienceLevel, fitnessGoal.
-   */
+  // Обновление профиля
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     if (!userId) throw new UnauthorizedError('Не авторизован');
@@ -102,12 +98,11 @@ export class ProfileController {
     }
   }
 
-  // Обновление предпочтительных дней тренировок (от 1 до 3 дней). 
+  // Обновление предпочтительных дней тренировок (от 1 до 5 дней). 
   async updatePreferredDays(req: Request, res: Response, next: NextFunction): Promise<void> {
     const userId = (req as any).userId;
     const { days } = req.body;
-    console.log('🔁 ProfileController.updatePreferredDays received:', { userId, days });
-    if (!Array.isArray(days) || days.length < 1 || days.length > 3) {
+    if (!Array.isArray(days) || days.length < 1 || days.length > 5) {
       throw new ValidationError('Выберите от 1 до 3 дней недели');
     }
     const valid = days.every(d => Number.isInteger(d) && d >= 1 && d <= 7);

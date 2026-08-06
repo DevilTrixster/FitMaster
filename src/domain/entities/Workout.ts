@@ -1,26 +1,26 @@
 export enum WorkoutStatus {
-  Scheduled = 'scheduled',
-  InProgress = 'in_progress',
-  Completed = 'completed',
-  Skipped = 'skipped',
-  Rescheduled = 'rescheduled',
+  Scheduled = 'scheduled', // планируется
+  InProgress = 'in_progress', // в прогрессе
+  Completed = 'completed', // завершенно
+  Skipped = 'skipped', // пропущенно
+  Rescheduled = 'rescheduled', // перенесенно
 }
 export enum MetricType {
-    Reps = 'reps',
-    Weight = 'weight',
-    Duration = 'duration',
-    Distance = 'distance',
-    Calories = 'calories',
-    Incline = 'incline',
-    Resistance = 'resistance',
+    Reps = 'reps', // повторение
+    Weight = 'weight', // вес
+    Duration = 'duration', // продолжительность (время ММ:СС)
+    Distance = 'distance', // расстаяние
+    Calories = 'calories', // каллории 
+    Incline = 'incline', // --
+    Resistance = 'resistance', // восстановление
 }
 export enum AdaptationType {
-  IncreaseWeight = 'increase_weight',
-  DecreaseWeight = 'decrease_weight',
-  IncreaseReps = 'increase_reps',
-  DecreaseReps = 'decrease_reps',
-  NoChange = 'no_change',
-  Substitution = 'substitution',
+  IncreaseWeight = 'increase_weight', // увеличение веса
+  DecreaseWeight = 'decrease_weight', // уменьшение веса
+  IncreaseReps = 'increase_reps', // увеличение повторения
+  DecreaseReps = 'decrease_reps', // уменьшение повторений
+  NoChange = 'no_change', // без изменений 
+  Substitution = 'substitution', // замена
 }
 
 export interface MetricTemplate {

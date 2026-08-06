@@ -1,5 +1,6 @@
 import { Database } from '../../../injection/database';
 import { Workout, UserWorkout, WorkoutStatus, WorkoutExercise, Exercise } from '../../../domain/entities';
+import { bquery } from '../bquery';
 import { ExerciseRepository } from './ExerciseRepository';
 
 export class WorkoutReadRepository {
@@ -9,23 +10,13 @@ export class WorkoutReadRepository {
     this.exerciseRepo = new ExerciseRepository(database);
   }
 
+  // Получить тренировку по ид
   async getWorkoutById(id: number): Promise<Workout | null> {
     const workoutQuery = 'SELECT * FROM workouts WHERE id = $1';
     const workoutResult = await this.database.query(workoutQuery, [id]);
     if (workoutResult.rows.length === 0) return null;
 
-    const exercisesQuery = `
-      SELECT e.*,
-             (SELECT mg.name FROM exercise_muscles em
-              JOIN muscle_groups mg ON mg.id = em.muscle_group_id
-              WHERE em.exercise_id = e.id
-              ORDER BY em.priority DESC LIMIT 1) AS muscle_group,
-             we.sets, we.rest_seconds, we.order_index
-      FROM workout_exercises we
-      JOIN exercises e ON we.exercise_id = e.id
-      WHERE we.workout_id = $1
-      ORDER BY we.order_index
-    `;
+    const exercisesQuery = bquery.q_getWorkoutById;
     const exercisesResult = await this.database.query(exercisesQuery, [id]);
 
     const exercises = exercisesResult.rows.map((row: any) => {
@@ -53,41 +44,27 @@ export class WorkoutReadRepository {
     });
   }
 
+  // Получить тренировки пользователя
   async getUserWorkouts(userId: number, limit: number = 10): Promise<UserWorkout[]> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1
-      ORDER BY uw.scheduled_date ASC, uw.scheduled_time ASC 
-      LIMIT $2
-    `;
+    const query = bquery.q_getUserWorkouts;
     const result = await this.database.query(query, [userId, limit]);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 
+  // Получение тренировки пользователя по ид
   async getUserWorkoutById(id: number): Promise<UserWorkout | null> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.id = $1
-    `;
+    const query = bquery.q_getUserWorkoutById;
     const result = await this.database.query(query, [id]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUserWorkout(result.rows[0]);
   }
 
+  // Получение истории тренировок
   async getWorkoutHistory(
     userId: number, limit: number, offset: number,
     status?: string, dateFrom?: string, dateTo?: string
   ): Promise<UserWorkout[]> {
-    let query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1
-    `;
+    let query = bquery.q_getWorkoutHistory;
     const params: any[] = [userId];
     let paramIndex = 2;
 
@@ -114,6 +91,7 @@ export class WorkoutReadRepository {
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 
+  // Получение истории завершенных тренировок
   async getCompletedWorkoutsHistory(
     userId: number,
     limit: number,
@@ -125,12 +103,7 @@ export class WorkoutReadRepository {
     exerciseId?: number,
     muscleGroup?: string
   ): Promise<UserWorkout[]> {
-    let query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1 AND uw.status = 'completed'
-    `;
+    let query = bquery.q_getCompletedWorkoutsHistory;
     const params: any[] = [userId];
     let paramIndex = 2;
 
@@ -266,6 +239,7 @@ export class WorkoutReadRepository {
     };
   }
 
+  // Разделить программу
   async getSplitPrograms(): Promise<Workout[]> {
     const query = `SELECT * FROM workouts WHERE id IN (1, 2, 3) ORDER BY id ASC`;
     const result = await this.database.query(query);
@@ -277,35 +251,17 @@ export class WorkoutReadRepository {
     return workouts;
   }
 
+  // Получение активной тренировки пользователя
   async getUserActiveWorkout(userId: number): Promise<UserWorkout | null> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1 AND uw.status = 'in_progress'
-      ORDER BY uw.scheduled_date ASC
-      LIMIT 1
-    `;
+    const query = bquery.q_getUserActiveWorkout;
     const result = await this.database.query(query, [userId]);
     if (result.rows.length === 0) return null;
     return this.mapRowToUserWorkout(result.rows[0]);
   }
 
+  // Получение объёма тренировки в истории
   async getDailyWorkoutVolumes(userId: number, days: number): Promise<Array<{ date: string; volume: number }>> {
-    const query = `
-      SELECT uw.scheduled_date::text AS date,
-            COALESCE(SUM(sm.value * sm2.value), 0) AS volume
-      FROM user_workouts uw
-      JOIN workout_exercises we ON we.workout_id = uw.workout_id
-      JOIN exercise_sets es ON es.workout_exercise_id = we.id
-      LEFT JOIN set_metrics sm ON sm.exercise_set_id = es.id AND sm.metric_type = 'reps'
-      LEFT JOIN set_metrics sm2 ON sm2.exercise_set_id = es.id AND sm2.metric_type = 'weight'
-      WHERE uw.user_id = $1
-        AND uw.status = 'completed'
-        AND uw.scheduled_date >= CURRENT_DATE - $2::int
-      GROUP BY uw.scheduled_date
-      ORDER BY uw.scheduled_date DESC
-    `;
+    const query = bquery.q_getDailyWorkoutVolumes;
     const result = await this.database.query(query, [userId, days]);
     return result.rows.map((row: any) => ({
       date: row.date,
@@ -313,18 +269,14 @@ export class WorkoutReadRepository {
     }));
   }
 
+  // Получение тренировки в диапазоне
   async getWorkoutsInRange(userId: number, startDate: Date, endDate: Date): Promise<UserWorkout[]> {
-    const query = `
-      SELECT uw.*, w.name as workout_name, w.description as workout_description
-      FROM user_workouts uw
-      JOIN workouts w ON uw.workout_id = w.id
-      WHERE uw.user_id = $1 AND uw.scheduled_date BETWEEN $2 AND $3
-      ORDER BY uw.scheduled_date ASC
-    `;
+    const query = bquery.q_getWorkoutsInRange;
     const result = await this.database.query(query, [userId, startDate, endDate]);
     return result.rows.map((row: any) => this.mapRowToUserWorkout(row));
   }
 
+  // Сопостовление строки с тренировкой пользователя
   private mapRowToUserWorkout(row: any): UserWorkout {
     const workout = new Workout({
       id: row.workout_id,

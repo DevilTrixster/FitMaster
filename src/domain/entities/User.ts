@@ -10,22 +10,22 @@ export enum ExperienceLevel {
 }
 
 export enum FitnessGoal {
-  WeightLoss = 'weight_loss',
-  MuscleGain = 'muscle_gain',
-  Strength = 'strength',
-  Maintenance = 'maintenance',
-  Endurance = 'endurance',
-  Aesthetics = 'aesthetics',
-  Recomposition = 'recomposition',
-  Mobility = 'mobility',
-  Rehabilitation = 'rehabilitation',
-  Sports = 'sports',
-  Event = 'event',
-  StressRelief = 'stress_relief',
-  Energy = 'energy',
-  Competition = 'competition',
-  Posture = 'posture',
-  HealthyAging = 'healthy_aging'
+  WeightLoss = 'weight_loss', // Похудение
+  MuscleGain = 'muscle_gain', // Наращивание мышц
+  Strength = 'strength', // Сила
+  Maintenance = 'maintenance', // Поддержка
+  Endurance = 'endurance', // Выносливость
+  Aesthetics = 'aesthetics', // Эстетичность тела
+  Recomposition = 'recomposition', // Перекомпановка - изменчивость упражнений
+  Mobility = 'mobility', // Мобильность/Подвижность
+  Rehabilitation = 'rehabilitation', // Реабилитация - после травм
+  Sports = 'sports', // Для конкретного спорта
+  Event = 'event', // Для события
+  StressRelief = 'stress_relief', // Снятия стресса
+  Energy = 'energy', // Энергия
+  Competition = 'competition', // Соревнования
+  Posture = 'posture', // Со своим телом
+  HealthyAging = 'healthy_aging' // Поддержание здоровья
 }
 
 export class User {

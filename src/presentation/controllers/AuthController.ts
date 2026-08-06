@@ -1,19 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../application/services/auth/AuthService';
 import { Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
-import {
-  validateRequired,
-  validateEmailFormat,
-  validatePasswordStrength,
-} from '../../core/utils/validators';
+import { allvalidators } from '../../core/utils/validators';
 
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  /**
-   * Регистрация нового пользователя.
-   * Принимает из тела запроса все поля, включая experienceLevel и fitnessGoal.
-   */
+  // Регистрация нового пользователя
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     const {
       nickname,
@@ -30,18 +23,18 @@ export class AuthController {
     } = req.body;
 
     // Валидация обязательных полей
-    validateRequired(nickname, 'nickname');
-    validateRequired(password, 'password');
-    validateRequired(email, 'email');
-    validateRequired(firstName, 'firstName');
-    validateRequired(lastName, 'lastName');
-    validateRequired(birthDate, 'birthDate');
-    validateRequired(gender, 'gender');
-    validateRequired(height, 'height');
-    validateRequired(weight, 'weight');
+    allvalidators.validateRequired(nickname, 'nickname');
+    allvalidators.validateRequired(password, 'password');
+    allvalidators.validateRequired(email, 'email');
+    allvalidators.validateRequired(firstName, 'firstName');
+    allvalidators.validateRequired(lastName, 'lastName');
+    allvalidators.validateRequired(birthDate, 'birthDate');
+    allvalidators.validateRequired(gender, 'gender');
+    allvalidators.validateRequired(height, 'height');
+    allvalidators.validateRequired(weight, 'weight');
 
-    validateEmailFormat(email);
-    validatePasswordStrength(password);
+    allvalidators.validateEmailFormat(email);
+    allvalidators.validatePasswordStrength(password);
 
     const result = await this.authService.register({
       nickname,
@@ -78,8 +71,8 @@ export class AuthController {
     }
 
     const { email, password } = req.body;
-    validateRequired(email, 'email');
-    validateRequired(password, 'password');
+    allvalidators.validateRequired(email, 'email');
+    allvalidators.validateRequired(password, 'password');
 
     const result = await this.authService.login(email, password);
     res.status(200).json({

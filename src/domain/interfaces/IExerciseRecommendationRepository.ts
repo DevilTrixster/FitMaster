@@ -1,3 +1,4 @@
+// Интерфейс рекомендаций
 export interface IExerciseRecommendation {
   id?: number;
   userId: number;
@@ -9,6 +10,7 @@ export interface IExerciseRecommendation {
   appliedAt?: Date;
 }
 
+// Репозиторий рекомендаций 
 export interface IExerciseRecommendationRepository {
   createRecommendation(recommendation: IExerciseRecommendation): Promise<void>;
   getActiveRecommendations(userId: number): Promise<IExerciseRecommendation[]>;
