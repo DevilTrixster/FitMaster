@@ -31,7 +31,7 @@ async function bootstrap() {
   await container.initialize();
 
   // WebSocket
-  const socketHandler = new WorkoutSocketHandler(io, container.services.workoutService);
+  const socketHandler = new WorkoutSocketHandler(io, container.services.workoutFacade);
   socketHandler.initialize();
 
   // Вызов всех маршрутов

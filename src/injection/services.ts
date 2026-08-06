@@ -61,7 +61,7 @@ export const targetQueryService = new WorkoutTargetQueryService(
     repositories.deloadRepository
 );
 
-export const workoutService = new WorkoutFacade(
+export const workoutFacade = new WorkoutFacade(
     workoutSchedulingService,
     workoutLifecycleService,
     workoutQueryService,
@@ -79,7 +79,7 @@ export const profileService = new ProfileService(
 
 export const authService = new AuthService(
     repositories.userRepository, 
-    workoutService, 
+    workoutFacade, 
     intelligentAdaptationService);
 
 // Аналитика и прогресс
@@ -107,7 +107,7 @@ export const services = {
     workoutResultsService,
     workoutLifecycleService,
     workoutQueryService,
-    workoutService,
+    workoutFacade,
     profileService,
     authService,
     progressService,
