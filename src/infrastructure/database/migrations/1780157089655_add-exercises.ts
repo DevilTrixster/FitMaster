@@ -134,7 +134,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     WHERE exercise_id BETWEEN 1 AND 100;
   `);
 
-  // 4. Вставляем шаблоны метрик на основе колонки "Поля упражнения" из Excel
+  // 4. Вставляем шаблоны метрик на основе колонки
   //    Для каждого упражнения определяем, какие метрики требуются.
   //    Сопоставление: повторение -> reps, вес -> weight, время -> duration, дистанция -> distance.
   pgm.sql(`
