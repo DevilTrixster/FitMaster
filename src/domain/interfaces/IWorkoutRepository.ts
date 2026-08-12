@@ -1,4 +1,5 @@
-import { Workout, UserWorkout, Exercise, WorkoutAdaptation, MetricTemplate, ExerciseSet, SetMetric } from '../entities';  
+import { Workout, UserWorkout, Exercise, WorkoutAdaptation, ExerciseSet } from '../entities';  
+import { IMetricTemplate } from './IMetricTemplate';
 
 export interface IWorkoutRepository {
   // Базовые программы
@@ -71,16 +72,15 @@ export interface IWorkoutRepository {
   getExerciseById(id: number): Promise<Exercise | null>;
 
   // Получение шаблонов метрик для упражнения
-  getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]>;
+  getExerciseMetricTemplates(exerciseId: number): Promise<IMetricTemplate[]>;
 
   // Сохранение подхода с метриками
-  saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet>;
+  saveExerciseSet(userWorkoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet>;
 
   // Получение подходов для упражнения в тренировке
-  getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]>;
+  getExerciseSets(userWorkoutExerciseId: number): Promise<ExerciseSet[]>;
 
-  // Получить ID записи workout_exercises по userWorkoutId и exerciseId
-  getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null>;
+  getUserWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null>;
 
   // Обновление времени у всех будущих запланированных тренировок пользователя
   updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void>;

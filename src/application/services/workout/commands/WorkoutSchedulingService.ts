@@ -3,7 +3,7 @@ import { IWorkoutRepository } from '../../../../domain/interfaces/IWorkoutReposi
 import { IUserRepository } from '../../../../domain/interfaces/IUserRepository';
 import { IExerciseRecommendationRepository } from '../../../../domain/interfaces/IExerciseRecommendationRepository';
 import { UserWorkout, WorkoutStatus, Workout, WorkoutExercise } from '../../../../domain/entities';
-import { FitnessGoal, ExperienceLevel } from '../../../../domain/entities/User';
+import { FitnessGoal, ExperienceLevel } from '../../../../domain/entities';
 
 export class WorkoutSchedulingService {
   constructor(

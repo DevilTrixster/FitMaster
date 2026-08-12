@@ -4,7 +4,7 @@ import { WorkoutAdaptation, AdaptationType } from '../../../domain/entities';
 import { SetAnalysisData } from '../../dto/SetAnalysisData';
 import { FatigueRecoveryService } from './FatigueRecoveryService';
 import { PlateauDetectionService } from './PlateauDetectionService';
-import { ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
+import { ExperienceLevel, FitnessGoal } from '../../../domain/entities';
 import { ExerciseLikeService } from '../exercise/ExerciseLikeService';
 import adaptationConfig from '../../../config/adaptation.config';
 

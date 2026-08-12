@@ -1,17 +1,6 @@
-import {
-  Workout,
-  UserWorkout,
-  Exercise,
-  WorkoutExercise,
-  WorkoutStatus,
-  WorkoutAdaptation,
-  AdaptationType,
-  MetricTemplate,
-  MetricType,
-  ExerciseSet,
-  SetMetric
-} from '../../domain/entities';
+import { Workout, UserWorkout, Exercise, WorkoutAdaptation, ExerciseSet} from '../../domain/entities';
 import { IWorkoutRepository } from '../../domain/interfaces/IWorkoutRepository';
+import { IMetricTemplate } from '../../domain/interfaces/IMetricTemplate'
 import { WorkoutReadRepository } from './WorkoutService/WorkoutReadRepository';
 import { WorkoutWriteRepository } from './WorkoutService/WorkoutWriteRepository';
 import { ExerciseRepository } from './WorkoutService/ExerciseRepository';
@@ -103,24 +92,24 @@ export class WorkoutRepository implements IWorkoutRepository {
     return this.readRepo.getSplitPrograms();
   }
 
-  async getExerciseById(id: number): Promise<Exercise | null> { 
-    return this.exerciseRepo.getExerciseById(id); 
+  async getExerciseById(id: number): Promise<Exercise | null> {
+    return this.exerciseRepo.getExerciseById(id);
   }
 
-  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> { 
-    return this.exerciseRepo.getExerciseMetricTemplates(exerciseId); 
+  async getExerciseMetricTemplates(exerciseId: number): Promise<IMetricTemplate[]> { 
+    return this.exerciseRepo.getExerciseMetricTemplates(exerciseId);
   }
 
-  async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> { 
-    return this.exerciseRepo.saveExerciseSet(workoutExerciseId, exerciseSet); 
+  async saveExerciseSet(userWorkoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> { 
+    return this.exerciseRepo.saveExerciseSet(userWorkoutExerciseId, exerciseSet); 
   }
 
-  async getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> { 
-    return this.exerciseRepo.getExerciseSets(workoutExerciseId); 
+  async getExerciseSets(userWorkoutExerciseId: number): Promise<ExerciseSet[]> { 
+    return this.exerciseRepo.getExerciseSets(userWorkoutExerciseId); 
   }
 
-  async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> { 
-    return this.exerciseRepo.getWorkoutExerciseId(userWorkoutId, exerciseId); 
+  async getUserWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> { 
+    return this.exerciseRepo.getUserWorkoutExerciseId(userWorkoutId, exerciseId); 
   }
 
   async updateFutureWorkoutsTime(userId: number, newTime: string): Promise<void> { 

@@ -1,4 +1,4 @@
-import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
+import { User, Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities';
 import { bquery } from './bquery';
 import { IUserRepository } from '../../domain/interfaces/IUserRepository';
 import { Database } from '../../injection/database';

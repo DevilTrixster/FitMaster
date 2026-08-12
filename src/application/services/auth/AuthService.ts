@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { ConflictError, UnauthorizedError } from '../../../core/errors/ValidationError';
-import { User, Gender, ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
+import { User, Gender, ExperienceLevel, FitnessGoal } from '../../../domain/entities';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import { WorkoutFacade } from '../workout/WorkoutFacade';
 import { IntelligentAdaptationService } from '../adaptation/IntelligentAdaptationService';

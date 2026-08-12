@@ -1,5 +1,6 @@
 import adaptationConfig from '../../../../config/adaptation.config';
-import { UserWorkout, WorkoutStatus, MetricTemplate, WorkoutAdaptation } from '../../../../domain/entities';
+import { UserWorkout, WorkoutStatus, WorkoutAdaptation } from '../../../../domain/entities';
+import { IMetricTemplate } from '../../../../domain/interfaces/IMetricTemplate'
 import { IWorkoutRepository } from '../../../../domain/interfaces/IWorkoutRepository';
 import { WorkoutSchedulingService } from '../commands/WorkoutSchedulingService';
 
@@ -38,7 +39,7 @@ export class WorkoutQueryService {
   }
 
   // Получает рекомендации по замене упражнений для пользователя
-  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
+  async getExerciseMetricTemplates(exerciseId: number): Promise<IMetricTemplate[]> {
     return this.workoutRepository.getExerciseMetricTemplates(exerciseId);
   }
 

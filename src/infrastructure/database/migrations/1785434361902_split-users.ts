@@ -3,154 +3,151 @@ import { MigrationBuilder } from 'node-pg-migrate';
 export async function up(pgm: MigrationBuilder): Promise<void> {
     // Таблицы
     pgm.createTable('user_profiles', {
-    id: {
-      type: 'uuid',
-      primaryKey: true,
-      default: pgm.func('gen_random_uuid()')
-    },
+      id: {
+        type: 'serial',
+        primaryKey: true
+      },
 
-    user_id: {
-      type: 'uuid',
-      notNull: true,
-      unique: true,
-      references: 'users(id)',
-      onDelete: 'CASCADE'
-    },
+      user_id: {
+        type: 'integer',
+        notNull: true,
+        unique: true,
+        references: 'users(id)',
+        onDelete: 'CASCADE'
+      },
 
-    first_name: {
-      type: 'varchar(50)',
-      notNull: true
-    },
+      first_name: {
+        type: 'varchar(50)',
+        notNull: true
+      },
 
-    last_name: {
-      type: 'varchar(50)',
-      notNull: true
-    },
+      last_name: {
+        type: 'varchar(50)',
+        notNull: true
+      },
 
-    birth_date: {
-      type: 'date',
-      notNull: true,
-      check: 'birth_date <= CURRENT_DATE'
-    },
+      birth_date: {
+        type: 'date',
+        notNull: true,
+        check: 'birth_date <= CURRENT_DATE'
+      },
 
-    gender: {
-      type: 'gender_type',
-      notNull: true,
-      default: 'male'
-    },
+      gender: {
+        type: 'gender_type',
+        notNull: true,
+        default: 'male'
+      },
 
-    height: {
-      type: 'integer',
-      notNull: true,
-      check: 'height > 100 AND height < 250'
-    },
+      height: {
+        type: 'integer',
+        notNull: true,
+        check: 'height > 100 AND height < 250'
+      },
 
-    weight: {
-      type: 'numeric(5,2)',
-      notNull: true,
-      check: 'weight > 30 AND weight < 300'
-    },
+      weight: {
+        type: 'numeric(5,2)',
+        notNull: true,
+        check: 'weight > 30 AND weight < 300'
+      },
 
-    avatar_url: { type: 'text' },
+      avatar_url: { type: 'text' },
 
-    created_at: {
-      type: 'timestamp with time zone',
-      notNull: true,
-      default: pgm.func('CURRENT_TIMESTAMP')
-    },
+      created_at: {
+        type: 'timestamp with time zone',
+        notNull: true,
+        default: pgm.func('CURRENT_TIMESTAMP')
+      },
 
-    updated_at: {
-      type: 'timestamp with time zone',
-      notNull: true,
-      default: pgm.func('CURRENT_TIMESTAMP')
-    },
+      updated_at: {
+        type: 'timestamp with time zone',
+        notNull: true,
+        default: pgm.func('CURRENT_TIMESTAMP')
+      }
     });
 
     pgm.createTable('user_settings', {
-    id: {
-      type: 'uuid',
-      primaryKey: true,
-      default: pgm.func('gen_random_uuid()')
-    },
+      id: {
+        type: 'serial',
+        primaryKey: true
+      },
 
-    user_id: {
-      type: 'uuid',
-      notNull: true,
-      unique: true,
-      references: 'users(id)',
-      onDelete: 'CASCADE'
-    },
+      user_id: {
+        type: 'integer',
+        notNull: true,
+        unique: true,
+        references: 'users(id)',
+        onDelete: 'CASCADE'
+      },
 
-    preferred_workout_time: {
-      type: 'time',
-      notNull: true,
-      default: '17:00:00'
-    },
+      preferred_workout_time: {
+        type: 'time',
+        notNull: true,
+        default: '17:00:00'
+      },
 
-    preferred_days: {
-      type: 'integer[]',
-      notNull: true,
-      default: pgm.func("'{}'::integer[]"),
-      check: 'check_days_array(preferred_days)'
-    },
+      preferred_days: {
+        type: 'integer[]',
+        notNull: true,
+        default: pgm.func("'{}'::integer[]"),
+        check: 'check_days_array(preferred_days)'
+      },
 
-    settings_json: {
-      type: 'jsonb',
-      notNull: true,
-      default: pgm.func("'{}'::jsonb")
-    },
+      settings_json: {
+        type: 'jsonb',
+        notNull: true,
+        default: pgm.func("'{}'::jsonb")
+      },
 
-    created_at: {
-      type: 'timestamp with time zone',
-      notNull: true,
-      default: pgm.func('CURRENT_TIMESTAMP')
-    },
+      created_at: {
+        type: 'timestamp with time zone',
+        notNull: true,
+        default: pgm.func('CURRENT_TIMESTAMP')
+      },
 
-    updated_at: {
-      type: 'timestamp with time zone',
-      notNull: true,
-      default: pgm.func('CURRENT_TIMESTAMP')
-    },
+      updated_at: {
+        type: 'timestamp with time zone',
+        notNull: true,
+        default: pgm.func('CURRENT_TIMESTAMP')
+      }
     });
 
     pgm.createTable('user_preferences', {
-    id: {
-      type: 'uuid',
-      primaryKey: true,
-      default: pgm.func('gen_random_uuid()')
-    },
+      id: {
+        type: 'serial',
+        primaryKey: true
+      },
 
-    user_id: {
-      type: 'uuid',
-      notNull: true,
-      unique: true,
-      references: 'users(id)',
-      onDelete: 'CASCADE'
-    },
+      user_id: {
+        type: 'integer',
+        notNull: true,
+        unique: true,
+        references: 'users(id)',
+        onDelete: 'CASCADE'
+      },
 
-    experience_level: {
-      type: 'level',
-      notNull: true,
-      default: 'novice'
-    },
+      experience_level: {
+        type: 'level',
+        notNull: true,
+        default: 'novice'
+      },
 
-    fitness_goal: {
-      type: 'goal',
-      notNull: true,
-      default: 'maintenance'
-    },
+      fitness_goal: {
+        type: 'goal',
+        notNull: true,
+        default: 'maintenance'
+      },
 
-    created_at: {
-      type: 'timestamp with time zone',
-      notNull: true,
-      default: pgm.func('CURRENT_TIMESTAMP')
-    },
+      created_at: {
+        type: 'timestamp with time zone',
+        notNull: true,
+        default: pgm.func('CURRENT_TIMESTAMP')
+      },
 
-    updated_at: {
-      type: 'timestamp with time zone',
-      notNull: true,
-      default: pgm.func('CURRENT_TIMESTAMP')
-    },
+      updated_at: {
+        type: 'timestamp with time zone',
+        notNull: true,
+        default: pgm.func('CURRENT_TIMESTAMP')
+      }
     });
 
     // Передача данных от пользователя

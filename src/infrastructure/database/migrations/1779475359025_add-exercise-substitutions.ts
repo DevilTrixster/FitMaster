@@ -5,20 +5,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     // Таблицы
     pgm.createTable('exercise_substitutions', {
       id: {
-          type: 'uuid',
-          primaryKey: true,
-          default: pgm.func('gen_random_uuid()')
+          type: 'serial',
+          primaryKey: true
       },
 
       exercise_id: {
-          type: 'uuid',
+          type: 'integer',
           notNull: true,
           references: 'exercises(id)',
           onDelete: 'CASCADE'
       },
 
       substitute_exercise_id: {
-          type: 'uuid',
+          type: 'integer',
           notNull: true,
           references: 'exercises(id)',
           onDelete: 'CASCADE'
@@ -57,13 +56,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('deload_periods', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()')
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'users(id)',
             onDelete: 'CASCADE'
@@ -103,27 +101,26 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('exercise_recommendations', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()')
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'users(id)',
             onDelete: 'CASCADE'
         },
 
         exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'exercises(id)',
             onDelete: 'CASCADE'
         },
 
         suggested_exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'exercises(id)',
             onDelete: 'CASCADE'

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../../application/services/auth/AuthService';
-import { Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities/User';
+import { Gender, ExperienceLevel, FitnessGoal } from '../../domain/entities';
 import { allvalidators } from '../../core/utils/validators';
 
 export class AuthController {

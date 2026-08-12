@@ -1,5 +1,5 @@
 import { MetricType, ExerciseSet, SetMetric } from '../../../../domain/entities';
-import { FitnessGoal } from '../../../../domain/entities/User';
+import { FitnessGoal } from '../../../../domain/entities';
 import { IWorkoutRepository } from '../../../../domain/interfaces/IWorkoutRepository';
 import { IUserRepository } from '../../../../domain/interfaces/IUserRepository';
 import { IntelligentAdaptationService } from '../../adaptation/IntelligentAdaptationService';
@@ -30,11 +30,11 @@ export class WorkoutResultsService {
       throw new UnauthorizedError('Доступ запрещён');
     }
 
-    const workoutExerciseId = await this.workoutRepository.getWorkoutExerciseId(
+    const userWorkoutExerciseId = await this.workoutRepository.getUserWorkoutExerciseId(
       workoutId,
       exerciseId
     );
-    if (workoutExerciseId === null) {
+    if (userWorkoutExerciseId === null) {
       throw new ValidationError('Упражнение не найдено в тренировке');
     }
 
@@ -46,7 +46,7 @@ export class WorkoutResultsService {
       ),
     });
 
-    await this.workoutRepository.saveExerciseSet(workoutExerciseId, exerciseSet);
+    await this.workoutRepository.saveExerciseSet(userWorkoutExerciseId, exerciseSet);
   }
 
   async triggerAdaptation(
@@ -63,13 +63,13 @@ export class WorkoutResultsService {
     for (const exercise of userWorkout.workout.exercises) {
       if (!exercise.exercise.id) continue;
 
-      const weId = await this.workoutRepository.getWorkoutExerciseId(
+      const userWorkoutExerciseId = await this.workoutRepository.getUserWorkoutExerciseId(
         completedWorkoutId,
         exercise.exercise.id
       );
-      if (!weId) continue;
+      if (!userWorkoutExerciseId) continue;
 
-      const exerciseSets = await this.workoutRepository.getExerciseSets(weId);
+      const exerciseSets = await this.workoutRepository.getExerciseSets(userWorkoutExerciseId);
       const templates = await this.workoutRepository.getExerciseMetricTemplates(
         exercise.exercise.id
       );

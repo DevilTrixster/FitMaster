@@ -1,4 +1,4 @@
-import { User, ExperienceLevel, FitnessGoal } from '../../../domain/entities/User';
+import { User, ExperienceLevel, FitnessGoal } from '../../../domain/entities';
 import { IUserRepository } from '../../../domain/interfaces/IUserRepository';
 import { IWorkoutRepository } from '../../../domain/interfaces/IWorkoutRepository';
 import { NotFoundError } from '../../../core/errors/ValidationError';

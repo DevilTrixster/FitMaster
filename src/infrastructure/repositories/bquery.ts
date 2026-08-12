@@ -309,11 +309,18 @@ export const q_getExerciseById = `
 
 // Запрос на Получение сета упражнений в ExerciseRepository
 export const q_getExerciseSets = `
-      SELECT es.id as set_id, es.set_number, es.set_type,
-             sm.id as metric_id, sm.metric_type, sm.value, sm.unit
+      SELECT
+          es.id AS set_id,
+          es.set_number,
+          es.set_type,
+          sm.id AS metric_id,
+          sm.metric_type,
+          sm.value,
+          sm.unit
       FROM exercise_sets es
-      LEFT JOIN set_metrics sm ON sm.exercise_set_id = es.id
-      WHERE es.workout_exercise_id = $1
+      LEFT JOIN set_metrics sm
+          ON sm.exercise_set_id = es.id
+      WHERE es.user_workout_exercise_id = $1
       ORDER BY es.set_number, sm.metric_type
     `;
 

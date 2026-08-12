@@ -63,13 +63,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.createTable("user_adaptation_profiles", {
         // Индефикация 
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()")
+            type: "serial",
+            primaryKey: true
         },
 
         user_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             // unique: true,
             references: "users(id)",
@@ -217,6 +216,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             type: "jsonb",
             notNull: true,
             default: "{}",
+            check: "jsonb_typeof(parameter_confidence) = 'object'"
         },
 
         last_learning_at: {
@@ -239,26 +239,25 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.createTable("user_adaptation_snapshots", {
 
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         user_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "users(id)",
             onDelete: "CASCADE",
         },
 
         workout_id: {
-            type: "uuid",
+            type: "integer",
             references: "workouts(id)",
             onDelete: "SET NULL",
         },
         
         parent_snapshot_id: {
-            type: "uuid",
+            type: "integer",
             references: "user_adaptation_snapshots(id)",
             onDelete: "SET NULL",
         },
@@ -278,9 +277,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.createTable("adaptation_factors", {
 
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         code: {
@@ -310,12 +308,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
         min_value: {
             type: "numeric(6,3)",
-            notNull: true,
+            notNull: true
         },
 
         max_value: {
             type: "numeric(6,3)",
-            notNull: true,
+            notNull: true
         },
 
         default_value: {
@@ -347,13 +345,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             notNull: true,
             default: pgm.func("CURRENT_TIMESTAMP"),
         }
+    }, {
+        constraints: { check: `
+            min_value < max_value
+            AND default_value >= min_value
+            AND default_value <= max_value
+        `}
     });
 
     pgm.createTable("adaptation_metrics", {
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         code: {
@@ -389,18 +392,17 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable("adaptation_factor_targets", {
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
         factor_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "adaptation_factors(id)",
             onDelete: "CASCADE",
         },
         metric_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "adaptation_metrics(id)",
             onDelete: "CASCADE",
@@ -426,24 +428,25 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             notNull: true,
             default: pgm.func("CURRENT_TIMESTAMP"),
         },
+    }, {
+    constraints: { unique: ["factor_id", "metric_id"]}
     });
 
     pgm.createTable("user_snapshot_factor_values", {
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         snapshot_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "user_adaptation_snapshots(id)",
             onDelete: "CASCADE",
         },
 
         factor_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "adaptation_factors(id)",
             onDelete: "CASCADE",
@@ -476,20 +479,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable("user_snapshot_metric_values", {
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         snapshot_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "user_adaptation_snapshots(id)",
             onDelete: "CASCADE",
         },
 
         metric_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "adaptation_metrics(id)",
             onDelete: "CASCADE",
@@ -523,27 +525,26 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.createTable("user_muscle_states", {
 
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         user_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "users(id)",
             onDelete: "CASCADE",
         },
 
         muscle_group_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "muscle_groups(id)",
             onDelete: "CASCADE",
         },
 
         last_snapshot_id: {
-            type: "uuid",
+            type: "integer",
             references: "user_adaptation_snapshots(id)",
             onDelete: "SET NULL",
         },
@@ -636,30 +637,25 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.createTable("user_adaptation_risk_states", {
 
         id: {
-            type: "uuid",
-            primaryKey: true,
-            default: pgm.func("gen_random_uuid()"),
+            type: "serial",
+            primaryKey: true
         },
 
         user_id: {
-            type: "uuid",
+            type: "integer",
             notNull: true,
             references: "users(id)",
             onDelete: "CASCADE",
         },
 
         snapshot_id: {
-            type: "uuid",
+            type: "integer",
             references: "user_adaptation_snapshots(id)",
             onDelete: "SET NULL",
         },
 
-        /*
-        * Общая готовность организма к тренировке.
-        *
-        * 0 = полностью не готов
-        * 1 = полностью готов
-        */
+
+        // Общая готовность организма к тренировке.
         readiness_score: {
             type: "numeric(5,4)",
             notNull: true,
@@ -840,27 +836,6 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     pgm.createIndex("user_adaptation_risk_states", "estimated_training_ready_at", { name: "idx_user_adaptation_risk_states_ready_at" });
 
 
-
-
-    // Ограничения для полей
-
-    // Ограничение для parameter_confidence — значение должно быть JSON-объектом
-    pgm.addConstraint('user_adaptation_profiles', 'chk_parameter_confidence', {
-        check: ` jsonb_typeof(parameter_confidence) = 'object'`
-        });
-
-    pgm.addConstraint("adaptation_factors", "chk_factor_range", {
-        check: `
-            min_value < max_value
-            AND default_value >= min_value
-            AND default_value <= max_value
-        `
-    });
-
-    pgm.addConstraint("adaptation_factor_targets", "uniq_factor_metric", {
-        unique: ["factor_id", "metric_id"],
-    });
-
     // Наполнение таблицы adaptation_factors
     pgm.sql(`
         INSERT INTO adaptation_factors
@@ -908,11 +883,6 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
     pgm.dropIndex("user_adaptation_risk_states", "training_allowed", { name: "idx_user_adaptation_risk_states_training_allowed" });
     pgm.dropIndex("user_adaptation_risk_states", "estimated_training_ready_at", { name: "idx_user_adaptation_risk_states_ready_at" });
     
-
-    // Удаление ограничений
-    pgm.dropConstraint('user_adaptation_profiles', 'chk_parameter_confidence');
-    pgm.dropConstraint('adaptation_factors', 'chk_factor_range');
-    pgm.dropConstraint('adaptation_factor_targets', 'uniq_factor_metric');
 
     // Удаляние таблиц
     pgm.dropTable('user_adaptation_risk_states');

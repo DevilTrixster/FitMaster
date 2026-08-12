@@ -1,4 +1,5 @@
-import { UserWorkout, MetricType, MetricTemplate } from '../../../domain/entities';
+import { UserWorkout, MetricType} from '../../../domain/entities';
+import { IMetricTemplate } from '../../../domain/interfaces/IMetricTemplate';
 import { WorkoutSchedulingService } from './commands/WorkoutSchedulingService';
 import { WorkoutLifecycleService } from './commands/WorkoutLifecycleService';
 import { WorkoutResultsService } from './commands/WorkoutResultsService';
@@ -29,7 +30,7 @@ export class WorkoutFacade {
   }
 
 
-  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
+  async getExerciseMetricTemplates(exerciseId: number): Promise<IMetricTemplate[]> {
     return this.queryService.getExerciseMetricTemplates(exerciseId);
   }
 

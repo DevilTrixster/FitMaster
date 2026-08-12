@@ -58,7 +58,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       SELECT id, name FROM muscle_groups
     )
     SELECT
-      md5('fitmaster.exercise.' || t.exercise_id)::uuid,
+      t.exercise_id,
       mm.id,
       t.priority
     FROM (
@@ -574,14 +574,10 @@ export async function down(pgm: MigrationBuilder): Promise<void> {
         -- 2. Удаляем связи exercise_muscles,
         -- созданные этой миграцией.
         --
-        -- exercises.id теперь UUID,
-        -- поэтому используем тот же детерминированный UUID,
-        -- который использовался при заполнении данных.
+        -- exercises.id использует INTEGER.
         DELETE FROM exercise_muscles
         WHERE exercise_id IN (
-            SELECT md5(
-                'fitmaster.exercise.' || exercise_id
-            )::uuid
+            SELECT exercise_id
             FROM (
                 VALUES
                     (1), (2), (3), (4), (5),

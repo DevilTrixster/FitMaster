@@ -192,36 +192,37 @@ export class WorkoutReadRepository {
     return parseInt(result.rows[0].count, 10);
   }
 
-  async getWorkoutDetails(workoutId: number, userId: number): Promise<any> {
-    const userWorkout = await this.getUserWorkoutById(workoutId);
+  async getWorkoutDetails(userWorkoutId: number, userId: number): Promise<any> {
+    const userWorkout = await this.getUserWorkoutById(userWorkoutId);
     if (!userWorkout || userWorkout.userId !== userId) return null;
 
     const workout = await this.getWorkoutById(userWorkout.workout.id!);
     if (!workout) return null;
 
     const exercisesWithSets = await Promise.all(workout.exercises.map(async (we) => {
-      const weId = await this.exerciseRepo.getWorkoutExerciseId(workoutId, we.exercise.id!);
-      const sets = weId ? await this.exerciseRepo.getExerciseSets(weId) : [];
+      const userWorkoutExerciseId = await this.exerciseRepo.getUserWorkoutExerciseId(userWorkoutId, we.exercise.id!);
+      const sets = userWorkoutExerciseId ? await this.exerciseRepo.getExerciseSets(userWorkoutExerciseId): [];
       const mappedSets = sets.map((set: any) => ({
-        setNumber: set.setNumber,
-        setType: set.setType,
-        metrics: set.metrics.map((m: any) => ({
-          metricType: m.metricType,
-          value: m.value,
-          unit: m.unit
-        }))
+          setNumber: set.setNumber,
+          setType: set.setType,
+          metrics: set.metrics.map((m: any) => ({
+              metricType: m.metricType,
+              value: m.value,
+              unit: m.unit
+          }))
       }));
+
       return {
-        exercise: {
-          id: we.exercise.id,
-          name: we.exercise.name,
-          muscleGroup: we.exercise.muscleGroup
-        },
-        sets: we.sets,
-        restSeconds: we.restSeconds,
-        completedSets: mappedSets
+          exercise: {
+              id: we.exercise.id,
+              name: we.exercise.name,
+              muscleGroup: we.exercise.muscleGroup
+          },
+          sets: we.sets,
+          restSeconds: we.restSeconds,
+          completedSets: mappedSets
       };
-    }));
+  }));
 
     return {
       id: userWorkout.id,

@@ -1,4 +1,5 @@
-import { Exercise, MetricTemplate, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
+import { Exercise, MetricType, ExerciseSet, SetMetric } from '../../../domain/entities';
+import { IMetricTemplate } from '../../../domain/interfaces/IMetricTemplate';
 import { Database } from '../../../injection/database';
 import { bquery } from '../bquery';
 
@@ -18,7 +19,7 @@ export class ExerciseRepository {
     }));
   }
 
-  // Получить упражнения по ид
+  // Получить упражнение по ID
   async getExerciseById(id: number): Promise<Exercise | null> {
     const query = bquery.q_getExerciseById;
     const result = await this.database.query(query, [id]);
@@ -33,7 +34,8 @@ export class ExerciseRepository {
     });
   }
 
-  async getExerciseMetricTemplates(exerciseId: number): Promise<MetricTemplate[]> {
+  // Получить шаблоны метрик упражнения
+  async getExerciseMetricTemplates(exerciseId: number): Promise<IMetricTemplate[]> {
     const result = await this.database.query(
       'SELECT metric_type, required, default_value, unit FROM exercise_metric_templates WHERE exercise_id = $1',
       [exerciseId]
@@ -46,18 +48,31 @@ export class ExerciseRepository {
     }));
   }
 
-  async getWorkoutExerciseId(userWorkoutId: number, exerciseId: number): Promise<number | null> {
-    const res = await this.database.query(
-      `SELECT we.id FROM workout_exercises we
-       JOIN user_workouts uw ON we.workout_id = uw.workout_id
-       WHERE uw.id = $1 AND we.exercise_id = $2`,
-      [userWorkoutId, exerciseId]
-    );
-    return res.rows.length > 0 ? res.rows[0].id : null;
+  // Получить конкретное упражнение конкретной пользовательской тренировки
+  async getUserWorkoutExerciseId(
+      userWorkoutId: number,
+      exerciseId: number
+  ): Promise<number | null> {
+      const res = await this.database.query(
+          `
+          SELECT uwe.id
+          FROM user_workout_exercises uwe
+          JOIN workout_exercises we
+              ON we.id = uwe.workout_exercise_id
+          WHERE uwe.user_workout_id = $1
+            AND we.exercise_id = $2
+          LIMIT 1
+          `,
+          [userWorkoutId, exerciseId]
+      );
+
+      return res.rows.length > 0
+          ? res.rows[0].id
+          : null;
   }
 
-  // Upsert: обновляет существующий подход или создаёт новый
-  async saveExerciseSet(workoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> {
+  // Создать или обновить подход
+  async saveExerciseSet(userWorkoutExerciseId: number, exerciseSet: ExerciseSet): Promise<ExerciseSet> {
     const client = await this.database.getPool().connect();
     try {
       await client.query('BEGIN');
@@ -65,8 +80,8 @@ export class ExerciseRepository {
       // Проверяем, существует ли уже подход с таким номером
       const existingSet = await client.query(
         `SELECT id FROM exercise_sets 
-         WHERE workout_exercise_id = $1 AND set_number = $2`,
-        [workoutExerciseId, exerciseSet.setNumber]
+         WHERE user_workout_exercise_id = $1 AND set_number = $2`,
+        [userWorkoutExerciseId, exerciseSet.setNumber]
       );
 
       let setId: number;
@@ -82,9 +97,9 @@ export class ExerciseRepository {
       } else {
         // Создаём новый подход
         const insertSet = await client.query(
-          `INSERT INTO exercise_sets (workout_exercise_id, set_number, set_type)
+          `INSERT INTO exercise_sets (user_workout_exercise_id, set_number, set_type)
            VALUES ($1, $2, $3) RETURNING id`,
-          [workoutExerciseId, exerciseSet.setNumber, exerciseSet.setType]
+          [userWorkoutExerciseId, exerciseSet.setNumber, exerciseSet.setType]
         );
         setId = insertSet.rows[0].id;
       }
@@ -103,7 +118,7 @@ export class ExerciseRepository {
       return new ExerciseSet({
         ...exerciseSet,
         id: setId,
-        workoutExerciseId,
+        userWorkoutExerciseId,
       });
     } catch (e) {
       await client.query('ROLLBACK');
@@ -113,30 +128,38 @@ export class ExerciseRepository {
     }
   }
 
-  // Получить сет упражнений
-  async getExerciseSets(workoutExerciseId: number): Promise<ExerciseSet[]> {
+  // Получить подходы конкретного упражнения конкретной тренировки пользователя
+  async getExerciseSets(userWorkoutExerciseId: number): Promise<ExerciseSet[]> {
     const query = bquery.q_getExerciseSets;
-    const result = await this.database.query(query, [workoutExerciseId]);
+    const result = await this.database.query(query, [userWorkoutExerciseId]);
     const setsMap = new Map<number, ExerciseSet>();
+
     result.rows.forEach(row => {
-      if (!setsMap.has(row.set_id)) {
-        setsMap.set(row.set_id, new ExerciseSet({
-          id: row.set_id,
-          setNumber: row.set_number,
-          setType: row.set_type,
-          metrics: [],
-          workoutExerciseId,
-        }));
-      }
-      if (row.metric_id) {
-        setsMap.get(row.set_id)!.metrics.push(new SetMetric({
-          id: row.metric_id,
-          metricType: row.metric_type as MetricType,
-          value: parseFloat(row.value),
-          unit: row.unit,
-        }));
-      }
+        if (!setsMap.has(row.set_id)) {
+            setsMap.set(
+                row.set_id,
+                new ExerciseSet({
+                    id: row.set_id,
+                    setNumber: row.set_number,
+                    setType: row.set_type,
+                    metrics: [],
+                    userWorkoutExerciseId,
+                })
+            );
+        }
+        if (row.metric_id) {
+            setsMap.get(row.set_id)!.metrics.push(
+                new SetMetric({
+                    id: row.metric_id,
+                    exerciseSetId: row.set_id,
+                    metricType: row.metric_type as MetricType,
+                    value: parseFloat(row.value),
+                    unit: row.unit,
+                })
+            );
+        }
     });
+
     return Array.from(setsMap.values()).sort((a, b) => a.setNumber - b.setNumber);
   }
 }

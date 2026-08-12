@@ -143,9 +143,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     // Таблицы
     pgm.createTable('users', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         nickname: {
@@ -240,9 +239,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('workouts', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         name: {
@@ -280,9 +278,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('muscle_groups', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         name: {
@@ -292,7 +289,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         },
 
         parent_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'muscle_groups(id)',
             onDelete: 'CASCADE',
         },
@@ -312,9 +309,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('exercises', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         name: {
@@ -328,6 +324,10 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
             type: 'equipment_type',
             notNull: true,
             default: 'bodyweight',
+        },
+
+        verbal_instruction: {
+            type: 'text'
         },
 
         is_active: {
@@ -387,20 +387,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     // exercises <-> muscle_groups (многие ко многим с приоритетом)
     pgm.createTable('exercise_muscles',{
         id: {
-            type: 'uuid',
+            type: 'serial',
             primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
         },
 
         exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'exercises(id)',
             onDelete: 'CASCADE',
         },
 
         muscle_group_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'muscle_groups(id)',
             onDelete: 'CASCADE',
@@ -431,20 +430,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     // workout <-> exercises
     pgm.createTable('workout_exercises', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         workout_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'workouts(id)',
             onDelete: 'CASCADE',
         },
 
         exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'exercises(id)',
             onDelete: 'CASCADE',
@@ -486,20 +484,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('user_workouts', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'users(id)',
             onDelete: 'CASCADE',
         },
 
         workout_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'workouts(id)',
             onDelete: 'CASCADE',
         },
@@ -528,7 +525,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
         completed_at: { type: 'timestamp with time zone' },
 
         last_completed_exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'exercises(id)',
             onDelete: 'SET NULL',
         },
@@ -566,13 +563,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('exercise_sets', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         workout_exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'workout_exercises(id)',
             onDelete: 'CASCADE',
@@ -614,13 +610,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('set_metrics', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         exercise_set_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'exercise_sets(id)',
             onDelete: 'CASCADE',
@@ -654,25 +649,24 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('workout_adaptations', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'users(id)',
             onDelete: 'CASCADE',
         },
 
         user_workout_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'user_workouts(id)',
             onDelete: 'CASCADE',
         },
 
         exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'exercises(id)',
             onDelete: 'CASCADE',
         },
@@ -720,13 +714,12 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('fatigue_recovery', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'users(id)',
             onDelete: 'CASCADE',
         },
@@ -779,19 +772,18 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('muscle_recovery', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'users(id)',
             onDelete: 'CASCADE',
         },
 
         muscle_group_id: {
-            type: 'uuid',
+            type: 'integer',
             references: 'muscle_groups(id)',
             onDelete: 'CASCADE',
         },
@@ -823,20 +815,19 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
 
     pgm.createTable('exercise_likes', {
         id: {
-            type: 'uuid',
-            primaryKey: true,
-            default: pgm.func('gen_random_uuid()'),
+            type: 'serial',
+            primaryKey: true
         },
 
         user_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'users(id)',
             onDelete: 'CASCADE',
         },
 
         exercise_id: {
-            type: 'uuid',
+            type: 'integer',
             notNull: true,
             references: 'exercises(id)',
             onDelete: 'CASCADE',

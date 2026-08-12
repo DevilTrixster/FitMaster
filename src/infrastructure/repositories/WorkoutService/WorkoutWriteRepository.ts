@@ -1,5 +1,5 @@
 import { Database } from '../../../injection/database';
-import { UserWorkout, WorkoutStatus } from '../../../domain/entities'; 
+import { UserWorkout } from '../../../domain/entities'; 
 
 export class WorkoutWriteRepository {
   constructor(private database: Database) {}

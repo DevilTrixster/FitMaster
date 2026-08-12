@@ -58,9 +58,9 @@ export class WorkoutLifecycleService {
     const missingSets: string[] = [];
 
     for (const exercise of userWorkout.workout.exercises) {
-      const weId = await this.workoutRepository.getWorkoutExerciseId(workoutId, exercise.exercise.id!);
-      if (!weId) continue;
-      const savedSets = await this.workoutRepository.getExerciseSets(weId);
+      const userWorkoutExerciseId = await this.workoutRepository.getUserWorkoutExerciseId(workoutId,exercise.exercise.id!);
+      if (!userWorkoutExerciseId) continue;
+      const savedSets = await this.workoutRepository.getExerciseSets(userWorkoutExerciseId);
       // Считаем, что подход выполнен, если у него есть хотя бы одна метрика (или тип не normal, но для простоты – проверяем metrics.length)
       const completedCount = savedSets.filter(s => s.metrics.length > 0).length;
       if (completedCount < exercise.sets) {
